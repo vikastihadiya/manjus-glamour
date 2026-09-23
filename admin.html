@@ -2,14 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <meta name="robots" content="noindex, nofollow">
 
     <title>Admin Panel | Manju's The World of Glamour</title>
-
-    <meta
-        name="description"
-        content="Secure admin panel for Manju's The World of Glamour."
-    >
 
     <style>
         * {
@@ -19,336 +18,642 @@
         }
 
         :root {
-            --ivory: #f8f5ef;
-            --cream: #eee7dc;
-            --charcoal: #262321;
-            --gold: #b49663;
-            --gold-dark: #8f7445;
+            --ivory: #fbf7f0;
+            --cream: #f4ede3;
             --white: #ffffff;
-            --muted: #77716a;
-            --border: #ddd5ca;
-            --danger: #a33b3b;
-            --success: #39734a;
+            --charcoal: #24211f;
+            --muted: #77706a;
+            --gold: #b89455;
+            --gold-dark: #94733d;
+            --border: #e6ddd1;
+            --danger: #b84b4b;
+            --success: #3d805b;
+            --shadow: 0 15px 40px rgba(45, 36, 28, 0.08);
         }
 
         body {
-            min-height: 100vh;
-            background:
-                radial-gradient(
-                    circle at top right,
-                    rgba(180, 150, 99, 0.15),
-                    transparent 35%
-                ),
-                var(--ivory);
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--ivory);
             color: var(--charcoal);
-            font-family:
-                Arial,
-                Helvetica,
-                sans-serif;
+            min-height: 100vh;
         }
 
-        .login-wrapper {
+        button,
+        input,
+        textarea,
+        select {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* =========================
+           LOGIN
+        ========================= */
+
+        #loginSection {
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 24px;
+            background:
+                radial-gradient(circle at top left, rgba(184,148,85,.13), transparent 35%),
+                radial-gradient(circle at bottom right, rgba(184,148,85,.09), transparent 35%),
+                var(--ivory);
         }
 
         .login-card {
             width: 100%;
-            max-width: 450px;
-            background: rgba(255, 255, 255, 0.96);
+            max-width: 440px;
+            background: var(--white);
             border: 1px solid var(--border);
+            border-radius: 22px;
             padding: 42px 34px;
-            border-radius: 18px;
-            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.10);
+            box-shadow: var(--shadow);
         }
 
-        .brand {
+        .brand-mark {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--charcoal);
+            color: #d8bb7e;
+            font-family: Georgia, serif;
+            font-size: 25px;
+            border: 2px solid #d8bb7e;
+        }
+
+        .login-card h1 {
             text-align: center;
-            margin-bottom: 32px;
-        }
-
-        .brand-small {
-            font-size: 11px;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: var(--gold-dark);
-            margin-bottom: 10px;
-        }
-
-        .brand h1 {
             font-family: Georgia, "Times New Roman", serif;
-            font-size: 30px;
-            line-height: 1.15;
+            font-size: 28px;
             font-weight: 500;
+            margin-bottom: 8px;
         }
 
-        .brand p {
-            margin-top: 10px;
+        .login-subtitle {
+            text-align: center;
             color: var(--muted);
             font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 30px;
         }
 
         .form-group {
             margin-bottom: 18px;
         }
 
-        label {
+        .form-group label {
             display: block;
+            margin-bottom: 7px;
             font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 8px;
+            font-weight: 700;
         }
 
-        input {
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
             width: 100%;
-            padding: 14px 15px;
+            padding: 13px 14px;
             border: 1px solid var(--border);
             border-radius: 10px;
-            background: #fff;
-            color: var(--charcoal);
-            font-size: 15px;
+            background: #fffdf9;
             outline: none;
-            transition: 0.2s ease;
+            transition: .2s;
         }
 
-        input:focus {
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
             border-color: var(--gold);
-            box-shadow: 0 0 0 3px rgba(180, 150, 99, 0.12);
+            box-shadow: 0 0 0 3px rgba(184,148,85,.10);
         }
 
-        .login-btn {
+        .primary-btn {
             width: 100%;
-            border: 0;
+            border: none;
             border-radius: 10px;
-            padding: 15px;
+            padding: 14px 18px;
             background: var(--charcoal);
-            color: #fff;
-            font-size: 14px;
+            color: white;
             font-weight: 700;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: 0.2s ease;
+            transition: .2s;
         }
 
-        .login-btn:hover {
-            background: var(--gold-dark);
+        .primary-btn:hover {
+            background: #000;
+            transform: translateY(-1px);
         }
 
-        .message {
-            margin-top: 16px;
-            padding: 12px 14px;
-            border-radius: 9px;
-            display: none;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .message.error {
-            display: block;
-            background: #f9e8e8;
-            color: var(--danger);
-        }
-
-        .message.success {
-            display: block;
-            background: #e8f4eb;
-            color: var(--success);
-        }
-
-        .forgot {
+        .forgot-link {
             display: block;
             text-align: center;
             margin-top: 18px;
             color: var(--gold-dark);
-            text-decoration: none;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: 600;
         }
 
-        .forgot:hover {
+        .forgot-link:hover {
             text-decoration: underline;
         }
 
-        .back-home {
+        #loginMessage {
+            margin-top: 15px;
+            padding: 11px 13px;
+            border-radius: 9px;
+            font-size: 13px;
+            display: none;
+        }
+
+        #loginMessage.error {
             display: block;
+            background: #fff0f0;
+            color: var(--danger);
+        }
+
+        #loginMessage.success {
+            display: block;
+            background: #edf8f1;
+            color: var(--success);
+        }
+
+        /* =========================
+           ADMIN APP
+        ========================= */
+
+        #adminApp {
+            min-height: 100vh;
+            display: none;
+        }
+
+        .admin-layout {
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+
+        .sidebar {
+            width: 260px;
+            flex-shrink: 0;
+            background: #211e1c;
+            color: white;
+            padding: 25px 16px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-brand {
+            padding: 5px 10px 25px;
+            border-bottom: 1px solid rgba(255,255,255,.10);
+            margin-bottom: 18px;
+        }
+
+        .sidebar-brand-title {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 21px;
+            line-height: 1.25;
+            color: #ead3a4;
+        }
+
+        .sidebar-brand-sub {
+            margin-top: 7px;
+            font-size: 11px;
+            color: #aaa39d;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .nav-label {
+            font-size: 10px;
+            color: #8e8883;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+            padding: 0 10px 8px;
+        }
+
+        .admin-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .admin-nav button {
+            width: 100%;
+            border: none;
+            background: transparent;
+            color: #d8d2cc;
+            text-align: left;
+            padding: 12px 13px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            font-size: 13px;
+            transition: .2s;
+        }
+
+        .admin-nav button:hover,
+        .admin-nav button.active {
+            background: rgba(184,148,85,.17);
+            color: #f2dcae;
+        }
+
+        .nav-icon {
+            width: 22px;
             text-align: center;
+            font-size: 16px;
+        }
+
+        .sidebar-bottom {
             margin-top: 25px;
-            color: var(--muted);
-            text-decoration: none;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255,255,255,.10);
+        }
+
+        .logout-btn {
+            width: 100%;
+            border: 1px solid rgba(255,255,255,.15);
+            background: transparent;
+            color: #ddd6cf;
+            padding: 11px 12px;
+            border-radius: 9px;
             font-size: 13px;
         }
 
-        .back-home:hover {
-            color: var(--charcoal);
+        .logout-btn:hover {
+            background: rgba(255,255,255,.08);
         }
 
-        /* Dashboard */
+        /* Main */
 
-        #dashboard {
-            display: none;
+        .main-content {
+            margin-left: 260px;
+            width: calc(100% - 260px);
             min-height: 100vh;
         }
 
         .topbar {
-            min-height: 72px;
-            background: var(--charcoal);
-            color: #fff;
+            height: 76px;
+            padding: 0 30px;
+            background: white;
+            border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 20px;
-            padding: 14px 28px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
         }
 
-        .topbar-title {
+        .topbar h2 {
             font-family: Georgia, "Times New Roman", serif;
-            font-size: 21px;
-        }
-
-        .topbar-subtitle {
-            color: #cfc8bd;
-            font-size: 11px;
-            margin-top: 3px;
-            letter-spacing: 1px;
-        }
-
-        .logout-btn {
-            border: 1px solid rgba(255,255,255,0.35);
-            background: transparent;
-            color: #fff;
-            padding: 10px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-
-        .logout-btn:hover {
-            background: rgba(255,255,255,0.1);
-        }
-
-        .dashboard-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 30px;
-        }
-
-        .welcome {
-            margin-bottom: 30px;
-        }
-
-        .welcome h2 {
-            font-family: Georgia, "Times New Roman", serif;
-            font-size: 32px;
+            font-size: 24px;
             font-weight: 500;
         }
 
-        .welcome p {
-            margin-top: 8px;
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .admin-email {
+            font-size: 12px;
             color: var(--muted);
+        }
+
+        .view-site-btn {
+            padding: 9px 13px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            color: var(--charcoal);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .view-site-btn:hover {
+            border-color: var(--gold);
+        }
+
+        .content-area {
+            padding: 30px;
+            max-width: 1500px;
+            margin: auto;
+        }
+
+        /* Dashboard */
+
+        .welcome-box {
+            background:
+                linear-gradient(120deg, #fffdf8, #f5eadb);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 28px;
+            margin-bottom: 26px;
+        }
+
+        .welcome-box h1 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 30px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .welcome-box p {
+            color: var(--muted);
+            line-height: 1.6;
+            max-width: 760px;
+            font-size: 14px;
         }
 
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 18px;
+            gap: 16px;
         }
 
         .dashboard-card {
-            background: #fff;
             border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 22px;
-            min-height: 150px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+            border-radius: 15px;
+            background: white;
+            padding: 21px;
+            text-align: left;
+            cursor: pointer;
+            transition: .22s;
+            box-shadow: 0 5px 18px rgba(45,36,28,.03);
         }
 
-        .dashboard-card span {
-            display: block;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--gold-dark);
-            margin-bottom: 12px;
+        .dashboard-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--gold);
+            box-shadow: var(--shadow);
+        }
+
+        .dashboard-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--cream);
+            font-size: 20px;
+            margin-bottom: 16px;
         }
 
         .dashboard-card h3 {
             font-family: Georgia, "Times New Roman", serif;
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 500;
+            margin-bottom: 6px;
         }
 
         .dashboard-card p {
             color: var(--muted);
-            font-size: 13px;
-            line-height: 1.6;
-            margin-top: 9px;
+            font-size: 12px;
+            line-height: 1.5;
         }
 
-        .section {
-            margin-top: 28px;
-            background: #fff;
+        /* Module */
+
+        #moduleArea {
+            display: none;
+        }
+
+        .module-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 22px;
+        }
+
+        .module-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
             border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 24px;
-        }
-
-        .section h3 {
-            font-family: Georgia, "Times New Roman", serif;
-            font-size: 24px;
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
-
-        .section p {
-            color: var(--muted);
-            line-height: 1.6;
-            font-size: 14px;
-        }
-
-        .coming {
-            margin-top: 18px;
-            padding: 18px;
-            border: 1px dashed var(--border);
-            border-radius: 10px;
-            background: var(--ivory);
-            color: var(--muted);
+            background: white;
+            padding: 9px 13px;
+            border-radius: 8px;
             font-size: 13px;
         }
 
-        @media (max-width: 1000px) {
+        .back-btn:hover {
+            border-color: var(--gold);
+        }
+
+        .module-title {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 27px;
+            font-weight: 500;
+        }
+
+        .module-description {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .module-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .secondary-btn,
+        .gold-btn,
+        .danger-btn {
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid var(--border);
+        }
+
+        .secondary-btn {
+            background: white;
+        }
+
+        .gold-btn {
+            background: var(--gold);
+            color: white;
+            border-color: var(--gold);
+        }
+
+        .danger-btn {
+            background: #fff3f3;
+            color: var(--danger);
+            border-color: #efd0d0;
+        }
+
+        .module-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 22px;
+            margin-bottom: 18px;
+        }
+
+        .module-card h3 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 7px;
+        }
+
+        .module-card p {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0,1fr));
+            gap: 18px;
+        }
+
+        .module-placeholder {
+            min-height: 170px;
+            border: 1px dashed #d8cbbb;
+            border-radius: 12px;
+            background: #fffcf7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 25px;
+        }
+
+        .module-placeholder strong {
+            display: block;
+            margin-bottom: 6px;
+            font-family: Georgia, serif;
+            font-size: 17px;
+        }
+
+        .module-placeholder span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* Mobile */
+
+        .mobile-menu-btn {
+            display: none;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 8px;
+            padding: 8px 11px;
+        }
+
+        @media (max-width: 1100px) {
             .dashboard-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-columns: repeat(3, minmax(0, 1fr));
             }
         }
 
-        @media (max-width: 600px) {
-            .login-card {
-                padding: 32px 22px;
+        @media (max-width: 850px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: .25s;
             }
 
-            .brand h1 {
-                font-size: 25px;
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .mobile-menu-btn {
+                display: block;
             }
 
             .topbar {
-                padding: 14px 18px;
+                padding: 0 18px;
             }
 
-            .topbar-title {
-                font-size: 17px;
+            .dashboard-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
-            .dashboard-container {
-                padding: 20px 16px;
+            .content-area {
+                padding: 20px;
+            }
+
+            .module-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-email {
+                display: none;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .login-card {
+                padding: 30px 22px;
             }
 
             .dashboard-grid {
                 grid-template-columns: 1fr;
             }
 
-            .welcome h2 {
-                font-size: 27px;
+            .welcome-box {
+                padding: 22px;
+            }
+
+            .welcome-box h1 {
+                font-size: 25px;
+            }
+
+            .topbar h2 {
+                font-size: 20px;
+            }
+
+            .topbar-right .view-site-btn {
+                display: none;
+            }
+
+            .module-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .module-title {
+                font-size: 24px;
             }
         }
     </style>
@@ -356,254 +661,805 @@
 
 <body>
 
-    <!-- =====================================================
-         LOGIN
-         ===================================================== -->
+<!-- =====================================================
+     LOGIN SECTION
+===================================================== -->
 
-    <section id="loginSection" class="login-wrapper">
+<section id="loginSection">
 
-        <div class="login-card">
+    <div class="login-card">
 
-            <div class="brand">
-                <div class="brand-small">
-                    Private Administration
-                </div>
+        <div class="brand-mark">M</div>
 
-                <h1>
-                    Manju's The World of Glamour
-                </h1>
+        <h1>Admin Panel</h1>
 
-                <p>
-                    Secure Admin Panel
-                </p>
+        <p class="login-subtitle">
+            Manju's The World of Glamour<br>
+            Secure business management
+        </p>
+
+        <form id="loginForm">
+
+            <div class="form-group">
+                <label for="adminEmail">Email Address</label>
+
+                <input
+                    type="email"
+                    id="adminEmail"
+                    placeholder="Enter admin email"
+                    autocomplete="email"
+                    required
+                >
             </div>
 
-            <form id="loginForm">
+            <div class="form-group">
+                <label for="adminPassword">Password</label>
 
-                <div class="form-group">
-                    <label for="adminEmail">
-                        Email
-                    </label>
-
-                    <input
-                        type="email"
-                        id="adminEmail"
-                        placeholder="Enter admin email"
-                        autocomplete="email"
-                        required
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="adminPassword">
-                        Password
-                    </label>
-
-                    <input
-                        type="password"
-                        id="adminPassword"
-                        placeholder="Enter password"
-                        autocomplete="current-password"
-                        required
-                    >
-                </div>
-
-                <button
-                    type="submit"
-                    class="login-btn"
+                <input
+                    type="password"
+                    id="adminPassword"
+                    placeholder="Enter password"
+                    autocomplete="current-password"
+                    required
                 >
-                    SIGN IN
-                </button>
-
-                <div
-                    id="loginMessage"
-                    class="message"
-                ></div>
-
-            </form>
-
-            <a
-                href="reset-password.html"
-                class="forgot"
-            >
-                Forgot password?
-            </a>
-
-            <a
-                href="index.html"
-                class="back-home"
-            >
-                ← Back to website
-            </a>
-
-        </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         DASHBOARD
-         ===================================================== -->
-
-    <section id="dashboard">
-
-        <header class="topbar">
-
-            <div>
-                <div class="topbar-title">
-                    Manju's The World of Glamour
-                </div>
-
-                <div class="topbar-subtitle">
-                    ADMINISTRATION
-                </div>
             </div>
 
             <button
-                id="logoutBtn"
-                class="logout-btn"
+                type="submit"
+                class="primary-btn"
+                id="loginBtn"
             >
-                Logout
+                Sign In
             </button>
 
-        </header>
+            <div id="loginMessage"></div>
+
+        </form>
+
+        <a
+            href="reset-password.html"
+            class="forgot-link"
+        >
+            Forgot password?
+        </a>
+
+    </div>
+
+</section>
 
 
-        <main class="dashboard-container">
+<!-- =====================================================
+     ADMIN APPLICATION
+===================================================== -->
 
-            <div class="welcome">
+<section id="adminApp">
 
-                <h2>
-                    Welcome to your dashboard
-                </h2>
+    <div class="admin-layout">
 
-                <p>
-                    Manage your salon website, appointments,
-                    services, galleries and offers from one place.
-                </p>
+        <!-- SIDEBAR -->
+
+        <aside class="sidebar" id="sidebar">
+
+            <div class="sidebar-brand">
+                <div class="sidebar-brand-title">
+                    Manju's The World of Glamour
+                </div>
+
+                <div class="sidebar-brand-sub">
+                    Admin Management
+                </div>
+            </div>
+
+            <div class="nav-label">
+                Management
+            </div>
+
+            <nav class="admin-nav">
+
+                <button
+                    type="button"
+                    class="nav-item active"
+                    data-module="dashboard"
+                >
+                    <span class="nav-icon">⌂</span>
+                    Dashboard
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-module="appointments"
+                >
+                    <span class="nav-icon">📅</span>
+                    Appointments
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-module="services"
+                >
+                    <span class="nav-icon">✦</span>
+                    Services
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-module="offers"
+                >
+                    <span class="nav-icon">🏷</span>
+                    Offers & Prices
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-module="gallery"
+                >
+                    <span class="nav-icon">▧</span>
+                    Gallery
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-module="bride_gallery"
+                >
+                    <span class="nav-icon">👰</span>
+                    Brides & Girls
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-module="customer_gallery"
+                >
+                    <span class="nav-icon">♡</span>
+                    Customers
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-module="before_after"
+                >
+                    <span class="nav-icon">↔</span>
+                    Before / After
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-module="bridal_packages"
+                >
+                    <span class="nav-icon">♢</span>
+                    Bridal Packages
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-module="team"
+                >
+                    <span class="nav-icon">♙</span>
+                    Team
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-module="testimonials"
+                >
+                    <span class="nav-icon">★</span>
+                    Testimonials
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-module="faqs"
+                >
+                    <span class="nav-icon">?</span>
+                    FAQs
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-module="settings"
+                >
+                    <span class="nav-icon">⚙</span>
+                    Settings
+                </button>
+
+            </nav>
+
+            <div class="sidebar-bottom">
+
+                <button
+                    type="button"
+                    class="logout-btn"
+                    id="logoutBtn"
+                >
+                    Sign Out
+                </button>
 
             </div>
 
+        </aside>
 
-            <div class="dashboard-grid">
 
-                <div class="dashboard-card">
-                    <span>Appointments</span>
-                    <h3>Manage Requests</h3>
-                    <p>
-                        View and manage appointment enquiries
-                        from customers.
-                    </p>
+        <!-- MAIN CONTENT -->
+
+        <main class="main-content">
+
+            <header class="topbar">
+
+                <div style="display:flex;align-items:center;gap:12px;">
+
+                    <button
+                        type="button"
+                        class="mobile-menu-btn"
+                        id="mobileMenuBtn"
+                        aria-label="Open menu"
+                    >
+                        ☰
+                    </button>
+
+                    <h2 id="pageTitle">
+                        Dashboard
+                    </h2>
+
                 </div>
 
+                <div class="topbar-right">
 
-                <div class="dashboard-card">
-                    <span>Services</span>
-                    <h3>Manage Services</h3>
-                    <p>
-                        Add services, descriptions, durations
-                        and prices.
-                    </p>
+                    <span
+                        class="admin-email"
+                        id="loggedInEmail"
+                    ></span>
+
+                    <a
+                        href="index.html"
+                        target="_blank"
+                        class="view-site-btn"
+                    >
+                        View Website ↗
+                    </a>
+
                 </div>
 
-
-                <div class="dashboard-card">
-                    <span>Gallery</span>
-                    <h3>Upload Photos</h3>
-                    <p>
-                        Manage your salon, bride and customer
-                        photography.
-                    </p>
-                </div>
+            </header>
 
 
-                <div class="dashboard-card">
-                    <span>Offers</span>
-                    <h3>Manage Offers</h3>
-                    <p>
-                        Add promotional offers, prices,
-                        validity and terms.
-                    </p>
-                </div>
+            <div class="content-area">
+
+                <!-- DASHBOARD -->
+
+                <section id="dashboardArea">
+
+                    <div class="welcome-box">
+
+                        <h1>
+                            Welcome to your dashboard
+                        </h1>
+
+                        <p>
+                            Manage appointments, services, offers, prices,
+                            bridal content, customer photos, gallery images,
+                            testimonials and website settings from one place.
+                        </p>
+
+                    </div>
 
 
-                <div class="dashboard-card">
-                    <span>Before / After</span>
-                    <h3>Transformations</h3>
-                    <p>
-                        Upload before and after beauty
-                        transformation photos.
-                    </p>
-                </div>
+                    <div class="dashboard-grid">
+
+                        <button
+                            type="button"
+                            class="dashboard-card"
+                            data-module="appointments"
+                        >
+                            <div class="dashboard-icon">📅</div>
+                            <h3>Appointments</h3>
+                            <p>
+                                View and manage customer appointment requests.
+                            </p>
+                        </button>
 
 
-                <div class="dashboard-card">
-                    <span>Bridal</span>
-                    <h3>Bridal Packages</h3>
-                    <p>
-                        Manage bridal packages and
-                        bridal enquiries.
-                    </p>
-                </div>
+                        <button
+                            type="button"
+                            class="dashboard-card"
+                            data-module="services"
+                        >
+                            <div class="dashboard-icon">✦</div>
+                            <h3>Services</h3>
+                            <p>
+                                Add, edit, hide or remove salon services.
+                            </p>
+                        </button>
 
 
-                <div class="dashboard-card">
-                    <span>Customers</span>
-                    <h3>Customer Gallery</h3>
-                    <p>
-                        Add customer photos and testimonials
-                        with consent.
-                    </p>
-                </div>
+                        <button
+                            type="button"
+                            class="dashboard-card"
+                            data-module="offers"
+                        >
+                            <div class="dashboard-icon">🏷</div>
+                            <h3>Offers & Prices</h3>
+                            <p>
+                                Manage offers, prices, dates and promotional content.
+                            </p>
+                        </button>
 
 
-                <div class="dashboard-card">
-                    <span>Website</span>
-                    <h3>Settings</h3>
-                    <p>
-                        Manage contact details, social links,
-                        FAQs and opening hours.
-                    </p>
-                </div>
+                        <button
+                            type="button"
+                            class="dashboard-card"
+                            data-module="gallery"
+                        >
+                            <div class="dashboard-icon">▧</div>
+                            <h3>Gallery</h3>
+                            <p>
+                                Upload and manage website portfolio photos.
+                            </p>
+                        </button>
 
-            </div>
+
+                        <button
+                            type="button"
+                            class="dashboard-card"
+                            data-module="bride_gallery"
+                        >
+                            <div class="dashboard-icon">👰</div>
+                            <h3>Brides & Girls</h3>
+                            <p>
+                                Upload bridal, girls and special-look photos.
+                            </p>
+                        </button>
 
 
-            <div class="section">
+                        <button
+                            type="button"
+                            class="dashboard-card"
+                            data-module="customer_gallery"
+                        >
+                            <div class="dashboard-icon">♡</div>
+                            <h3>Customers</h3>
+                            <p>
+                                Manage regular customer photos and feedback.
+                            </p>
+                        </button>
 
-                <h3>
-                    Admin system
-                </h3>
 
-                <p>
-                    Your secure Supabase authentication is
-                    connected. The management modules will be
-                    added next.
-                </p>
+                        <button
+                            type="button"
+                            class="dashboard-card"
+                            data-module="before_after"
+                        >
+                            <div class="dashboard-icon">↔</div>
+                            <h3>Before / After</h3>
+                            <p>
+                                Upload transformation photos and manage results.
+                            </p>
+                        </button>
 
-                <div class="coming">
-                    🔐 You are viewing the protected admin
-                    dashboard. Only authenticated users can
-                    access this area.
-                </div>
+
+                        <button
+                            type="button"
+                            class="dashboard-card"
+                            data-module="bridal_packages"
+                        >
+                            <div class="dashboard-icon">♢</div>
+                            <h3>Bridal Packages</h3>
+                            <p>
+                                Manage bridal packages and package information.
+                            </p>
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="dashboard-card"
+                            data-module="team"
+                        >
+                            <div class="dashboard-icon">♙</div>
+                            <h3>Team</h3>
+                            <p>
+                                Manage team and artist profiles.
+                            </p>
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="dashboard-card"
+                            data-module="testimonials"
+                        >
+                            <div class="dashboard-icon">★</div>
+                            <h3>Testimonials</h3>
+                            <p>
+                                Manage customer testimonials shown on the website.
+                            </p>
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="dashboard-card"
+                            data-module="faqs"
+                        >
+                            <div class="dashboard-icon">?</div>
+                            <h3>FAQs</h3>
+                            <p>
+                                Manage frequently asked questions.
+                            </p>
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="dashboard-card"
+                            data-module="settings"
+                        >
+                            <div class="dashboard-icon">⚙</div>
+                            <h3>Settings</h3>
+                            <p>
+                                Manage business contact and website settings.
+                            </p>
+                        </button>
+
+                    </div>
+
+                </section>
+
+
+                <!-- MODULE AREA -->
+
+                <section id="moduleArea">
+
+                    <div class="module-header">
+
+                        <div class="module-header-left">
+
+                            <button
+                                type="button"
+                                class="back-btn"
+                                id="backToDashboard"
+                            >
+                                ← Dashboard
+                            </button>
+
+                            <div>
+                                <h1
+                                    class="module-title"
+                                    id="moduleTitle"
+                                >
+                                    Module
+                                </h1>
+
+                                <p
+                                    class="module-description"
+                                    id="moduleDescription"
+                                >
+                                    Manage website content.
+                                </p>
+                            </div>
+
+                        </div>
+
+                        <div
+                            class="module-actions"
+                            id="moduleActions"
+                        ></div>
+
+                    </div>
+
+
+                    <!--
+                        admin.js will load the selected
+                        Supabase management interface here.
+                    -->
+
+                    <div id="moduleContent">
+
+                        <div class="module-card">
+
+                            <div class="module-placeholder">
+
+                                <div>
+
+                                    <strong>
+                                        Loading management module...
+                                    </strong>
+
+                                    <span>
+                                        The selected section will connect
+                                        to your Supabase database and storage.
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
 
             </div>
 
         </main>
 
-    </section>
+    </div>
+
+</section>
 
 
-    <!-- Supabase JavaScript library -->
-    <script
-        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-    ></script>
+<!-- =====================================================
+     SUPABASE + ADMIN JAVASCRIPT
+===================================================== -->
 
-    <!-- Your Supabase configuration -->
-    <script src="supabase-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- Admin functionality -->
-    <script src="admin.js"></script>
+<script src="supabase-config.js"></script>
+
+<script src="admin.js"></script>
+
+
+<!-- =====================================================
+     BASIC UI CONTROLLER
+     
+     This controller only handles:
+     - sidebar navigation
+     - dashboard cards
+     - mobile menu
+     - dashboard/module switching
+     
+     Supabase CRUD will be handled by admin.js.
+===================================================== -->
+
+<script>
+
+(function () {
+
+    const loginSection = document.getElementById("loginSection");
+    const adminApp = document.getElementById("adminApp");
+
+    const dashboardArea = document.getElementById("dashboardArea");
+    const moduleArea = document.getElementById("moduleArea");
+
+    const pageTitle = document.getElementById("pageTitle");
+
+    const moduleTitle = document.getElementById("moduleTitle");
+    const moduleDescription = document.getElementById("moduleDescription");
+
+    const backToDashboard =
+        document.getElementById("backToDashboard");
+
+    const mobileMenuBtn =
+        document.getElementById("mobileMenuBtn");
+
+    const sidebar =
+        document.getElementById("sidebar");
+
+    const navItems =
+        document.querySelectorAll("[data-module]");
+
+
+    const moduleInfo = {
+
+        dashboard: {
+            title: "Dashboard",
+            description: "Manage your beauty studio website."
+        },
+
+        appointments: {
+            title: "Appointments",
+            description: "View and manage customer appointment requests."
+        },
+
+        services: {
+            title: "Services",
+            description: "Manage salon services and service information."
+        },
+
+        offers: {
+            title: "Offers & Prices",
+            description: "Manage offers, prices, promotional dates and terms."
+        },
+
+        gallery: {
+            title: "Gallery",
+            description: "Manage portfolio and website gallery photos."
+        },
+
+        bride_gallery: {
+            title: "Brides & Girls",
+            description: "Manage bridal, girls and special-look photos."
+        },
+
+        customer_gallery: {
+            title: "Customers",
+            description: "Manage regular customer photos and feedback."
+        },
+
+        before_after: {
+            title: "Before / After",
+            description: "Manage transformation photos."
+        },
+
+        bridal_packages: {
+            title: "Bridal Packages",
+            description: "Manage bridal packages and package information."
+        },
+
+        team: {
+            title: "Team",
+            description: "Manage team and artist profiles."
+        },
+
+        testimonials: {
+            title: "Testimonials",
+            description: "Manage customer testimonials."
+        },
+
+        faqs: {
+            title: "FAQs",
+            description: "Manage frequently asked questions."
+        },
+
+        settings: {
+            title: "Settings",
+            description: "Manage business information and website settings."
+        }
+
+    };
+
+
+    function openDashboard() {
+
+        dashboardArea.style.display = "block";
+        moduleArea.style.display = "none";
+
+        pageTitle.textContent = "Dashboard";
+
+        document
+            .querySelectorAll(".nav-item")
+            .forEach(function (item) {
+
+                item.classList.remove("active");
+
+                if (item.dataset.module === "dashboard") {
+                    item.classList.add("active");
+                }
+
+            });
+
+        sidebar.classList.remove("open");
+
+    }
+
+
+    function openModule(moduleName) {
+
+        if (moduleName === "dashboard") {
+            openDashboard();
+            return;
+        }
+
+        const info = moduleInfo[moduleName];
+
+        if (!info) {
+            return;
+        }
+
+        dashboardArea.style.display = "none";
+        moduleArea.style.display = "block";
+
+        pageTitle.textContent = info.title;
+
+        moduleTitle.textContent = info.title;
+        moduleDescription.textContent = info.description;
+
+        document
+            .querySelectorAll(".nav-item")
+            .forEach(function (item) {
+
+                item.classList.remove("active");
+
+                if (item.dataset.module === moduleName) {
+                    item.classList.add("active");
+                }
+
+            });
+
+        sidebar.classList.remove("open");
+
+
+        /*
+         * admin.js can listen to this event and
+         * load the actual Supabase CRUD interface.
+         */
+
+        document.dispatchEvent(
+            new CustomEvent("adminModuleOpen", {
+                detail: {
+                    module: moduleName
+                }
+            })
+        );
+
+    }
+
+
+    navItems.forEach(function (item) {
+
+        item.addEventListener("click", function () {
+
+            const moduleName =
+                item.dataset.module;
+
+            openModule(moduleName);
+
+        });
+
+    });
+
+
+    backToDashboard.addEventListener(
+        "click",
+        openDashboard
+    );
+
+
+    mobileMenuBtn.addEventListener(
+        "click",
+        function () {
+
+            sidebar.classList.toggle("open");
+
+        }
+    );
+
+
+    /*
+     * Allow admin.js to show/hide the
+     * authenticated application.
+     */
+
+    window.showAdminPanel = function (email) {
+
+        loginSection.style.display = "none";
+        adminApp.style.display = "block";
+
+        const emailElement =
+            document.getElementById("loggedInEmail");
+
+        if (emailElement) {
+            emailElement.textContent =
+                email || "";
+        }
+
+        openDashboard();
+
+    };
+
+
+    window.showLoginPanel = function () {
+
+        adminApp.style.display = "none";
+        loginSection.style.display = "flex";
+
+    };
+
+
+})();
+
+</script>
 
 </body>
 </html>
