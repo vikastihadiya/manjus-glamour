@@ -2831,6 +2831,12 @@
 
 
 <!-- =========================================
+     SUPABASE
+========================================= -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+
+<!-- =========================================
      JAVASCRIPT
 ========================================= -->
 
@@ -3186,43 +3192,27 @@ document
 .getElementById("bookingForm")
 .addEventListener(
     "submit",
-    function(event) {
+    async function(event) {
 
         event.preventDefault();
 
-
         const service =
-            document
-            .getElementById("bookingService")
-            .value;
-
-
+            document.getElementById("bookingService").value.trim();
         const date =
-            document
-            .getElementById("bookingDate")
-            .value;
-
-
+            document.getElementById("bookingDate").value;
         const time =
-            document
-            .getElementById("bookingTime")
-            .value;
-
-
+            document.getElementById("bookingTime").value;
         const name =
-            document
-            .getElementById("bookingName")
-            .value;
-
-
+            document.getElementById("bookingName").value.trim();
         const phone =
-            document
-            .getElementById("bookingPhone")
-            .value;
+            document.getElementById("bookingPhone").value.trim();
 
+        if (!service || !date || !time || !name || !phone) {
+            alert("Please complete all appointment fields.");
+            return;
+        }
 
         const message =
-
 `Hello Manju's The World of Glamour,
 
 I would like to request an appointment.
@@ -3234,9 +3224,50 @@ Preferred Time: ${time}
 Name: ${name}
 Phone: ${phone}`;
 
+        const submitButton =
+            this.querySelector("button[type='submit']");
+        const oldText = submitButton?.textContent || "REQUEST APPOINTMENT";
 
-        openWhatsApp(message);
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = "Saving request...";
+        }
 
+        try {
+            if (typeof supabaseClient === "undefined") {
+                throw new Error("Website database configuration is unavailable.");
+            }
+
+            const { error } = await supabaseClient
+                .from("appointments")
+                .insert({
+                    name,
+                    phone,
+                    service,
+                    date,
+                    time,
+                    status: "New"
+                });
+
+            if (error) throw error;
+
+            this.reset();
+            alert("Appointment request submitted successfully. We will contact you shortly.");
+            openWhatsApp(message);
+
+        } catch (error) {
+            console.error("Appointment save error:", error);
+            alert(
+                "Your appointment could not be saved. Please try again or contact us on WhatsApp.\n\n" +
+                (error.message || "Database error")
+            );
+            openWhatsApp(message);
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = oldText;
+            }
+        }
     }
 );
 
@@ -3659,6 +3690,189 @@ window.addEventListener(
 
 </script>
 
+
+
+<script>
+/* =========================================================
+   MANJU PUBLIC DATABASE CONTENT
+   This layer loads content entered from the admin panel.
+========================================================= */
+(function () {
+    "use strict";
+
+    function esc(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function imageUrl(item) {
+        return item?.image_url || item?.url || item?.photo_url || "";
+    }
+
+    function empty(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = `<div class="muted" style="padding:25px;text-align:center">${esc(text)}</div>`;
+    }
+
+    function renderPublicServices(rows) {
+        const grid = document.getElementById("serviceGrid");
+        if (!grid) return;
+        if (!rows.length) {
+            empty("serviceGrid", "Services will be published here soon.");
+            return;
+        }
+        grid.innerHTML = rows.map(service => `
+            <article class="service-card">
+                <div class="service-content">
+                    <p class="eyebrow">${esc(service.category || "BEAUTY SERVICE")}</p>
+                    <h3>${esc(service.name || "Service")}</h3>
+                    <p>${esc(service.description || "")}</p>
+                    <div class="service-meta"><span>${service.price != null && service.price !== "" ? "₹" + esc(service.price) : "Price on enquiry"}</span></div>
+                    ${service.duration ? `<small>${esc(service.duration)}</small>` : ""}
+                    <button class="service-book" type="button" data-db-service="${esc(service.name || "")}">BOOK / ENQUIRE</button>
+                </div>
+            </article>
+        `).join("");
+        grid.querySelectorAll("[data-db-service]").forEach(btn => {
+            btn.addEventListener("click", () => selectService(btn.dataset.dbService));
+        });
+    }
+
+    function renderOffers(rows) {
+        const grid = document.getElementById("offerGrid");
+        if (!grid) return;
+        const now = Date.now();
+        const active = rows.filter(o => {
+            if (o.active === false) return false;
+            if (o.start_date && new Date(o.start_date).getTime() > now) return false;
+            if (o.end_date && new Date(o.end_date).getTime() < now) return false;
+            return true;
+        });
+        if (!active.length) {
+            empty("offerGrid", "No active offers are available right now.");
+            return;
+        }
+        grid.innerHTML = active.map(o => `
+            <article class="offer-card">
+                <p class="eyebrow">OFFER</p>
+                <h3>${esc(o.name || "Special Offer")}</h3>
+                <p>${esc(o.description || "")}</p>
+                <div>
+                    ${o.original_price != null ? `<del>₹${esc(o.original_price)}</del> ` : ""}
+                    ${o.offer_price != null ? `<strong>₹${esc(o.offer_price)}</strong>` : ""}
+                </div>
+                ${o.start_date || o.end_date ? `<small>Valid ${o.start_date ? esc(new Date(o.start_date).toLocaleDateString()) : "now"}${o.end_date ? " – " + esc(new Date(o.end_date).toLocaleDateString()) : ""}</small>` : ""}
+                ${o.terms ? `<p class="muted">${esc(o.terms)}</p>` : ""}
+            </article>
+        `).join("");
+    }
+
+    function renderGallery(id, rows, type) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (!rows.length) {
+            empty(id, "No photos have been published yet.");
+            return;
+        }
+        el.innerHTML = rows.map(item => {
+            const url = imageUrl(item);
+            if (!url) return "";
+            const title = item.title || item.name || "Beauty photo";
+            return `<div class="gallery-item" style="background-image:url('${esc(url)}');background-size:cover;background-position:center;min-height:260px;display:flex;align-items:flex-end;padding:0;overflow:hidden">
+                <div style="width:100%;padding:14px;background:linear-gradient(transparent,rgba(0,0,0,.75));color:#fff">${esc(title)}</div>
+            </div>`;
+        }).join("");
+    }
+
+    function renderCustomers(rows) {
+        const grid = document.getElementById("customerGrid");
+        if (!grid) return;
+        if (!rows.length) { empty("customerGrid", "Customer photos will appear here after approval."); return; }
+        grid.innerHTML = rows.map(item => {
+            const url = imageUrl(item);
+            return `<article class="customer-card">
+                ${url ? `<img src="${esc(url)}" alt="${esc(item.title || item.name || "Customer")}" style="width:100%;height:280px;object-fit:cover;border-radius:inherit">` : `<div class="customer-photo">PHOTO</div>`}
+                <h3>${esc(item.title || item.name || "Customer")}</h3>
+                ${item.description ? `<p class="muted">${esc(item.description)}</p>` : ""}
+            </article>`;
+        }).join("");
+    }
+
+    function renderBeforeAfter(rows) {
+        const grid = document.getElementById("beforeAfterGrid");
+        if (!grid) return;
+        if (!rows.length) { empty("beforeAfterGrid", "Before / After transformations will appear here."); return; }
+        grid.innerHTML = rows.map(item => `
+            <div class="before-card">
+                <div class="before-images">
+                    ${item.before_image_url ? `<div><img src="${esc(item.before_image_url)}" alt="Before" style="width:100%;height:260px;object-fit:cover"><span>BEFORE</span></div>` : ""}
+                    ${item.after_image_url ? `<div><img src="${esc(item.after_image_url)}" alt="After" style="width:100%;height:260px;object-fit:cover"><span>AFTER</span></div>` : ""}
+                </div>
+                ${item.title ? `<p>${esc(item.title)}</p>` : ""}
+            </div>
+        `).join("");
+    }
+
+    function renderReviews(rows) {
+        const grid = document.getElementById("reviewGrid");
+        if (!grid) return;
+        if (!rows.length) { empty("reviewGrid", "Customer reviews will appear here."); return; }
+        grid.innerHTML = rows.map(item => `
+            <article class="review">
+                <div class="stars">★★★★★</div>
+                <blockquote>${esc(item.message || item.description || item.answer || "")}</blockquote>
+                <small>${esc(item.name || item.title || "Customer")}</small>
+            </article>
+        `).join("");
+    }
+
+    async function loadTable(table, order = "created_at") {
+        const result = await supabaseClient.from(table).select("*").order(order, { ascending:false });
+        if (result.error) throw result.error;
+        return result.data || [];
+    }
+
+    async function loadPublicContent() {
+        if (typeof supabaseClient === "undefined") return;
+        try {
+            const results = await Promise.allSettled([
+                loadTable("services"),
+                loadTable("offers"),
+                loadTable("gallery"),
+                loadTable("bride_gallery"),
+                loadTable("customer_gallery"),
+                loadTable("before_after"),
+                loadTable("testimonials")
+            ]);
+
+            const [services, offers, gallery, bride, customers, beforeAfter, reviews] = results;
+            if (services.status === "fulfilled") renderPublicServices(services.value.filter(x => x.active !== false));
+            if (offers.status === "fulfilled") renderOffers(offers.value);
+            if (gallery.status === "fulfilled") renderGallery("workGallery", gallery.value, "gallery");
+            if (bride.status === "fulfilled") renderGallery("brideGallery", bride.value, "bride");
+            if (customers.status === "fulfilled") renderCustomers(customers.value);
+            if (beforeAfter.status === "fulfilled") renderBeforeAfter(beforeAfter.value);
+            if (reviews.status === "fulfilled") renderReviews(reviews.value);
+
+            results.forEach((r, i) => {
+                if (r.status === "rejected") console.warn("Public content load failed:", i, r.reason);
+            });
+        } catch (error) {
+            console.warn("Public Supabase content load failed:", error);
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", loadPublicContent);
+    } else {
+        loadPublicContent();
+    }
+})();
+</script>
 
 </body>
 </html>
