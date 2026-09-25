@@ -3,6 +3,8 @@
 // ADMIN PANEL
 // ============================================================
 
+const supabaseClient = window.supabaseClient;
+
 let currentUser = null;
 let currentModule = "dashboard";
 
