@@ -1,372 +1,541 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-```
 <title>Admin Panel | Manju's The World of Glamour</title>
 
 <meta
     name="description"
-    content="Secure admin panel for Manju's The World of Glamour."
+    content="Secure administration panel for Manju's The World of Glamour."
 >
 
 <style>
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --ivory: #f8f5ef;
+    --cream: #eee7dc;
+    --charcoal: #262321;
+    --gold: #b49663;
+    --gold-dark: #8f7445;
+    --white: #ffffff;
+    --muted: #77716a;
+    --border: #ddd5ca;
+    --danger: #a33b3b;
+    --success: #39734a;
+}
+
+body {
+    min-height: 100vh;
+    background: var(--ivory);
+    color: var(--charcoal);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* =========================
+   LOGIN
+========================= */
+
+#loginSection {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 450px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 42px 34px;
+    box-shadow: 0 25px 70px rgba(0,0,0,.10);
+}
+
+.brand {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.brand-small {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    margin-bottom: 10px;
+}
+
+.brand h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 30px;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.brand p {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: #fff;
+    color: var(--charcoal);
+    font-size: 14px;
+    outline: none;
+}
+
+textarea {
+    min-height: 110px;
+    resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(180,150,99,.12);
+}
+
+.login-btn {
+    width: 100%;
+    border: 0;
+    border-radius: 9px;
+    padding: 15px;
+    background: var(--charcoal);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+}
+
+.login-btn:hover {
+    background: var(--gold-dark);
+}
+
+.message {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 8px;
+    display: none;
+    font-size: 13px;
+}
+
+.message.error {
+    display: block;
+    background: #f9e8e8;
+    color: var(--danger);
+}
+
+.message.success {
+    display: block;
+    background: #e8f4eb;
+    color: var(--success);
+}
+
+.forgot,
+.back-home {
+    display: block;
+    text-align: center;
+    margin-top: 18px;
+    color: var(--gold-dark);
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.back-home {
+    color: var(--muted);
+    margin-top: 22px;
+}
+
+/* =========================
+   ADMIN PANEL
+========================= */
+
+#adminPanel {
+    display: none;
+    min-height: 100vh;
+}
+
+/* TOP BAR */
+
+.topbar {
+    min-height: 72px;
+    background: var(--charcoal);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 14px 28px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.topbar-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 21px;
+}
+
+.topbar-subtitle {
+    color: #cfc8bd;
+    font-size: 11px;
+    margin-top: 3px;
+    letter-spacing: 1px;
+}
+
+.logout-btn {
+    border: 1px solid rgba(255,255,255,.35);
+    background: transparent;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.logout-btn:hover {
+    background: rgba(255,255,255,.12);
+}
+
+/* LAYOUT */
+
+.admin-layout {
+    display: grid;
+    grid-template-columns: 250px minmax(0,1fr);
+    min-height: calc(100vh - 72px);
+}
+
+/* SIDEBAR */
+
+.sidebar {
+    background: #fff;
+    border-right: 1px solid var(--border);
+    padding: 20px 14px;
+}
+
+.sidebar-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--gold-dark);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+}
+
+.nav-btn {
+    width: 100%;
+    display: block;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    padding: 12px 13px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    color: var(--charcoal);
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.nav-btn:hover,
+.nav-btn.active {
+    background: var(--cream);
+    color: var(--gold-dark);
+}
+
+/* CONTENT */
+
+.main-content {
+    min-width: 0;
+    padding: 28px;
+}
+
+.module-header {
+    margin-bottom: 25px;
+}
+
+.module-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 32px;
+    font-weight: 500;
+}
+
+.module-description {
+    margin-top: 7px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+#moduleArea {
+    display: block;
+}
+
+#moduleContent {
+    min-height: 300px;
+}
+
+/* CARDS */
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 16px;
+}
+
+.admin-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    padding: 20px;
+}
+
+.admin-card h3 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 21px;
+    font-weight: 500;
+}
+
+.admin-card p {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 8px;
+    line-height: 1.5;
+}
+
+/* COMMON MODULE */
+
+.admin-module {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    overflow-x: auto;
+}
+
+.module-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.primary-btn {
+    border: 0;
+    background: var(--charcoal);
+    color: #fff;
+    padding: 11px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.primary-btn:hover {
+    background: var(--gold-dark);
+}
+
+.secondary-btn {
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--charcoal);
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.danger-btn {
+    border: 0;
+    background: #f5dddd;
+    color: var(--danger);
+    padding: 9px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+}
+
+th,
+td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    font-size: 13px;
+    vertical-align: top;
+}
+
+th {
+    color: var(--gold-dark);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.empty-state {
+    padding: 50px 20px;
+    text-align: center;
+    color: var(--muted);
+}
+
+.module-loading {
+    padding: 50px;
+    text-align: center;
+    color: var(--muted);
+}
+
+/* FORMS GENERATED BY JS */
+
+.admin-form {
+    display: grid;
+    gap: 15px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 15px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* IMAGE */
+
+.admin-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+/* MESSAGE */
+
+#adminMessage {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 9999;
+    max-width: 360px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    background: var(--charcoal);
+    color: #fff;
+    box-shadow: 0 12px 40px rgba(0,0,0,.18);
+}
+
+/* MOBILE */
+
+@media (max-width: 1000px) {
+
+    .admin-grid {
+        grid-template-columns: repeat(2,minmax(0,1fr));
     }
 
-    :root {
-        --ivory: #f8f5ef;
-        --cream: #eee7dc;
-        --charcoal: #262321;
-        --gold: #b49663;
-        --gold-dark: #8f7445;
-        --white: #ffffff;
-        --muted: #77716a;
-        --border: #ddd5ca;
-        --danger: #a33b3b;
-        --success: #39734a;
+    .admin-layout {
+        grid-template-columns: 210px minmax(0,1fr);
     }
+}
 
-    body {
-        min-height: 100vh;
-        background:
-            radial-gradient(
-                circle at top right,
-                rgba(180, 150, 99, 0.15),
-                transparent 35%
-            ),
-            var(--ivory);
-        color: var(--charcoal);
-        font-family: Arial, Helvetica, sans-serif;
-    }
-
-    .login-wrapper {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
-    }
-
-    .login-card {
-        width: 100%;
-        max-width: 450px;
-        background: rgba(255, 255, 255, 0.96);
-        border: 1px solid var(--border);
-        padding: 42px 34px;
-        border-radius: 18px;
-        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.10);
-    }
-
-    .brand {
-        text-align: center;
-        margin-bottom: 32px;
-    }
-
-    .brand-small {
-        font-size: 11px;
-        letter-spacing: 3px;
-        text-transform: uppercase;
-        color: var(--gold-dark);
-        margin-bottom: 10px;
-    }
-
-    .brand h1 {
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: 30px;
-        line-height: 1.15;
-        font-weight: 500;
-    }
-
-    .brand p {
-        margin-top: 10px;
-        color: var(--muted);
-        font-size: 14px;
-    }
-
-    .form-group {
-        margin-bottom: 18px;
-    }
-
-    label {
-        display: block;
-        font-size: 13px;
-        font-weight: 600;
-        margin-bottom: 8px;
-    }
-
-    input {
-        width: 100%;
-        padding: 14px 15px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        background: #fff;
-        color: var(--charcoal);
-        font-size: 15px;
-        outline: none;
-        transition: 0.2s ease;
-    }
-
-    input:focus {
-        border-color: var(--gold);
-        box-shadow: 0 0 0 3px rgba(180, 150, 99, 0.12);
-    }
-
-    .login-btn {
-        width: 100%;
-        border: 0;
-        border-radius: 10px;
-        padding: 15px;
-        background: var(--charcoal);
-        color: #fff;
-        font-size: 14px;
-        font-weight: 700;
-        letter-spacing: 1px;
-        cursor: pointer;
-        transition: 0.2s ease;
-    }
-
-    .login-btn:hover {
-        background: var(--gold-dark);
-    }
-
-    .message {
-        margin-top: 16px;
-        padding: 12px 14px;
-        border-radius: 9px;
-        display: none;
-        font-size: 13px;
-        line-height: 1.5;
-    }
-
-    .message.error {
-        display: block;
-        background: #f9e8e8;
-        color: var(--danger);
-    }
-
-    .message.success {
-        display: block;
-        background: #e8f4eb;
-        color: var(--success);
-    }
-
-    .forgot {
-        display: block;
-        text-align: center;
-        margin-top: 18px;
-        color: var(--gold-dark);
-        text-decoration: none;
-        font-size: 13px;
-    }
-
-    .forgot:hover {
-        text-decoration: underline;
-    }
-
-    .back-home {
-        display: block;
-        text-align: center;
-        margin-top: 25px;
-        color: var(--muted);
-        text-decoration: none;
-        font-size: 13px;
-    }
-
-    .back-home:hover {
-        color: var(--charcoal);
-    }
-
-    /* Dashboard */
-
-    #dashboard {
-        display: none;
-        min-height: 100vh;
-    }
+@media (max-width: 700px) {
 
     .topbar {
-        min-height: 72px;
-        background: var(--charcoal);
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        padding: 14px 28px;
+        padding: 14px 16px;
     }
 
     .topbar-title {
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: 21px;
+        font-size: 17px;
     }
 
-    .topbar-subtitle {
-        color: #cfc8bd;
-        font-size: 11px;
-        margin-top: 3px;
-        letter-spacing: 1px;
-    }
-
-    .logout-btn {
-        border: 1px solid rgba(255,255,255,0.35);
-        background: transparent;
-        color: #fff;
-        padding: 10px 16px;
-        border-radius: 8px;
-        cursor: pointer;
-    }
-
-    .logout-btn:hover {
-        background: rgba(255,255,255,0.1);
-    }
-
-    .dashboard-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 30px;
-    }
-
-    .welcome {
-        margin-bottom: 30px;
-    }
-
-    .welcome h2 {
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: 32px;
-        font-weight: 500;
-    }
-
-    .welcome p {
-        margin-top: 8px;
-        color: var(--muted);
-    }
-
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 18px;
-    }
-
-    .dashboard-card {
-        background: #fff;
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 22px;
-        min-height: 150px;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.04);
-    }
-
-    .dashboard-card span {
+    .admin-layout {
         display: block;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        color: var(--gold-dark);
-        margin-bottom: 12px;
     }
 
-    .dashboard-card h3 {
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: 22px;
-        font-weight: 500;
+    .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 10px;
     }
 
-    .dashboard-card p {
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.6;
-        margin-top: 9px;
+    .sidebar-title {
+        display: none;
     }
 
-    .section {
-        margin-top: 28px;
-        background: #fff;
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 24px;
+    .nav-btn {
+        width: auto;
+        display: inline-block;
+        margin-right: 4px;
     }
 
-    .section h3 {
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: 24px;
-        font-weight: 500;
-        margin-bottom: 8px;
+    .main-content {
+        padding: 18px 14px;
     }
 
-    .section p {
-        color: var(--muted);
-        line-height: 1.6;
-        font-size: 14px;
+    .module-title {
+        font-size: 27px;
     }
 
-    .coming {
-        margin-top: 18px;
-        padding: 18px;
-        border: 1px dashed var(--border);
-        border-radius: 10px;
-        background: var(--ivory);
-        color: var(--muted);
-        font-size: 13px;
+    .admin-grid {
+        grid-template-columns: 1fr;
     }
 
-    @media (max-width: 1000px) {
-        .dashboard-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
+    .form-row {
+        grid-template-columns: 1fr;
     }
 
-    @media (max-width: 600px) {
-        .login-card {
-            padding: 32px 22px;
-        }
-
-        .brand h1 {
-            font-size: 25px;
-        }
-
-        .topbar {
-            padding: 14px 18px;
-        }
-
-        .topbar-title {
-            font-size: 17px;
-        }
-
-        .dashboard-container {
-            padding: 20px 16px;
-        }
-
-        .dashboard-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .welcome h2 {
-            font-size: 27px;
-        }
+    .login-card {
+        padding: 32px 22px;
     }
+}
 </style>
-```
-
 </head>
 
 <body>
 
-```
 <!-- =====================================================
      LOGIN
-     ===================================================== -->
+===================================================== -->
 
-<section id="loginSection" class="login-wrapper">
+<section id="loginSection">
 
     <div class="login-card">
 
         <div class="brand">
+
             <div class="brand-small">
                 Private Administration
             </div>
@@ -378,11 +547,13 @@
             <p>
                 Secure Admin Panel
             </p>
+
         </div>
 
         <form id="loginForm">
 
             <div class="form-group">
+
                 <label for="adminEmail">
                     Email
                 </label>
@@ -394,9 +565,11 @@
                     autocomplete="email"
                     required
                 >
+
             </div>
 
             <div class="form-group">
+
                 <label for="adminPassword">
                     Password
                 </label>
@@ -408,6 +581,7 @@
                     autocomplete="current-password"
                     required
                 >
+
             </div>
 
             <button
@@ -444,14 +618,15 @@
 
 
 <!-- =====================================================
-     DASHBOARD
-     ===================================================== -->
+     ADMIN PANEL
+===================================================== -->
 
-<section id="dashboard">
+<section id="adminPanel">
 
     <header class="topbar">
 
         <div>
+
             <div class="topbar-title">
                 Manju's The World of Glamour
             </div>
@@ -459,11 +634,13 @@
             <div class="topbar-subtitle">
                 ADMINISTRATION
             </div>
+
         </div>
 
         <button
             id="logoutBtn"
             class="logout-btn"
+            type="button"
         >
             Logout
         </button>
@@ -471,140 +648,215 @@
     </header>
 
 
-    <main class="dashboard-container">
+    <div class="admin-layout">
 
-        <div class="welcome">
+        <!-- SIDEBAR -->
 
-            <h2>
-                Welcome to your dashboard
-            </h2>
+        <aside class="sidebar">
 
-            <p>
-                Manage your salon website, appointments,
-                services, galleries and offers from one place.
-            </p>
-
-        </div>
-
-
-        <div class="dashboard-grid">
-
-            <div class="dashboard-card">
-                <span>Appointments</span>
-                <h3>Manage Requests</h3>
-                <p>
-                    View and manage appointment enquiries
-                    from customers.
-                </p>
+            <div class="sidebar-title">
+                Management
             </div>
 
+            <button
+                type="button"
+                class="nav-btn active"
+                data-module="dashboard"
+            >
+                Dashboard
+            </button>
 
-            <div class="dashboard-card">
-                <span>Services</span>
-                <h3>Manage Services</h3>
-                <p>
-                    Add services, descriptions, durations
-                    and prices.
-                </p>
+            <button
+                type="button"
+                class="nav-btn"
+                data-module="appointments"
+            >
+                Appointments
+            </button>
+
+            <button
+                type="button"
+                class="nav-btn"
+                data-module="services"
+            >
+                Services
+            </button>
+
+            <button
+                type="button"
+                class="nav-btn"
+                data-module="offers"
+            >
+                Offers
+            </button>
+
+            <button
+                type="button"
+                class="nav-btn"
+                data-module="gallery"
+            >
+                Our Work Gallery
+            </button>
+
+            <button
+                type="button"
+                class="nav-btn"
+                data-module="bride_gallery"
+            >
+                Bride / Girls Gallery
+            </button>
+
+            <button
+                type="button"
+                class="nav-btn"
+                data-module="customer_gallery"
+            >
+                Customer Gallery
+            </button>
+
+            <button
+                type="button"
+                class="nav-btn"
+                data-module="before_after"
+            >
+                Before / After
+            </button>
+
+            <button
+                type="button"
+                class="nav-btn"
+                data-module="bridal_packages"
+            >
+                Bridal Packages
+            </button>
+
+            <button
+                type="button"
+                class="nav-btn"
+                data-module="team"
+            >
+                Team
+            </button>
+
+            <button
+                type="button"
+                class="nav-btn"
+                data-module="testimonials"
+            >
+                Testimonials
+            </button>
+
+            <button
+                type="button"
+                class="nav-btn"
+                data-module="faqs"
+            >
+                FAQs
+            </button>
+
+            <button
+                type="button"
+                class="nav-btn"
+                data-module="settings"
+            >
+                Settings
+            </button>
+
+        </aside>
+
+
+        <!-- MAIN CONTENT -->
+
+        <main class="main-content">
+
+            <div
+                id="moduleArea"
+            >
+
+                <div class="module-header">
+
+                    <h1
+                        id="moduleTitle"
+                        class="module-title"
+                    >
+                        Dashboard
+                    </h1>
+
+                    <p
+                        id="moduleDescription"
+                        class="module-description"
+                    >
+                        Manage your beauty business website.
+                    </p>
+
+                </div>
+
+
+                <div
+                    id="moduleContent"
+                >
+
+                    <div class="module-loading">
+                        Loading dashboard...
+                    </div>
+
+                </div>
+
             </div>
 
+        </main>
 
-            <div class="dashboard-card">
-                <span>Gallery</span>
-                <h3>Upload Photos</h3>
-                <p>
-                    Manage your salon, bride and customer
-                    photography.
-                </p>
-            </div>
-
-
-            <div class="dashboard-card">
-                <span>Offers</span>
-                <h3>Manage Offers</h3>
-                <p>
-                    Add promotional offers, prices,
-                    validity and terms.
-                </p>
-            </div>
-
-
-            <div class="dashboard-card">
-                <span>Before / After</span>
-                <h3>Transformations</h3>
-                <p>
-                    Upload before and after beauty
-                    transformation photos.
-                </p>
-            </div>
-
-
-            <div class="dashboard-card">
-                <span>Bridal</span>
-                <h3>Bridal Packages</h3>
-                <p>
-                    Manage bridal packages and
-                    bridal enquiries.
-                </p>
-            </div>
-
-
-            <div class="dashboard-card">
-                <span>Customers</span>
-                <h3>Customer Gallery</h3>
-                <p>
-                    Add customer photos and testimonials
-                    with consent.
-                </p>
-            </div>
-
-
-            <div class="dashboard-card">
-                <span>Website</span>
-                <h3>Settings</h3>
-                <p>
-                    Manage contact details, social links,
-                    FAQs and opening hours.
-                </p>
-            </div>
-
-        </div>
-
-
-        <div class="section">
-
-            <h3>
-                Admin system
-            </h3>
-
-            <p>
-                Your secure Supabase authentication is
-                connected. The management modules will be
-                added next.
-            </p>
-
-            <div class="coming">
-                🔐 You are viewing the protected admin
-                dashboard. Only authenticated users can
-                access this area.
-            </div>
-
-        </div>
-
-    </main>
+    </div>
 
 </section>
 
 
 <!-- =====================================================
-     SUPABASE + ADMIN JAVASCRIPT
-     IMPORTANT: KEEP EACH SCRIPT ONLY ONCE
-     ===================================================== -->
+     SUPABASE
+===================================================== -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="supabase-config.js"></script>
+
 <script src="admin.js"></script>
-```
+
+
+<!-- =====================================================
+     NAVIGATION SUPPORT
+===================================================== -->
+
+<script>
+
+document.addEventListener("click", function(event) {
+
+    const button = event.target.closest("[data-module]");
+
+    if (!button) {
+        return;
+    }
+
+    const moduleName = button.dataset.module;
+
+    if (!moduleName) {
+        return;
+    }
+
+    document
+        .querySelectorAll(".nav-btn")
+        .forEach(function(item) {
+            item.classList.remove("active");
+        });
+
+    button.classList.add("active");
+
+    if (typeof openModule === "function") {
+        openModule(moduleName);
+    }
+
+});
+
+</script>
 
 </body>
 </html>
