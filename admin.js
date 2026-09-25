@@ -1,129 +1,28 @@
 // ============================================================
 // MANJU'S THE WORLD OF GLAMOUR
 // ADMIN PANEL
+// Supabase-powered admin dashboard
 // ============================================================
 
-const supabaseClient = window.supabaseClient;
+"use strict";
 
-let currentUser = null;
+
+// ============================================================
+// GLOBALS
+// ============================================================
+
 let currentModule = "dashboard";
 
-const moduleArea = document.getElementById("moduleArea");
-const moduleContent = document.getElementById("moduleContent");
-
-const loginSection = document.getElementById("loginSection");
-const adminPanel = document.getElementById("adminPanel");
-const loginForm = document.getElementById("loginForm");
-const logoutBtn = document.getElementById("logoutBtn");
-
-const adminEmail = document.getElementById("adminEmail");
-const adminPassword = document.getElementById("adminPassword");
+const moduleContent =
+    document.getElementById("moduleContent");
 
 
 // ============================================================
-// AUTH
-// ============================================================
-
-async function checkAuth() {
-    if (!window.supabaseClient) {
-        console.error("Supabase client not found.");
-        return;
-    }
-
-    const {
-        data: { session },
-        error
-    } = await supabaseClient.auth.getSession();
-
-    if (error) {
-        console.error("Auth session error:", error);
-        showLogin();
-        return;
-    }
-
-    if (session) {
-        currentUser = session.user;
-        showAdmin();
-    } else {
-        showLogin();
-    }
-}
-
-
-function showLogin() {
-    if (loginSection) {
-        loginSection.style.display = "flex";
-    }
-
-    if (adminPanel) {
-        adminPanel.style.display = "none";
-    }
-}
-
-
-function showAdmin() {
-    if (loginSection) {
-        loginSection.style.display = "none";
-    }
-
-    if (adminPanel) {
-        adminPanel.style.display = "block";
-    }
-
-    openModule("dashboard");
-}
-
-
-async function handleLogin(event) {
-    event.preventDefault();
-
-    const email = adminEmail?.value?.trim();
-    const password = adminPassword?.value || "";
-
-    if (!email || !password) {
-        alert("Please enter email and password.");
-        return;
-    }
-
-    try {
-        const { data, error } =
-            await supabaseClient.auth.signInWithPassword({
-                email,
-                password
-            });
-
-        if (error) {
-            console.error("Login error:", error);
-            alert(error.message);
-            return;
-        }
-
-        currentUser = data.user;
-        showAdmin();
-
-    } catch (error) {
-        console.error(error);
-        alert("Login failed. Please try again.");
-    }
-}
-
-
-async function handleLogout() {
-    try {
-        await supabaseClient.auth.signOut();
-        currentUser = null;
-        showLogin();
-    } catch (error) {
-        console.error("Logout error:", error);
-    }
-}
-
-
-// ============================================================
-// HELPERS
+// BASIC HELPERS
 // ============================================================
 
 function escapeHTML(value) {
+
     if (value === null || value === undefined) {
         return "";
     }
@@ -137,93 +36,335 @@ function escapeHTML(value) {
 }
 
 
-function formatDate(value) {
-    if (!value) return "—";
-
-    try {
-        return new Date(value).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-        });
-    } catch {
-        return value;
-    }
+function escapeAttribute(value) {
+    return escapeHTML(value);
 }
 
 
-function formatDateTime(value) {
-    if (!value) return "—";
+function safeJSON(value) {
 
-    try {
-        return new Date(value).toLocaleString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit"
-        });
-    } catch {
-        return value;
-    }
+    return JSON.stringify(value)
+        .replace(/</g, "\\u003c")
+        .replace(/>/g, "\\u003e")
+        .replace(/&/g, "\\u0026")
+        .replace(/'/g, "\\u0027");
 }
 
 
 function showMessage(message, type = "success") {
-    const existing = document.getElementById("adminMessage");
 
-    if (existing) {
-        existing.remove();
+    let box =
+        document.getElementById("adminMessage");
+
+    if (!box) {
+
+        box = document.createElement("div");
+
+        box.id = "adminMessage";
+
+        box.style.position = "fixed";
+        box.style.top = "20px";
+        box.style.right = "20px";
+        box.style.zIndex = "99999";
+        box.style.maxWidth = "420px";
+        box.style.padding = "14px 18px";
+        box.style.borderRadius = "10px";
+        box.style.fontFamily = "Arial, sans-serif";
+        box.style.fontSize = "14px";
+        box.style.boxShadow =
+            "0 10px 30px rgba(0,0,0,.15)";
+
+        document.body.appendChild(box);
     }
-
-    const box = document.createElement("div");
-    box.id = "adminMessage";
 
     box.textContent = message;
 
-    box.style.padding = "12px 16px";
-    box.style.margin = "15px 0";
-    box.style.borderRadius = "10px";
-    box.style.fontSize = "14px";
+    box.style.background =
+        type === "error"
+            ? "#b42318"
+            : "#1f7a4d";
 
-    if (type === "error") {
-        box.style.background = "#fee2e2";
-        box.style.color = "#991b1b";
-    } else {
-        box.style.background = "#dcfce7";
-        box.style.color = "#166534";
-    }
+    box.style.color = "#fff";
 
-    moduleContent?.prepend(box);
+    box.style.display = "block";
 
-    setTimeout(() => {
-        box.remove();
+    clearTimeout(box._timer);
+
+    box._timer = setTimeout(() => {
+
+        box.style.display = "none";
+
     }, 4000);
 }
 
 
-async function deleteRecord(table, id) {
-    if (!id) return;
+function showDatabaseError(error) {
 
-    const confirmed = confirm(
-        "Are you sure you want to delete this item?"
-    );
+    console.error(error);
 
-    if (!confirmed) return;
+    if (!moduleContent) return;
 
-    const { error } = await supabaseClient
-        .from(table)
-        .delete()
-        .eq("id", id);
+    moduleContent.innerHTML = `
+
+        <div class="admin-module">
+
+            <h2>Database Error</h2>
+
+            <p>
+                ${escapeHTML(
+                    error?.message ||
+                    "Something went wrong."
+                )}
+            </p>
+
+        </div>
+
+    `;
+}
+
+
+// ============================================================
+// AUTHENTICATION
+// ============================================================
+
+async function checkAdminSession() {
+
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient.auth.getSession();
+
+        if (error) {
+
+            console.error(
+                "Session error:",
+                error
+            );
+
+            return;
+        }
+
+        const session = data?.session;
+
+        const loginSection =
+            document.getElementById(
+                "loginSection"
+            );
+
+        const adminPanel =
+            document.getElementById(
+                "adminPanel"
+            );
+
+        if (session) {
+
+            if (loginSection) {
+                loginSection.style.display =
+                    "none";
+            }
+
+            if (adminPanel) {
+                adminPanel.style.display =
+                    "block";
+            }
+
+            await initializeAdmin();
+
+        } else {
+
+            if (loginSection) {
+                loginSection.style.display =
+                    "flex";
+            }
+
+            if (adminPanel) {
+                adminPanel.style.display =
+                    "none";
+            }
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Authentication error:",
+            error
+        );
+    }
+}
+
+
+async function loginAdmin(email, password) {
+
+    const {
+        data,
+        error
+    } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+    });
 
     if (error) {
-        console.error("Delete error:", error);
-        showMessage(error.message, "error");
+
+        showMessage(
+            error.message,
+            "error"
+        );
+
+        return false;
+    }
+
+    showMessage(
+        "Login successful."
+    );
+
+    await checkAdminSession();
+
+    return true;
+}
+
+
+async function logoutAdmin() {
+
+    const {
+        error
+    } = await supabaseClient.auth.signOut();
+
+    if (error) {
+
+        showMessage(
+            error.message,
+            "error"
+        );
+
         return;
     }
 
-    showMessage("Deleted successfully.");
-    openModule(currentModule);
+    window.location.reload();
+}
+
+
+// ============================================================
+// AUTH FORM
+// ============================================================
+
+function setupLogin() {
+
+    const loginForm =
+        document.getElementById(
+            "loginForm"
+        );
+
+    if (!loginForm) return;
+
+    loginForm.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+            const email =
+                document
+                    .getElementById("adminEmail")
+                    ?.value
+                    .trim();
+
+            const password =
+                document
+                    .getElementById("adminPassword")
+                    ?.value;
+
+            if (!email || !password) {
+
+                showMessage(
+                    "Enter email and password.",
+                    "error"
+                );
+
+                return;
+            }
+
+            await loginAdmin(
+                email,
+                password
+            );
+        }
+    );
+}
+
+
+// ============================================================
+// ADMIN INITIALIZATION
+// ============================================================
+
+async function initializeAdmin() {
+
+    setupNavigation();
+
+    setupLogout();
+
+    await openModule(
+        "dashboard"
+    );
+}
+
+
+function setupLogout() {
+
+    const buttons =
+        document.querySelectorAll(
+            "[data-logout]"
+        );
+
+    buttons.forEach(button => {
+
+        button.addEventListener(
+            "click",
+            logoutAdmin
+        );
+
+    });
+}
+
+
+function setupNavigation() {
+
+    const buttons =
+        document.querySelectorAll(
+            "[data-open-module]"
+        );
+
+    buttons.forEach(button => {
+
+        if (
+            button.dataset
+                .navigationBound
+        ) {
+            return;
+        }
+
+        button.dataset.navigationBound =
+            "true";
+
+        button.addEventListener(
+            "click",
+            async () => {
+
+                const module =
+                    button.dataset.openModule;
+
+                if (module) {
+
+                    await openModule(
+                        module
+                    );
+                }
+
+            }
+        );
+
+    });
 }
 
 
@@ -232,108 +373,163 @@ async function deleteRecord(table, id) {
 // ============================================================
 
 async function openModule(moduleName) {
-    currentModule = moduleName;
 
-    if (!moduleContent) return;
+    currentModule =
+        moduleName;
+
+    if (!moduleContent) {
+
+        console.error(
+            "moduleContent not found."
+        );
+
+        return;
+    }
 
     moduleContent.innerHTML = `
-        <div style="padding:40px;text-align:center;">
+
+        <div
+            style="
+                padding:40px;
+                text-align:center;
+            "
+        >
             Loading...
         </div>
+
     `;
 
     try {
+
         switch (moduleName) {
 
             case "dashboard":
+
                 await loadDashboard();
+
                 break;
+
 
             case "appointments":
+
                 await loadAppointments();
+
                 break;
+
 
             case "services":
+
                 await loadServices();
+
                 break;
+
 
             case "offers":
+
                 await loadOffers();
+
                 break;
 
+
             case "gallery":
+
                 await loadImageGallery(
                     "gallery",
                     "Gallery",
                     "gallery",
-                    "Upload work/gallery images."
+                    "Upload work and gallery images."
                 );
+
                 break;
 
+
             case "bride_gallery":
+
                 await loadImageGallery(
                     "bride_gallery",
                     "Bride Gallery",
                     "bride-gallery",
-                    "Upload bridal/before wedding images."
+                    "Upload bridal and bride images."
                 );
+
                 break;
 
+
             case "customer_gallery":
+
                 await loadImageGallery(
                     "customer_gallery",
                     "Customer Gallery",
                     "customer-gallery",
                     "Upload customer photos."
                 );
+
                 break;
+
 
             case "before_after":
+
                 await loadBeforeAfter();
+
                 break;
+
 
             case "bridal_packages":
+
                 await loadBridalPackages();
+
                 break;
 
+
             case "team":
+
                 await loadSimpleTable(
                     "team",
                     "Team",
-                    "Add team members and artists."
+                    "Manage team members and artists."
                 );
+
                 break;
 
+
             case "testimonials":
+
                 await loadSimpleTable(
                     "testimonials",
                     "Testimonials",
-                    "Manage customer reviews."
+                    "Manage customer testimonials."
                 );
+
                 break;
+
 
             case "faqs":
+
                 await loadFAQs();
+
                 break;
+
 
             case "settings":
+
                 await loadSettings();
+
                 break;
 
+
             default:
+
                 await loadDashboard();
         }
 
     } catch (error) {
-        console.error("Module error:", error);
 
-        moduleContent.innerHTML = `
-            <div style="padding:30px;">
-                <h3>Something went wrong</h3>
-                <p>${escapeHTML(error.message)}</p>
-                <p>Check the browser console for more details.</p>
-            </div>
-        `;
+        console.error(
+            "Module error:",
+            error
+        );
+
+        showDatabaseError(error);
     }
 }
 
@@ -343,7 +539,11 @@ async function openModule(moduleName) {
 // ============================================================
 
 async function getCount(table) {
-    const { count, error } = await supabaseClient
+
+    const {
+        count,
+        error
+    } = await supabaseClient
         .from(table)
         .select("*", {
             count: "exact",
@@ -351,7 +551,12 @@ async function getCount(table) {
         });
 
     if (error) {
-        console.error(`Count error for ${table}:`, error);
+
+        console.error(
+            `Count error for ${table}:`,
+            error
+        );
+
         return 0;
     }
 
@@ -362,6 +567,7 @@ async function getCount(table) {
 async function loadDashboard() {
 
     const tables = [
+
         "appointments",
         "services",
         "offers",
@@ -373,108 +579,176 @@ async function loadDashboard() {
         "team",
         "testimonials",
         "faqs"
+
     ];
 
-    const results = await Promise.all(
-        tables.map(table => getCount(table))
-    );
+    const results =
+        await Promise.all(
+            tables.map(
+                table =>
+                    getCount(table)
+            )
+        );
 
     const counts = {};
 
-    tables.forEach((table, index) => {
-        counts[table] = results[index];
-    });
+    tables.forEach(
+        (table, index) => {
+
+            counts[table] =
+                results[index];
+
+        }
+    );
+
 
     moduleContent.innerHTML = `
+
         <div class="admin-module">
 
             <div class="module-header">
+
                 <div>
+
                     <h2>Dashboard</h2>
-                    <p>Manage Manju's The World of Glamour.</p>
+
+                    <p>
+                        Manage Manju's The World of Glamour.
+                    </p>
+
                 </div>
+
             </div>
+
 
             <div class="dashboard-grid">
 
-                <div class="dashboard-card"
-                     data-open-module="appointments">
-                    <h3>${counts.appointments}</h3>
-                    <p>Appointments</p>
+
+                ${dashboardCard(
+                    counts.appointments,
+                    "Appointments",
+                    "appointments"
+                )}
+
+
+                ${dashboardCard(
+                    counts.services,
+                    "Services",
+                    "services"
+                )}
+
+
+                ${dashboardCard(
+                    counts.offers,
+                    "Offers",
+                    "offers"
+                )}
+
+
+                ${dashboardCard(
+                    counts.gallery,
+                    "Gallery",
+                    "gallery"
+                )}
+
+
+                ${dashboardCard(
+                    counts.bride_gallery,
+                    "Bride Gallery",
+                    "bride_gallery"
+                )}
+
+
+                ${dashboardCard(
+                    counts.customer_gallery,
+                    "Customer Gallery",
+                    "customer_gallery"
+                )}
+
+
+                ${dashboardCard(
+                    counts.before_after,
+                    "Before / After",
+                    "before_after"
+                )}
+
+
+                ${dashboardCard(
+                    counts.bridal_packages,
+                    "Bridal Packages",
+                    "bridal_packages"
+                )}
+
+
+                ${dashboardCard(
+                    counts.team,
+                    "Team",
+                    "team"
+                )}
+
+
+                ${dashboardCard(
+                    counts.testimonials,
+                    "Testimonials",
+                    "testimonials"
+                )}
+
+
+                ${dashboardCard(
+                    counts.faqs,
+                    "FAQs",
+                    "faqs"
+                )}
+
+
+                <div
+                    class="dashboard-card"
+                    data-open-module="settings"
+                >
+
+                    <h3>⚙</h3>
+
+                    <p>Settings</p>
+
                 </div>
 
-                <div class="dashboard-card"
-                     data-open-module="services">
-                    <h3>${counts.services}</h3>
-                    <p>Services</p>
-                </div>
-
-                <div class="dashboard-card"
-                     data-open-module="offers">
-                    <h3>${counts.offers}</h3>
-                    <p>Offers</p>
-                </div>
-
-                <div class="dashboard-card"
-                     data-open-module="gallery">
-                    <h3>${counts.gallery}</h3>
-                    <p>Gallery</p>
-                </div>
-
-                <div class="dashboard-card"
-                     data-open-module="bride_gallery">
-                    <h3>${counts.bride_gallery}</h3>
-                    <p>Bride Gallery</p>
-                </div>
-
-                <div class="dashboard-card"
-                     data-open-module="customer_gallery">
-                    <h3>${counts.customer_gallery}</h3>
-                    <p>Customer Gallery</p>
-                </div>
-
-                <div class="dashboard-card"
-                     data-open-module="before_after">
-                    <h3>${counts.before_after}</h3>
-                    <p>Before / After</p>
-                </div>
-
-                <div class="dashboard-card"
-                     data-open-module="bridal_packages">
-                    <h3>${counts.bridal_packages}</h3>
-                    <p>Bridal Packages</p>
-                </div>
-
-                <div class="dashboard-card"
-                     data-open-module="team">
-                    <h3>${counts.team}</h3>
-                    <p>Team</p>
-                </div>
-
-                <div class="dashboard-card"
-                     data-open-module="testimonials">
-                    <h3>${counts.testimonials}</h3>
-                    <p>Testimonials</p>
-                </div>
-
-                <div class="dashboard-card"
-                     data-open-module="faqs">
-                    <h3>${counts.faqs}</h3>
-                    <p>FAQs</p>
-                </div>
 
             </div>
 
         </div>
+
     `;
 
-    moduleContent
-        .querySelectorAll("[data-open-module]")
-        .forEach(card => {
-            card.addEventListener("click", () => {
-                openModule(card.dataset.openModule);
-            });
-        });
+    setupNavigation();
+}
+
+
+function dashboardCard(
+    count,
+    title,
+    module
+) {
+
+    return `
+
+        <div
+            class="dashboard-card"
+            data-open-module="${escapeAttribute(
+                module
+            )}"
+        >
+
+            <h3>
+                ${escapeHTML(count)}
+            </h3>
+
+            <p>
+                ${escapeHTML(title)}
+            </p>
+
+        </div>
+
+    `;
 }
 
 
@@ -484,168 +758,231 @@ async function loadDashboard() {
 
 async function loadAppointments() {
 
-    const { data, error } = await supabaseClient
+    const {
+        data,
+        error
+    } = await supabaseClient
         .from("appointments")
-        .select("*")
-        .order("created_at", {
-            ascending: false
-        });
+        .select(`
+            *,
+            services (
+                id,
+                name
+            )
+        `)
+        .order(
+            "created_at",
+            {
+                ascending: false
+            }
+        );
 
     if (error) {
-        console.error("Appointments error:", error);
-        moduleContent.innerHTML = `
-            <h2>Appointments</h2>
-            <p>${escapeHTML(error.message)}</p>
-        `;
+
+        showDatabaseError(error);
+
         return;
     }
 
+
     moduleContent.innerHTML = `
+
         <div class="admin-module">
 
             <div class="module-header">
+
                 <div>
+
                     <h2>Appointments</h2>
-                    <p>Customer booking requests.</p>
+
+                    <p>
+                        Manage appointment requests.
+                    </p>
+
                 </div>
+
             </div>
+
 
             ${
                 data?.length
-                ? `
+                    ? `
+
                 <div class="admin-table-wrap">
+
                     <table class="admin-table">
+
                         <thead>
+
                             <tr>
-                                <th>Name</th>
+
+                                <th>Customer</th>
                                 <th>Phone</th>
                                 <th>Service</th>
                                 <th>Date</th>
                                 <th>Time</th>
                                 <th>Status</th>
-                                <th>Created</th>
                                 <th>Action</th>
+
                             </tr>
+
                         </thead>
+
 
                         <tbody>
 
                             ${data.map(item => `
+
                                 <tr>
 
                                     <td>
                                         ${escapeHTML(
-                                            item.name ||
                                             item.customer_name ||
                                             "—"
                                         )}
                                     </td>
 
                                     <td>
-                                        ${escapeHTML(item.phone || "—")}
-                                    </td>
-
-                                    <td>
                                         ${escapeHTML(
-                                            item.service ||
-                                            item.service_name ||
+                                            item.phone ||
                                             "—"
                                         )}
                                     </td>
 
                                     <td>
-                                        ${escapeHTML(item.date || "—")}
+                                        ${escapeHTML(
+                                            item.services?.name ||
+                                            "—"
+                                        )}
                                     </td>
 
                                     <td>
-                                        ${escapeHTML(item.time || "—")}
+                                        ${escapeHTML(
+                                            item.appointment_date ||
+                                            "—"
+                                        )}
+                                    </td>
+
+                                    <td>
+                                        ${escapeHTML(
+                                            item.appointment_time ||
+                                            "—"
+                                        )}
                                     </td>
 
                                     <td>
 
                                         <select
-                                            class="appointment-status"
-                                            data-id="${item.id}"
+                                            onchange="updateAppointmentStatus(
+                                                '${escapeAttribute(
+                                                    item.id
+                                                )}',
+                                                this.value
+                                            )"
                                         >
 
                                             ${[
                                                 "New",
                                                 "Confirmed",
                                                 "Completed",
-                                                "Cancelled"
-                                            ].map(status => `
-                                                <option
-                                                    value="${status}"
-                                                    ${
-                                                        item.status === status
-                                                        ? "selected"
-                                                        : ""
-                                                    }
-                                                >
-                                                    ${status}
-                                                </option>
-                                            `).join("")}
+                                                "Cancelled",
+                                                "No-show"
+                                            ]
+                                                .map(status => `
+
+                                                    <option
+                                                        value="${status}"
+                                                        ${
+                                                            item.status ===
+                                                            status
+                                                                ? "selected"
+                                                                : ""
+                                                        }
+                                                    >
+                                                        ${status}
+                                                    </option>
+
+                                                `)
+                                                .join("")}
 
                                         </select>
 
                                     </td>
 
-                                    <td>
-                                        ${formatDateTime(item.created_at)}
-                                    </td>
 
                                     <td>
+
                                         <button
                                             class="delete-btn"
                                             data-delete-table="appointments"
-                                            data-delete-id="${item.id}"
+                                            data-delete-id="${escapeAttribute(
+                                                item.id
+                                            )}"
                                         >
                                             Delete
                                         </button>
+
                                     </td>
 
                                 </tr>
+
                             `).join("")}
 
                         </tbody>
+
                     </table>
+
                 </div>
+
                 `
-                : `
+                    : `
+
                     <div class="empty-state">
+
                         No appointment requests yet.
+
                     </div>
+
                 `
             }
 
         </div>
+
     `;
 
-    moduleContent
-        .querySelectorAll(".appointment-status")
-        .forEach(select => {
-
-            select.addEventListener("change", async event => {
-
-                const id = event.target.dataset.id;
-                const status = event.target.value;
-
-                const { error } = await supabaseClient
-                    .from("appointments")
-                    .update({ status })
-                    .eq("id", id);
-
-                if (error) {
-                    console.error(error);
-                    alert(error.message);
-                    return;
-                }
-
-                showMessage("Appointment status updated.");
-            });
-        });
-
     attachDeleteButtons();
+}
+
+
+async function updateAppointmentStatus(
+    id,
+    status
+) {
+
+    const {
+        error
+    } = await supabaseClient
+        .from("appointments")
+        .update({
+            status,
+            updated_at:
+                new Date().toISOString()
+        })
+        .eq("id", id);
+
+    if (error) {
+
+        showMessage(
+            error.message,
+            "error"
+        );
+
+        return;
+    }
+
+    showMessage(
+        "Appointment status updated."
+    );
 }
 
 
@@ -655,321 +992,731 @@ async function loadAppointments() {
 
 async function loadServices() {
 
-    const { data, error } = await supabaseClient
+    const {
+        data,
+        error
+    } = await supabaseClient
         .from("services")
-        .select("*")
-        .order("created_at", {
-            ascending: true
-        });
+        .select(`
+            *,
+            categories (
+                id,
+                name
+            )
+        `)
+        .order(
+            "display_order",
+            {
+                ascending: true
+            }
+        );
 
     if (error) {
-        console.error("Services error:", error);
 
-        moduleContent.innerHTML = `
-            <div class="admin-module">
-                <h2>Services</h2>
-                <p>${escapeHTML(error.message)}</p>
-            </div>
-        `;
+        showDatabaseError(error);
 
         return;
     }
 
+
     moduleContent.innerHTML = `
+
         <div class="admin-module">
 
             <div class="module-header">
+
                 <div>
+
                     <h2>Services</h2>
-                    <p>Manage beauty and salon services.</p>
+
+                    <p>
+                        Manage beauty and salon services.
+                    </p>
+
                 </div>
 
-                <button id="addServiceBtn" class="primary-btn">
+
+                <button
+                    id="addServiceBtn"
+                    class="primary-btn"
+                >
                     + Add Service
                 </button>
+
             </div>
+
 
             <div id="serviceFormArea"></div>
 
+
             ${
                 data?.length
-                ? `
-                <div class="admin-table-wrap">
+                    ? `
 
-                    <table class="admin-table">
+                    <div class="admin-table-wrap">
 
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Category</th>
-                                <th>Price</th>
-                                <th>Duration</th>
-                                <th>Active</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
+                        <table class="admin-table">
 
-                        <tbody>
+                            <thead>
 
-                            ${data.map(item => `
                                 <tr>
 
-                                    <td>
-                                        ${escapeHTML(item.name)}
-                                    </td>
-
-                                    <td>
-                                        ${escapeHTML(item.category || "—")}
-                                    </td>
-
-                                    <td>
-                                        ${escapeHTML(item.price || "—")}
-                                    </td>
-
-                                    <td>
-                                        ${escapeHTML(item.duration || "—")}
-                                    </td>
-
-                                    <td>
-                                        ${item.active !== false
-                                            ? "Yes"
-                                            : "No"}
-                                    </td>
-
-                                    <td>
-                                        <button
-                                            class="delete-btn"
-                                            data-delete-table="services"
-                                            data-delete-id="${item.id}"
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Price</th>
+                                    <th>Duration</th>
+                                    <th>Active</th>
+                                    <th>Action</th>
 
                                 </tr>
-                            `).join("")}
 
-                        </tbody>
+                            </thead>
 
-                    </table>
 
-                </div>
-                `
-                : `
-                    <div class="empty-state">
-                        No services added yet.
+                            <tbody>
+
+                                ${data.map(item => `
+
+                                    <tr>
+
+                                        <td>
+                                            ${escapeHTML(
+                                                item.name ||
+                                                "—"
+                                            )}
+                                        </td>
+
+                                        <td>
+                                            ${escapeHTML(
+                                                item.categories?.name ||
+                                                "—"
+                                            )}
+                                        </td>
+
+                                        <td>
+
+                                            ${
+                                                item.price !==
+                                                    null &&
+                                                item.price !==
+                                                    undefined
+                                                    ? "₹" +
+                                                      escapeHTML(
+                                                          String(
+                                                              item.price
+                                                          )
+                                                      )
+                                                    : escapeHTML(
+                                                        item.price_label ||
+                                                        "Price on enquiry"
+                                                    )
+                                            }
+
+                                        </td>
+
+                                        <td>
+
+                                            ${
+                                                item.duration_minutes
+                                                    ? escapeHTML(
+                                                        String(
+                                                            item.duration_minutes
+                                                        )
+                                                      ) +
+                                                      " min"
+                                                    : "—"
+                                            }
+
+                                        </td>
+
+                                        <td>
+
+                                            ${
+                                                item.active !== false
+                                                    ? "Yes"
+                                                    : "No"
+                                            }
+
+                                        </td>
+
+
+                                        <td>
+
+                                            <button
+                                                type="button"
+                                                class="primary-button"
+                                                onclick='editService(${safeJSON(
+                                                    item
+                                                )})'
+                                            >
+                                                Edit
+                                            </button>
+
+
+                                            <button
+                                                type="button"
+                                                class="delete-btn"
+                                                data-delete-table="services"
+                                                data-delete-id="${escapeAttribute(
+                                                    item.id
+                                                )}"
+                                            >
+                                                Delete
+                                            </button>
+
+                                        </td>
+
+                                    </tr>
+
+                                `).join("")}
+
+                            </tbody>
+
+                        </table>
+
                     </div>
+
+                `
+                    : `
+
+                    <div class="empty-state">
+
+                        No services added yet.
+
+                    </div>
+
                 `
             }
 
         </div>
+
     `;
 
+
     document
-        .getElementById("addServiceBtn")
-        ?.addEventListener("click", () => {
-            showServiceForm();
-        });
+        .getElementById(
+            "addServiceBtn"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                showServiceForm();
+
+            }
+        );
+
 
     attachDeleteButtons();
 }
 
 
-function showServiceForm(service = null) {
+async function showServiceForm(
+    service = null
+) {
 
-    const area = document.getElementById("serviceFormArea");
+    const area =
+        document.getElementById(
+            "serviceFormArea"
+        );
 
     if (!area) return;
 
+
+    const {
+        data: categories,
+        error
+    } = await supabaseClient
+        .from("categories")
+        .select(
+            "id, name, active"
+        )
+        .eq(
+            "active",
+            true
+        )
+        .order(
+            "display_order",
+            {
+                ascending: true
+            }
+        );
+
+
+    if (error) {
+
+        showMessage(
+            "Could not load categories: " +
+            error.message,
+            "error"
+        );
+
+        return;
+    }
+
+
+    const selectedCategoryId =
+        service?.category_id ||
+        "";
+
+
     area.innerHTML = `
+
         <div class="admin-form-card">
 
             <h3>
-                ${service ? "Edit Service" : "Add Service"}
+
+                ${
+                    service
+                        ? "Edit Service"
+                        : "Add Service"
+                }
+
             </h3>
+
 
             <form id="serviceForm">
 
-                <div class="form-grid">
 
-                    <div>
-                        <label>Service Name</label>
-                        <input
-                            id="serviceName"
-                            required
-                            value="${escapeHTML(service?.name || "")}"
-                        >
-                    </div>
+                <label>
+                    Service Name
+                </label>
 
-                    <div>
-                        <label>Category</label>
+                <input
+                    id="serviceName"
+                    required
+                    placeholder="Service name"
+                    value="${escapeAttribute(
+                        service?.name ||
+                        ""
+                    )}"
+                >
 
-                        <select id="serviceCategory">
 
-                            <option value="bridal"
-                                ${service?.category === "bridal"
-                                    ? "selected" : ""}>
-                                Bridal
-                            </option>
+                <label>
+                    Category
+                </label>
 
-                            <option value="makeup"
-                                ${service?.category === "makeup"
-                                    ? "selected" : ""}>
-                                Makeup
-                            </option>
+                <select
+                    id="serviceCategory"
+                    required
+                >
 
-                            <option value="hair"
-                                ${service?.category === "hair"
-                                    ? "selected" : ""}>
-                                Hair
-                            </option>
+                    <option value="">
+                        Select category
+                    </option>
 
-                            <option value="skin"
-                                ${service?.category === "skin"
-                                    ? "selected" : ""}>
-                                Skin
-                            </option>
 
-                            <option value="nails"
-                                ${service?.category === "nails"
-                                    ? "selected" : ""}>
-                                Nails
-                            </option>
+                    ${
+                        (categories || [])
+                            .map(
+                                category => `
 
-                            <option value="spa"
-                                ${service?.category === "spa"
-                                    ? "selected" : ""}>
-                                Spa
-                            </option>
+                                    <option
+                                        value="${escapeAttribute(
+                                            category.id
+                                        )}"
+                                        ${
+                                            selectedCategoryId ===
+                                            category.id
+                                                ? "selected"
+                                                : ""
+                                        }
+                                    >
 
-                        </select>
+                                        ${escapeHTML(
+                                            category.name
+                                        )}
 
-                    </div>
+                                    </option>
 
-                    <div>
-                        <label>Price</label>
-                        <input
-                            id="servicePrice"
-                            value="${escapeHTML(service?.price || "")}"
-                            placeholder="Price on enquiry"
-                        >
-                    </div>
+                                `
+                            )
+                            .join("")
+                    }
 
-                    <div>
-                        <label>Duration</label>
-                        <input
-                            id="serviceDuration"
-                            value="${escapeHTML(service?.duration || "")}"
-                            placeholder="1 hour"
-                        >
-                    </div>
+                </select>
 
-                </div>
 
-                <div>
-                    <label>Description</label>
-                    <textarea
-                        id="serviceDescription"
-                        rows="4"
-                    >${escapeHTML(service?.description || "")}</textarea>
-                </div>
+                <label>
+                    Description
+                </label>
 
-                <div>
-                    <label>
-                        <input
-                            type="checkbox"
-                            id="serviceActive"
-                            ${service?.active !== false ? "checked" : ""}
-                        >
-                        Active
-                    </label>
-                </div>
+                <textarea
+                    id="serviceDescription"
+                    rows="4"
+                    placeholder="Service description"
+                >${escapeHTML(
+                    service?.description ||
+                    ""
+                )}</textarea>
 
-                <div class="form-actions">
+
+                <label>
+                    Price
+                </label>
+
+                <input
+                    id="servicePrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Leave empty for price on enquiry"
+                    value="${
+                        service?.price ??
+                        ""
+                    }"
+                >
+
+
+                <label>
+                    Price Label
+                </label>
+
+                <input
+                    id="servicePriceLabel"
+                    placeholder="Price on enquiry"
+                    value="${escapeAttribute(
+                        service?.price_label ||
+                        "Price on enquiry"
+                    )}"
+                >
+
+
+                <label>
+                    Duration (minutes)
+                </label>
+
+                <input
+                    id="serviceDuration"
+                    type="number"
+                    min="0"
+                    placeholder="Example: 60"
+                    value="${
+                        service?.duration_minutes ??
+                        ""
+                    }"
+                >
+
+
+                <label>
+
+                    <input
+                        type="checkbox"
+                        id="serviceFeatured"
+                        ${
+                            service?.featured
+                                ? "checked"
+                                : ""
+                        }
+                    >
+
+                    Featured
+
+                </label>
+
+
+                <label>
+
+                    <input
+                        type="checkbox"
+                        id="serviceActive"
+                        ${
+                            service?.active !== false
+                                ? "checked"
+                                : ""
+                        }
+                    >
+
+                    Active
+
+                </label>
+
+
+                <div class="form-buttons">
 
                     <button
                         type="submit"
-                        class="primary-btn"
+                        class="primary-button"
                     >
                         Save Service
                     </button>
 
+
                     <button
                         type="button"
-                        id="cancelServiceBtn"
                         class="secondary-btn"
+                        id="cancelServiceBtn"
                     >
                         Cancel
                     </button>
 
                 </div>
 
+
             </form>
 
         </div>
+
     `;
 
-    document
-        .getElementById("cancelServiceBtn")
-        ?.addEventListener("click", () => {
-            area.innerHTML = "";
-        });
 
     document
-        .getElementById("serviceForm")
-        ?.addEventListener("submit", async event => {
+        .getElementById(
+            "cancelServiceBtn"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
 
-            event.preventDefault();
+                area.innerHTML = "";
 
-            const payload = {
-                name: document
-                    .getElementById("serviceName")
-                    .value
-                    .trim(),
-
-                category: document
-                    .getElementById("serviceCategory")
-                    .value,
-
-                price: document
-                    .getElementById("servicePrice")
-                    .value
-                    .trim(),
-
-                duration: document
-                    .getElementById("serviceDuration")
-                    .value
-                    .trim(),
-
-                description: document
-                    .getElementById("serviceDescription")
-                    .value
-                    .trim(),
-
-                active: document
-                    .getElementById("serviceActive")
-                    .checked
-            };
-
-            const { error } = service?.id
-                ? await supabaseClient
-                    .from("services")
-                    .update(payload)
-                    .eq("id", service.id)
-
-                : await supabaseClient
-                    .from("services")
-                    .insert(payload);
-
-            if (error) {
-                console.error("Service save error:", error);
-                showMessage(error.message, "error");
-                return;
             }
+        );
 
-            showMessage("Service saved successfully.");
-            loadServices();
-        });
+
+    document
+        .getElementById(
+            "serviceForm"
+        )
+        ?.addEventListener(
+            "submit",
+            async event => {
+
+                event.preventDefault();
+
+                await saveService(
+                    service?.id ||
+                    null
+                );
+
+            }
+        );
+}
+
+
+async function saveService(
+    id = null
+) {
+
+    const name =
+        document
+            .getElementById(
+                "serviceName"
+            )
+            ?.value
+            .trim();
+
+
+    const categoryId =
+        document
+            .getElementById(
+                "serviceCategory"
+            )
+            ?.value;
+
+
+    const description =
+        document
+            .getElementById(
+                "serviceDescription"
+            )
+            ?.value
+            .trim();
+
+
+    const priceValue =
+        document
+            .getElementById(
+                "servicePrice"
+            )
+            ?.value;
+
+
+    const priceLabel =
+        document
+            .getElementById(
+                "servicePriceLabel"
+            )
+            ?.value
+            .trim();
+
+
+    const durationValue =
+        document
+            .getElementById(
+                "serviceDuration"
+            )
+            ?.value;
+
+
+    const featured =
+        document
+            .getElementById(
+                "serviceFeatured"
+            )
+            ?.checked ||
+        false;
+
+
+    const active =
+        document
+            .getElementById(
+                "serviceActive"
+            )
+            ?.checked !== false;
+
+
+    if (!name) {
+
+        showMessage(
+            "Please enter a service name.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (!categoryId) {
+
+        showMessage(
+            "Please select a category.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const slug =
+        name
+            .toLowerCase()
+            .trim()
+            .replace(
+                /[^a-z0-9]+/g,
+                "-"
+            )
+            .replace(
+                /^-+|-+$/g,
+                ""
+            );
+
+
+    const payload = {
+
+        name,
+
+        slug,
+
+        category_id:
+            categoryId,
+
+        description:
+            description ||
+            null,
+
+        price:
+            priceValue === ""
+                ? null
+                : Number(
+                    priceValue
+                  ),
+
+        price_label:
+            priceLabel ||
+            "Price on enquiry",
+
+        duration_minutes:
+            durationValue === ""
+                ? null
+                : Number(
+                    durationValue
+                  ),
+
+        featured,
+
+        active
+
+    };
+
+
+    let result;
+
+
+    if (id) {
+
+        result =
+            await supabaseClient
+                .from("services")
+                .update(payload)
+                .eq(
+                    "id",
+                    id
+                );
+
+    } else {
+
+        result =
+            await supabaseClient
+                .from("services")
+                .insert(
+                    payload
+                );
+
+    }
+
+
+    if (result.error) {
+
+        console.error(
+            "Service save error:",
+            result.error
+        );
+
+        showMessage(
+            result.error.message,
+            "error"
+        );
+
+        return;
+    }
+
+
+    showMessage(
+        id
+            ? "Service updated successfully."
+            : "Service added successfully."
+    );
+
+
+    await loadServices();
+}
+
+
+function editService(
+    service
+) {
+
+    showServiceForm(
+        service
+    );
+
+    setTimeout(
+        () => {
+
+            document
+                .getElementById(
+                    "serviceFormArea"
+                )
+                ?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+
+        },
+        50
+    );
 }
 
 
@@ -979,36 +1726,44 @@ function showServiceForm(service = null) {
 
 async function loadOffers() {
 
-    const { data, error } = await supabaseClient
+    const {
+        data,
+        error
+    } = await supabaseClient
         .from("offers")
         .select("*")
-        .order("created_at", {
-            ascending: false
-        });
+        .order(
+            "created_at",
+            {
+                ascending: false
+            }
+        );
+
 
     if (error) {
 
-        console.error("Offers error:", error);
-
-        moduleContent.innerHTML = `
-            <div class="admin-module">
-                <h2>Offers</h2>
-                <p>${escapeHTML(error.message)}</p>
-            </div>
-        `;
+        showDatabaseError(error);
 
         return;
     }
 
+
     moduleContent.innerHTML = `
+
         <div class="admin-module">
 
             <div class="module-header">
 
                 <div>
+
                     <h2>Offers</h2>
-                    <p>Manage special offers and promotions.</p>
+
+                    <p>
+                        Create and manage special offers.
+                    </p>
+
                 </div>
+
 
                 <button
                     id="addOfferBtn"
@@ -1019,238 +1774,309 @@ async function loadOffers() {
 
             </div>
 
+
             <div id="offerFormArea"></div>
+
 
             ${
                 data?.length
-                ? `
-                <div class="admin-table-wrap">
+                    ? `
 
-                    <table class="admin-table">
+                    <div class="admin-table-wrap">
 
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Original Price</th>
-                                <th>Offer Price</th>
-                                <th>Start</th>
-                                <th>End</th>
-                                <th>Active</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
+                        <table class="admin-table">
 
-                        <tbody>
+                            <thead>
 
-                            ${data.map(item => `
                                 <tr>
 
-                                    <td>
-                                        ${escapeHTML(item.name)}
-                                    </td>
-
-                                    <td>
-                                        ${escapeHTML(
-                                            item.original_price || "—"
-                                        )}
-                                    </td>
-
-                                    <td>
-                                        ${escapeHTML(
-                                            item.offer_price || "—"
-                                        )}
-                                    </td>
-
-                                    <td>
-                                        ${formatDate(item.start_date)}
-                                    </td>
-
-                                    <td>
-                                        ${formatDate(item.end_date)}
-                                    </td>
-
-                                    <td>
-                                        ${
-                                            item.active !== false
-                                            ? "Yes"
-                                            : "No"
-                                        }
-                                    </td>
-
-                                    <td>
-                                        <button
-                                            class="delete-btn"
-                                            data-delete-table="offers"
-                                            data-delete-id="${item.id}"
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
+                                    <th>Name</th>
+                                    <th>Original</th>
+                                    <th>Offer Price</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                    <th>Active</th>
+                                    <th>Action</th>
 
                                 </tr>
-                            `).join("")}
 
-                        </tbody>
+                            </thead>
 
-                    </table>
 
-                </div>
-                `
-                : `
-                    <div class="empty-state">
-                        No offers added yet.
+                            <tbody>
+
+                                ${data.map(item => `
+
+                                    <tr>
+
+                                        <td>
+                                            ${escapeHTML(
+                                                item.name ||
+                                                "—"
+                                            )}
+                                        </td>
+
+                                        <td>
+                                            ${
+                                                item.original_price ??
+                                                "—"
+                                            }
+                                        </td>
+
+                                        <td>
+                                            ${
+                                                item.offer_price ??
+                                                "—"
+                                            }
+                                        </td>
+
+                                        <td>
+                                            ${escapeHTML(
+                                                item.start_date ||
+                                                "—"
+                                            )}
+                                        </td>
+
+                                        <td>
+                                            ${escapeHTML(
+                                                item.end_date ||
+                                                "—"
+                                            )}
+                                        </td>
+
+                                        <td>
+                                            ${
+                                                item.active
+                                                    ? "Yes"
+                                                    : "No"
+                                            }
+                                        </td>
+
+                                        <td>
+
+                                            <button
+                                                class="primary-button"
+                                                onclick='editOffer(${safeJSON(
+                                                    item
+                                                )})'
+                                            >
+                                                Edit
+                                            </button>
+
+
+                                            <button
+                                                class="delete-btn"
+                                                data-delete-table="offers"
+                                                data-delete-id="${escapeAttribute(
+                                                    item.id
+                                                )}"
+                                            >
+                                                Delete
+                                            </button>
+
+                                        </td>
+
+                                    </tr>
+
+                                `).join("")}
+
+                            </tbody>
+
+                        </table>
+
                     </div>
+
+                `
+                    : `
+
+                    <div class="empty-state">
+
+                        No offers added yet.
+
+                    </div>
+
                 `
             }
 
         </div>
+
     `;
 
+
     document
-        .getElementById("addOfferBtn")
-        ?.addEventListener("click", () => {
-            showOfferForm();
-        });
+        .getElementById(
+            "addOfferBtn"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                showOfferForm();
+
+            }
+        );
+
 
     attachDeleteButtons();
 }
 
 
-function showOfferForm(offer = null) {
+function showOfferForm(
+    offer = null
+) {
 
-    const area = document.getElementById("offerFormArea");
+    const area =
+        document.getElementById(
+            "offerFormArea"
+        );
 
     if (!area) return;
 
+
     area.innerHTML = `
+
         <div class="admin-form-card">
 
             <h3>
-                ${offer ? "Edit Offer" : "Add Offer"}
+
+                ${
+                    offer
+                        ? "Edit Offer"
+                        : "Add Offer"
+                }
+
             </h3>
+
 
             <form id="offerForm">
 
-                <div class="form-grid">
 
-                    <div>
-                        <label>Offer Name</label>
+                <label>
+                    Offer Name
+                </label>
 
-                        <input
-                            id="offerName"
-                            required
-                            value="${escapeHTML(
-                                offer?.name || ""
-                            )}"
-                        >
-                    </div>
+                <input
+                    id="offerName"
+                    required
+                    value="${escapeAttribute(
+                        offer?.name ||
+                        ""
+                    )}"
+                >
 
-                    <div>
-                        <label>Original Price</label>
 
-                        <input
-                            id="offerOriginalPrice"
-                            value="${escapeHTML(
-                                offer?.original_price || ""
-                            )}"
-                        >
-                    </div>
+                <label>
+                    Original Price
+                </label>
 
-                    <div>
-                        <label>Offer Price</label>
+                <input
+                    id="offerOriginalPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="${
+                        offer?.original_price ??
+                        ""
+                    }"
+                >
 
-                        <input
-                            id="offerPrice"
-                            value="${escapeHTML(
-                                offer?.offer_price || ""
-                            )}"
-                        >
-                    </div>
 
-                    <div>
-                        <label>Start Date</label>
+                <label>
+                    Offer Price
+                </label>
 
-                        <input
-                            type="date"
-                            id="offerStartDate"
-                            value="${
-                                offer?.start_date
-                                ? String(
-                                    offer.start_date
-                                ).slice(0, 10)
-                                : ""
-                            }"
-                        >
-                    </div>
+                <input
+                    id="offerPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="${
+                        offer?.offer_price ??
+                        ""
+                    }"
+                >
 
-                    <div>
-                        <label>End Date</label>
 
-                        <input
-                            type="date"
-                            id="offerEndDate"
-                            value="${
-                                offer?.end_date
-                                ? String(
-                                    offer.end_date
-                                ).slice(0, 10)
-                                : ""
-                            }"
-                        >
-                    </div>
+                <label>
+                    Start Date
+                </label>
 
-                </div>
+                <input
+                    id="offerStartDate"
+                    type="date"
+                    value="${escapeAttribute(
+                        offer?.start_date ||
+                        ""
+                    )}"
+                >
 
-                <div>
-                    <label>Description</label>
 
-                    <textarea
-                        id="offerDescription"
-                        rows="4"
-                    >${escapeHTML(
-                        offer?.description || ""
-                    )}</textarea>
-                </div>
+                <label>
+                    End Date
+                </label>
 
-                <div>
-                    <label>Terms</label>
+                <input
+                    id="offerEndDate"
+                    type="date"
+                    value="${escapeAttribute(
+                        offer?.end_date ||
+                        ""
+                    )}"
+                >
 
-                    <textarea
-                        id="offerTerms"
-                        rows="3"
-                    >${escapeHTML(
-                        offer?.terms || ""
-                    )}</textarea>
-                </div>
 
-                <div>
+                <label>
+                    Description
+                </label>
 
-                    <label>
+                <textarea
+                    id="offerDescription"
+                    rows="4"
+                >${escapeHTML(
+                    offer?.description ||
+                    ""
+                )}</textarea>
 
-                        <input
-                            type="checkbox"
-                            id="offerActive"
-                            ${
-                                offer?.active !== false
+
+                <label>
+                    Terms
+                </label>
+
+                <textarea
+                    id="offerTerms"
+                    rows="3"
+                >${escapeHTML(
+                    offer?.terms ||
+                    ""
+                )}</textarea>
+
+
+                <label>
+
+                    <input
+                        type="checkbox"
+                        id="offerActive"
+                        ${
+                            offer?.active !== false
                                 ? "checked"
                                 : ""
-                            }
-                        >
+                        }
+                    >
 
-                        Active
+                    Active
 
-                    </label>
+                </label>
 
-                </div>
 
-                <div class="form-actions">
+                <div class="form-buttons">
 
                     <button
                         type="submit"
-                        class="primary-btn"
+                        class="primary-button"
                     >
                         Save Offer
                     </button>
+
 
                     <button
                         type="button"
@@ -1262,103 +2088,190 @@ function showOfferForm(offer = null) {
 
                 </div>
 
+
             </form>
 
         </div>
+
     `;
 
-    document
-        .getElementById("cancelOfferBtn")
-        ?.addEventListener("click", () => {
-            area.innerHTML = "";
-        });
 
     document
-        .getElementById("offerForm")
-        ?.addEventListener("submit", async event => {
+        .getElementById(
+            "cancelOfferBtn"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
 
-            event.preventDefault();
+                area.innerHTML = "";
 
-            const payload = {
-
-                name: document
-                    .getElementById("offerName")
-                    .value
-                    .trim(),
-
-                original_price: document
-                    .getElementById("offerOriginalPrice")
-                    .value
-                    .trim(),
-
-                offer_price: document
-                    .getElementById("offerPrice")
-                    .value
-                    .trim(),
-
-                start_date:
-                    document.getElementById(
-                        "offerStartDate"
-                    ).value || null,
-
-                end_date:
-                    document.getElementById(
-                        "offerEndDate"
-                    ).value || null,
-
-                description:
-                    document.getElementById(
-                        "offerDescription"
-                    ).value.trim(),
-
-                terms:
-                    document.getElementById(
-                        "offerTerms"
-                    ).value.trim(),
-
-                active:
-                    document.getElementById(
-                        "offerActive"
-                    ).checked
-            };
-
-            const { error } = offer?.id
-
-                ? await supabaseClient
-                    .from("offers")
-                    .update(payload)
-                    .eq("id", offer.id)
-
-                : await supabaseClient
-                    .from("offers")
-                    .insert(payload);
-
-            if (error) {
-
-                console.error(
-                    "Offer save error:",
-                    error
-                );
-
-                showMessage(
-                    error.message,
-                    "error"
-                );
-
-                return;
             }
+        );
 
-            showMessage(
-                "Offer saved successfully."
-            );
 
-            loadOffers();
-        });
+    document
+        .getElementById(
+            "offerForm"
+        )
+        ?.addEventListener(
+            "submit",
+            async event => {
+
+                event.preventDefault();
+
+                await saveOffer(
+                    offer?.id ||
+                    null
+                );
+
+            }
+        );
+}
+
+
+async function saveOffer(
+    id = null
+) {
+
+    const payload = {
+
+        name:
+            document
+                .getElementById(
+                    "offerName"
+                )
+                ?.value
+                .trim(),
+
+        original_price:
+            document
+                .getElementById(
+                    "offerOriginalPrice"
+                )
+                ?.value || null,
+
+        offer_price:
+            document
+                .getElementById(
+                    "offerPrice"
+                )
+                ?.value || null,
+
+        start_date:
+            document
+                .getElementById(
+                    "offerStartDate"
+                )
+                ?.value ||
+            null,
+
+        end_date:
+            document
+                .getElementById(
+                    "offerEndDate"
+                )
+                ?.value ||
+            null,
+
+        description:
+            document
+                .getElementById(
+                    "offerDescription"
+                )
+                ?.value
+                .trim() ||
+            null,
+
+        terms:
+            document
+                .getElementById(
+                    "offerTerms"
+                )
+                ?.value
+                .trim() ||
+            null,
+
+        active:
+            document
+                .getElementById(
+                    "offerActive"
+                )
+                ?.checked ||
+            false
+
+    };
+
+
+    if (!payload.name) {
+
+        showMessage(
+            "Offer name is required.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    let result;
+
+
+    if (id) {
+
+        result =
+            await supabaseClient
+                .from("offers")
+                .update(payload)
+                .eq(
+                    "id",
+                    id
+                );
+
+    } else {
+
+        result =
+            await supabaseClient
+                .from("offers")
+                .insert(
+                    payload
+                );
+
+    }
+
+
+    if (result.error) {
+
+        showMessage(
+            result.error.message,
+            "error"
+        );
+
+        return;
+    }
+
+
+    showMessage(
+        "Offer saved successfully."
+    );
+
+
+    await loadOffers();
+}
+
+
+function editOffer(
+    offer
+) {
+
+    showOfferForm(
+        offer
+    );
 }
 
 
 // ============================================================
-// GALLERY
+// IMAGE GALLERY
 // ============================================================
 
 async function loadImageGallery(
@@ -1368,1144 +2281,27 @@ async function loadImageGallery(
     description
 ) {
 
-    const { data, error } = await supabaseClient
+    const {
+        data,
+        error
+    } = await supabaseClient
         .from(table)
         .select("*")
-        .order("created_at", {
-            ascending: false
-        });
-
-    if (error) {
-
-        console.error(
-            `${table} error:`,
-            error
-        );
-
-        moduleContent.innerHTML = `
-            <div class="admin-module">
-                <h2>${escapeHTML(title)}</h2>
-                <p>${escapeHTML(error.message)}</p>
-            </div>
-        `;
-
-        return;
-    }
-
-    moduleContent.innerHTML = `
-        <div class="admin-module">
-
-            <div class="module-header">
-
-                <div>
-                    <h2>${escapeHTML(title)}</h2>
-
-                    <p>
-                        ${escapeHTML(description)}
-                    </p>
-                </div>
-
-                <button
-                    id="addGalleryBtn"
-                    class="primary-btn"
-                >
-                    + Add Image
-                </button>
-
-            </div>
-
-            <div id="galleryFormArea"></div>
-
-            ${
-                data?.length
-                ? `
-                    <div class="admin-gallery-grid">
-
-                        ${data.map(item => `
-
-                            <div class="admin-gallery-card">
-
-                                ${
-                                    item.image_url
-                                    ? `
-                                    <img
-                                        src="${escapeHTML(
-                                            item.image_url
-                                        )}"
-                                        alt="${escapeHTML(
-                                            item.title ||
-                                            item.name ||
-                                            ""
-                                        )}"
-                                    >
-                                    `
-                                    : `
-                                    <div class="no-image">
-                                        No Image
-                                    </div>
-                                    `
-                                }
-
-                                <div class="admin-gallery-info">
-
-                                    <h4>
-                                        ${escapeHTML(
-                                            item.title ||
-                                            item.name ||
-                                            "Untitled"
-                                        )}
-                                    </h4>
-
-                                    ${
-                                        item.category
-                                        ? `
-                                        <p>
-                                            ${escapeHTML(
-                                                item.category
-                                            )}
-                                        </p>
-                                        `
-                                        : ""
-                                    }
-
-                                    ${
-                                        item.description
-                                        ? `
-                                        <p>
-                                            ${escapeHTML(
-                                                item.description
-                                            )}
-                                        </p>
-                                        `
-                                        : ""
-                                    }
-
-                                    <button
-                                        class="delete-btn"
-                                        data-delete-table="${table}"
-                                        data-delete-id="${item.id}"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </div>
-
-                            </div>
-
-                        `).join("")}
-
-                    </div>
-                `
-                : `
-                    <div class="empty-state">
-                        No images uploaded yet.
-                    </div>
-                `
-            }
-
-        </div>
-    `;
-
-    document
-        .getElementById("addGalleryBtn")
-        ?.addEventListener("click", () => {
-
-            showGalleryForm(
-                table,
-                bucket
-            );
-
-        });
-
-    attachDeleteButtons();
-}
-
-
-function showGalleryForm(table, bucket) {
-
-    const area =
-        document.getElementById(
-            "galleryFormArea"
-        );
-
-    if (!area) return;
-
-    area.innerHTML = `
-
-        <div class="admin-form-card">
-
-            <h3>Add Gallery Image</h3>
-
-            <form id="galleryForm">
-
-                <div class="form-grid">
-
-                    <div>
-
-                        <label>Title</label>
-
-                        <input
-                            id="galleryTitle"
-                            required
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>Category</label>
-
-                        <input
-                            id="galleryCategory"
-                            placeholder="Bridal, Makeup, Hair..."
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>Date</label>
-
-                        <input
-                            type="date"
-                            id="galleryDate"
-                        >
-
-                    </div>
-
-                </div>
-
-                <div>
-
-                    <label>Description</label>
-
-                    <textarea
-                        id="galleryDescription"
-                        rows="4"
-                    ></textarea>
-
-                </div>
-
-                <div>
-
-                    <label>Photo</label>
-
-                    <input
-                        type="file"
-                        id="galleryFile"
-                        accept="image/jpeg,image/png,image/webp"
-                        required
-                    >
-
-                </div>
-
-                <div>
-
-                    <label>
-
-                        <input
-                            type="checkbox"
-                            id="galleryFeatured"
-                        >
-
-                        Featured
-
-                    </label>
-
-                </div>
-
-                <div class="form-actions">
-
-                    <button
-                        type="submit"
-                        class="primary-btn"
-                    >
-                        Upload Image
-                    </button>
-
-                    <button
-                        type="button"
-                        id="cancelGalleryBtn"
-                        class="secondary-btn"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-    `;
-
-    document
-        .getElementById("cancelGalleryBtn")
-        ?.addEventListener("click", () => {
-            area.innerHTML = "";
-        });
-
-    document
-        .getElementById("galleryForm")
-        ?.addEventListener("submit", async event => {
-
-            event.preventDefault();
-
-            await uploadGalleryImage(
-                table,
-                bucket
-            );
-
-        });
-}
-
-
-// ============================================================
-// STORAGE UPLOAD
-// ============================================================
-
-async function uploadFile(
-    bucket,
-    file
-) {
-
-    if (!file) {
-        throw new Error(
-            "Please select an image."
-        );
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-        throw new Error(
-            "Maximum file size is 10 MB."
-        );
-    }
-
-    const allowedTypes = [
-        "image/jpeg",
-        "image/png",
-        "image/webp"
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-        throw new Error(
-            "Only JPG, PNG and WEBP images are allowed."
-        );
-    }
-
-    const extension =
-        file.name.split(".").pop();
-
-    const fileName =
-        `${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(2, 10)}.${extension}`;
-
-    const path = fileName;
-
-    const {
-        error
-    } = await supabaseClient.storage
-        .from(bucket)
-        .upload(
-            path,
-            file,
+        .order(
+            "created_at",
             {
-                cacheControl: "3600",
-                upsert: false,
-                contentType: file.type
-            }
-        );
-
-    if (error) {
-        throw error;
-    }
-
-    const {
-        data
-    } = supabaseClient.storage
-        .from(bucket)
-        .getPublicUrl(path);
-
-    return data.publicUrl;
-}
-
-
-async function uploadGalleryImage(
-    table,
-    bucket
-) {
-
-    try {
-
-        const title =
-            document
-                .getElementById(
-                    "galleryTitle"
-                )
-                .value
-                .trim();
-
-        const category =
-            document
-                .getElementById(
-                    "galleryCategory"
-                )
-                .value
-                .trim();
-
-        const description =
-            document
-                .getElementById(
-                    "galleryDescription"
-                )
-                .value
-                .trim();
-
-        const date =
-            document
-                .getElementById(
-                    "galleryDate"
-                )
-                .value || null;
-
-        const featured =
-            document
-                .getElementById(
-                    "galleryFeatured"
-                )
-                .checked;
-
-        const file =
-            document
-                .getElementById(
-                    "galleryFile"
-                )
-                .files[0];
-
-        if (!title) {
-            alert("Please enter a title.");
-            return;
-        }
-
-        const imageUrl =
-            await uploadFile(
-                bucket,
-                file
-            );
-
-        const payload = {
-            title,
-            category,
-            description,
-            date,
-            featured,
-            image_url: imageUrl
-        };
-
-        const {
-            error
-        } = await supabaseClient
-            .from(table)
-            .insert(payload);
-
-        if (error) {
-            throw error;
-        }
-
-        showMessage(
-            "Image uploaded successfully."
-        );
-
-        loadImageGallery(
-            table,
-            table === "gallery"
-                ? "Gallery"
-                : table === "bride_gallery"
-                    ? "Bride Gallery"
-                    : "Customer Gallery",
-            bucket,
-            "Manage uploaded images."
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Gallery upload error:",
-            error
-        );
-
-        showMessage(
-            error.message,
-            "error"
-        );
-    }
-}
-
-
-// ============================================================
-// BEFORE / AFTER
-// ============================================================
-
-async function loadBeforeAfter() {
-
-    const { data, error } = await supabaseClient
-        .from("before_after")
-        .select("*")
-        .order("created_at", {
-            ascending: false
-        });
-
-    if (error) {
-
-        console.error(
-            "Before/After error:",
-            error
-        );
-
-        moduleContent.innerHTML = `
-            <div class="admin-module">
-                <h2>Before / After</h2>
-                <p>${escapeHTML(
-                    error.message
-                )}</p>
-            </div>
-        `;
-
-        return;
-    }
-
-    moduleContent.innerHTML = `
-
-        <div class="admin-module">
-
-            <div class="module-header">
-
-                <div>
-                    <h2>Before / After</h2>
-                    <p>
-                        Upload transformation images.
-                    </p>
-                </div>
-
-                <button
-                    id="addBeforeAfterBtn"
-                    class="primary-btn"
-                >
-                    + Add Transformation
-                </button>
-
-            </div>
-
-            <div id="beforeAfterFormArea"></div>
-
-            ${
-                data?.length
-                ? `
-                <div class="admin-gallery-grid">
-
-                    ${data.map(item => `
-
-                        <div class="admin-gallery-card">
-
-                            <div class="before-after-preview">
-
-                                ${
-                                    item.before_image_url
-                                    ? `
-                                    <img
-                                        src="${escapeHTML(
-                                            item.before_image_url
-                                        )}"
-                                        alt="Before"
-                                    >
-                                    `
-                                    : ""
-                                }
-
-                                ${
-                                    item.after_image_url
-                                    ? `
-                                    <img
-                                        src="${escapeHTML(
-                                            item.after_image_url
-                                        )}"
-                                        alt="After"
-                                    >
-                                    `
-                                    : ""
-                                }
-
-                            </div>
-
-                            <div class="admin-gallery-info">
-
-                                <h4>
-                                    ${escapeHTML(
-                                        item.title ||
-                                        "Transformation"
-                                    )}
-                                </h4>
-
-                                <button
-                                    class="delete-btn"
-                                    data-delete-table="before_after"
-                                    data-delete-id="${item.id}"
-                                >
-                                    Delete
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    `).join("")}
-
-                </div>
-                `
-                : `
-                    <div class="empty-state">
-                        No before/after images yet.
-                    </div>
-                `
-            }
-
-        </div>
-
-    `;
-
-    document
-        .getElementById(
-            "addBeforeAfterBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-                showBeforeAfterForm();
-            }
-        );
-
-    attachDeleteButtons();
-}
-
-
-function showBeforeAfterForm() {
-
-    const area =
-        document.getElementById(
-            "beforeAfterFormArea"
-        );
-
-    if (!area) return;
-
-    area.innerHTML = `
-
-        <div class="admin-form-card">
-
-            <h3>Add Before / After</h3>
-
-            <form id="beforeAfterForm">
-
-                <div>
-
-                    <label>Title</label>
-
-                    <input
-                        id="beforeAfterTitle"
-                        required
-                    >
-
-                </div>
-
-                <div>
-
-                    <label>Before Image</label>
-
-                    <input
-                        type="file"
-                        id="beforeImage"
-                        accept="image/jpeg,image/png,image/webp"
-                        required
-                    >
-
-                </div>
-
-                <div>
-
-                    <label>After Image</label>
-
-                    <input
-                        type="file"
-                        id="afterImage"
-                        accept="image/jpeg,image/png,image/webp"
-                        required
-                    >
-
-                </div>
-
-                <div class="form-actions">
-
-                    <button
-                        type="submit"
-                        class="primary-btn"
-                    >
-                        Upload
-                    </button>
-
-                    <button
-                        type="button"
-                        id="cancelBeforeAfterBtn"
-                        class="secondary-btn"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-
-    `;
-
-    document
-        .getElementById(
-            "cancelBeforeAfterBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-                area.innerHTML = "";
-            }
-        );
-
-    document
-        .getElementById(
-            "beforeAfterForm"
-        )
-        ?.addEventListener(
-            "submit",
-            async event => {
-
-                event.preventDefault();
-
-                try {
-
-                    const title =
-                        document
-                            .getElementById(
-                                "beforeAfterTitle"
-                            )
-                            .value
-                            .trim();
-
-                    const beforeFile =
-                        document
-                            .getElementById(
-                                "beforeImage"
-                            )
-                            .files[0];
-
-                    const afterFile =
-                        document
-                            .getElementById(
-                                "afterImage"
-                            )
-                            .files[0];
-
-                    const beforeUrl =
-                        await uploadFile(
-                            "before-after",
-                            beforeFile
-                        );
-
-                    const afterUrl =
-                        await uploadFile(
-                            "before-after",
-                            afterFile
-                        );
-
-                    const {
-                        error
-                    } = await supabaseClient
-                        .from(
-                            "before_after"
-                        )
-                        .insert({
-                            title,
-                            before_image_url:
-                                beforeUrl,
-                            after_image_url:
-                                afterUrl
-                        });
-
-                    if (error) {
-                        throw error;
-                    }
-
-                    showMessage(
-                        "Before/After saved successfully."
-                    );
-
-                    loadBeforeAfter();
-
-                } catch (error) {
-
-                    console.error(
-                        error
-                    );
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-                }
-            }
-        );
-}
-
-
-// ============================================================
-// BRIDAL PACKAGES
-// ============================================================
-
-async function loadBridalPackages() {
-
-    const { data, error } =
-        await supabaseClient
-            .from("bridal_packages")
-            .select("*")
-            .order("created_at", {
                 ascending: false
-            });
+            }
+        );
+
 
     if (error) {
 
-        console.error(
-            "Bridal packages error:",
-            error
-        );
-
-        moduleContent.innerHTML = `
-            <div class="admin-module">
-                <h2>Bridal Packages</h2>
-                <p>${escapeHTML(
-                    error.message
-                )}</p>
-            </div>
-        `;
+        showDatabaseError(error);
 
         return;
     }
 
-    moduleContent.innerHTML = `
-
-        <div class="admin-module">
-
-            <div class="module-header">
-
-                <div>
-                    <h2>Bridal Packages</h2>
-
-                    <p>
-                        Manage bridal packages.
-                    </p>
-                </div>
-
-                <button
-                    id="addBridalPackageBtn"
-                    class="primary-btn"
-                >
-                    + Add Package
-                </button>
-
-            </div>
-
-            <div id="bridalPackageFormArea"></div>
-
-            ${
-                data?.length
-                ? `
-                <div class="admin-table-wrap">
-
-                    <table class="admin-table">
-
-                        <thead>
-
-                            <tr>
-                                <th>Name</th>
-                                <th>Description</th>
-                                <th>Price</th>
-                                <th>Action</th>
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-
-                            ${data.map(item => `
-
-                                <tr>
-
-                                    <td>
-                                        ${escapeHTML(
-                                            item.name
-                                        )}
-                                    </td>
-
-                                    <td>
-                                        ${escapeHTML(
-                                            item.description ||
-                                            "—"
-                                        )}
-                                    </td>
-
-                                    <td>
-                                        ${escapeHTML(
-                                            item.price ||
-                                            "—"
-                                        )}
-                                    </td>
-
-                                    <td>
-
-                                        <button
-                                            class="delete-btn"
-                                            data-delete-table="bridal_packages"
-                                            data-delete-id="${item.id}"
-                                        >
-                                            Delete
-                                        </button>
-
-                                    </td>
-
-                                </tr>
-
-                            `).join("")}
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-                `
-                : `
-                    <div class="empty-state">
-                        No bridal packages yet.
-                    </div>
-                `
-            }
-
-        </div>
-
-    `;
-
-    document
-        .getElementById(
-            "addBridalPackageBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-                showBridalPackageForm();
-            }
-        );
-
-    attachDeleteButtons();
-}
-
-
-function showBridalPackageForm() {
-
-    const area =
-        document.getElementById(
-            "bridalPackageFormArea"
-        );
-
-    if (!area) return;
-
-    area.innerHTML = `
-
-        <div class="admin-form-card">
-
-            <h3>Add Bridal Package</h3>
-
-            <form id="bridalPackageForm">
-
-                <div>
-
-                    <label>Package Name</label>
-
-                    <input
-                        id="bridalPackageName"
-                        required
-                    >
-
-                </div>
-
-                <div>
-
-                    <label>Description</label>
-
-                    <textarea
-                        id="bridalPackageDescription"
-                        rows="4"
-                    ></textarea>
-
-                </div>
-
-                <div>
-
-                    <label>Price</label>
-
-                    <input
-                        id="bridalPackagePrice"
-                    >
-
-                </div>
-
-                <div class="form-actions">
-
-                    <button
-                        type="submit"
-                        class="primary-btn"
-                    >
-                        Save Package
-                    </button>
-
-                    <button
-                        type="button"
-                        id="cancelBridalPackageBtn"
-                        class="secondary-btn"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-
-    `;
-
-    document
-        .getElementById(
-            "cancelBridalPackageBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-                area.innerHTML = "";
-            }
-        );
-
-    document
-        .getElementById(
-            "bridalPackageForm"
-        )
-        ?.addEventListener(
-            "submit",
-            async event => {
-
-                event.preventDefault();
-
-                const payload = {
-
-                    name:
-                        document
-                            .getElementById(
-                                "bridalPackageName"
-                            )
-                            .value
-                            .trim(),
-
-                    description:
-                        document
-                            .getElementById(
-                                "bridalPackageDescription"
-                            )
-                            .value
-                            .trim(),
-
-                    price:
-                        document
-                            .getElementById(
-                                "bridalPackagePrice"
-                            )
-                            .value
-                            .trim()
-
-                };
-
-                const {
-                    error
-                } = await supabaseClient
-                    .from(
-                        "bridal_packages"
-                    )
-                    .insert(payload);
-
-                if (error) {
-
-                    console.error(
-                        error
-                    );
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-
-                    return;
-                }
-
-                showMessage(
-                    "Bridal package saved."
-                );
-
-                loadBridalPackages();
-            }
-        );
-}
-
-
-// ============================================================
-// SIMPLE TABLES
-// TEAM / TESTIMONIALS
-// ============================================================
-
-async function loadSimpleTable(
-    table,
-    title,
-    description
-) {
-
-    const { data, error } =
-        await supabaseClient
-            .from(table)
-            .select("*")
-            .order("created_at", {
-                ascending: false
-            });
-
-    if (error) {
-
-        console.error(
-            `${table} error:`,
-            error
-        );
-
-        moduleContent.innerHTML = `
-            <div class="admin-module">
-                <h2>${escapeHTML(title)}</h2>
-                <p>${escapeHTML(
-                    error.message
-                )}</p>
-            </div>
-        `;
-
-        return;
-    }
 
     moduleContent.innerHTML = `
 
@@ -2525,6 +2321,1313 @@ async function loadSimpleTable(
 
                 </div>
 
+
+                <button
+                    id="addGalleryBtn"
+                    class="primary-btn"
+                >
+                    + Add Image
+                </button>
+
+            </div>
+
+
+            <div id="galleryFormArea"></div>
+
+
+            ${
+                data?.length
+                    ? `
+
+                    <div class="admin-gallery-grid">
+
+                        ${data.map(item => `
+
+                            <div
+                                class="admin-gallery-card"
+                            >
+
+                                ${
+                                    item.image_url
+                                        ? `
+
+                                        <img
+                                            src="${escapeAttribute(
+                                                item.image_url
+                                            )}"
+                                            alt="${escapeAttribute(
+                                                item.title ||
+                                                ""
+                                            )}"
+                                        >
+
+                                        `
+                                        : `
+
+                                        <div class="no-image">
+                                            No Image
+                                        </div>
+
+                                        `
+                                }
+
+
+                                <div
+                                    class="admin-gallery-info"
+                                >
+
+                                    <h4>
+                                        ${escapeHTML(
+                                            item.title ||
+                                            "Untitled"
+                                        )}
+                                    </h4>
+
+
+                                    ${
+                                        item.category
+                                            ? `
+                                            <p>
+                                                ${escapeHTML(
+                                                    item.category
+                                                )}
+                                            </p>
+                                            `
+                                            : ""
+                                    }
+
+
+                                    ${
+                                        item.description
+                                            ? `
+                                            <p>
+                                                ${escapeHTML(
+                                                    item.description
+                                                )}
+                                            </p>
+                                            `
+                                            : ""
+                                    }
+
+
+                                    <button
+                                        class="delete-btn"
+                                        data-delete-table="${escapeAttribute(
+                                            table
+                                        )}"
+                                        data-delete-id="${escapeAttribute(
+                                            item.id
+                                        )}"
+                                    >
+                                        Delete
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        `).join("")}
+
+                    </div>
+
+                `
+                    : `
+
+                    <div class="empty-state">
+
+                        No images uploaded yet.
+
+                    </div>
+
+                `
+            }
+
+        </div>
+
+    `;
+
+
+    document
+        .getElementById(
+            "addGalleryBtn"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                showGalleryForm(
+                    table,
+                    bucket
+                );
+
+            }
+        );
+
+
+    attachDeleteButtons();
+}
+
+
+function showGalleryForm(
+    table,
+    bucket
+) {
+
+    const area =
+        document.getElementById(
+            "galleryFormArea"
+        );
+
+    if (!area) return;
+
+
+    area.innerHTML = `
+
+        <div class="admin-form-card">
+
+            <h3>
+                Add Image
+            </h3>
+
+
+            <form id="galleryForm">
+
+
+                <label>
+                    Title
+                </label>
+
+                <input
+                    id="galleryTitle"
+                    required
+                    placeholder="Image title"
+                >
+
+
+                <label>
+                    Category
+                </label>
+
+                <input
+                    id="galleryCategory"
+                    placeholder="Bridal, Makeup, Hair, etc."
+                >
+
+
+                <label>
+                    Description
+                </label>
+
+                <textarea
+                    id="galleryDescription"
+                    rows="3"
+                ></textarea>
+
+
+                <label>
+                    Photo
+                </label>
+
+                <input
+                    id="galleryFile"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    required
+                >
+
+
+                <label>
+
+                    <input
+                        type="checkbox"
+                        id="galleryFeatured"
+                    >
+
+                    Featured
+
+                </label>
+
+
+                <div class="form-buttons">
+
+                    <button
+                        type="submit"
+                        class="primary-button"
+                    >
+                        Upload Image
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="cancelGalleryBtn"
+                        class="secondary-btn"
+                    >
+                        Cancel
+                    </button>
+
+                </div>
+
+
+            </form>
+
+        </div>
+
+    `;
+
+
+    document
+        .getElementById(
+            "cancelGalleryBtn"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                area.innerHTML = "";
+
+            }
+        );
+
+
+    document
+        .getElementById(
+            "galleryForm"
+        )
+        ?.addEventListener(
+            "submit",
+            async event => {
+
+                event.preventDefault();
+
+                await uploadGalleryImage(
+                    table,
+                    bucket
+                );
+
+            }
+        );
+}
+
+
+async function uploadGalleryImage(
+    table,
+    bucket
+) {
+
+    try {
+
+        const file =
+            document
+                .getElementById(
+                    "galleryFile"
+                )
+                ?.files[0];
+
+
+        if (!file) {
+
+            throw new Error(
+                "Please select an image."
+            );
+        }
+
+
+        const imageUrl =
+            await uploadStorageFile(
+                bucket,
+                file
+            );
+
+
+        if (!imageUrl) return;
+
+
+        const payload = {
+
+            title:
+                document
+                    .getElementById(
+                        "galleryTitle"
+                    )
+                    ?.value
+                    .trim() ||
+                "",
+
+            category:
+                document
+                    .getElementById(
+                        "galleryCategory"
+                    )
+                    ?.value
+                    .trim() ||
+                "",
+
+            description:
+                document
+                    .getElementById(
+                        "galleryDescription"
+                    )
+                    ?.value
+                    .trim() ||
+                "",
+
+            featured:
+                document
+                    .getElementById(
+                        "galleryFeatured"
+                    )
+                    ?.checked ||
+                false,
+
+            image_url:
+                imageUrl
+
+        };
+
+
+        /*
+         * IMPORTANT:
+         *
+         * The current database schemas for
+         * gallery / bride_gallery / customer_gallery
+         * support the fields above.
+         *
+         * We intentionally do NOT send:
+         * - date
+         *
+         * because that caused the previous
+         * missing-column error.
+         */
+
+
+        const {
+            error
+        } = await supabaseClient
+            .from(table)
+            .insert(
+                payload
+            );
+
+
+        if (error) {
+
+            throw error;
+        }
+
+
+        showMessage(
+            "Image uploaded successfully."
+        );
+
+
+        await loadImageGallery(
+            table,
+            table === "gallery"
+                ? "Gallery"
+                : table === "bride_gallery"
+                    ? "Bride Gallery"
+                    : "Customer Gallery",
+            bucket,
+            "Manage uploaded images."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Gallery upload error:",
+            error
+        );
+
+        showMessage(
+            error.message,
+            "error"
+        );
+    }
+}
+
+
+// ============================================================
+// STORAGE
+// ============================================================
+
+async function uploadStorageFile(
+    bucket,
+    file
+) {
+
+    if (!file) {
+
+        throw new Error(
+            "Please select an image."
+        );
+    }
+
+
+    if (
+        file.size >
+        10 * 1024 * 1024
+    ) {
+
+        throw new Error(
+            "Maximum file size is 10 MB."
+        );
+    }
+
+
+    const allowedTypes = [
+
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+
+    ];
+
+
+    if (
+        !allowedTypes.includes(
+            file.type
+        )
+    ) {
+
+        throw new Error(
+            "Only JPG, PNG and WEBP images are allowed."
+        );
+    }
+
+
+    const extension =
+        file.name
+            .split(".")
+            .pop()
+            .toLowerCase();
+
+
+    const fileName =
+        `${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(2, 10)}.${extension}`;
+
+
+    const {
+        error
+    } = await supabaseClient
+        .storage
+        .from(bucket)
+        .upload(
+            fileName,
+            file,
+            {
+                cacheControl:
+                    "3600",
+                upsert:
+                    false,
+                contentType:
+                    file.type
+            }
+        );
+
+
+    if (error) {
+
+        throw error;
+    }
+
+
+    const {
+        data
+    } = supabaseClient
+        .storage
+        .from(bucket)
+        .getPublicUrl(
+            fileName
+        );
+
+
+    return data.publicUrl;
+}
+
+
+// ============================================================
+// BEFORE / AFTER
+// ============================================================
+
+async function loadBeforeAfter() {
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("before_after")
+        .select("*")
+        .order(
+            "created_at",
+            {
+                ascending: false
+            }
+        );
+
+
+    if (error) {
+
+        showDatabaseError(error);
+
+        return;
+    }
+
+
+    moduleContent.innerHTML = `
+
+        <div class="admin-module">
+
+            <div class="module-header">
+
+                <div>
+
+                    <h2>
+                        Before / After
+                    </h2>
+
+                    <p>
+                        Upload transformation images.
+                    </p>
+
+                </div>
+
+
+                <button
+                    id="addBeforeAfterBtn"
+                    class="primary-btn"
+                >
+                    + Add Transformation
+                </button>
+
+            </div>
+
+
+            <div
+                id="beforeAfterFormArea"
+            ></div>
+
+
+            ${
+                data?.length
+                    ? `
+
+                    <div
+                        class="admin-gallery-grid"
+                    >
+
+                        ${data.map(item => `
+
+                            <div
+                                class="admin-gallery-card"
+                            >
+
+                                <div
+                                    class="before-after-preview"
+                                >
+
+                                    ${
+                                        item.before_image_url
+                                            ? `
+                                            <img
+                                                src="${escapeAttribute(
+                                                    item.before_image_url
+                                                )}"
+                                                alt="Before"
+                                            >
+                                            `
+                                            : ""
+                                    }
+
+
+                                    ${
+                                        item.after_image_url
+                                            ? `
+                                            <img
+                                                src="${escapeAttribute(
+                                                    item.after_image_url
+                                                )}"
+                                                alt="After"
+                                            >
+                                            `
+                                            : ""
+                                    }
+
+                                </div>
+
+
+                                <div
+                                    class="admin-gallery-info"
+                                >
+
+                                    <h4>
+                                        ${escapeHTML(
+                                            item.title ||
+                                            "Transformation"
+                                        )}
+                                    </h4>
+
+
+                                    <button
+                                        class="delete-btn"
+                                        data-delete-table="before_after"
+                                        data-delete-id="${escapeAttribute(
+                                            item.id
+                                        )}"
+                                    >
+                                        Delete
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        `).join("")}
+
+                    </div>
+
+                `
+                    : `
+
+                    <div class="empty-state">
+
+                        No before/after images yet.
+
+                    </div>
+
+                `
+            }
+
+        </div>
+
+    `;
+
+
+    document
+        .getElementById(
+            "addBeforeAfterBtn"
+        )
+        ?.addEventListener(
+            "click",
+            showBeforeAfterForm
+        );
+
+
+    attachDeleteButtons();
+}
+
+
+function showBeforeAfterForm() {
+
+    const area =
+        document.getElementById(
+            "beforeAfterFormArea"
+        );
+
+    if (!area) return;
+
+
+    area.innerHTML = `
+
+        <div class="admin-form-card">
+
+            <h3>
+                Add Transformation
+            </h3>
+
+
+            <form id="beforeAfterForm">
+
+
+                <label>
+                    Title
+                </label>
+
+                <input
+                    id="beforeAfterTitle"
+                    required
+                >
+
+
+                <label>
+                    Before Image
+                </label>
+
+                <input
+                    id="beforeAfterBefore"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    required
+                >
+
+
+                <label>
+                    After Image
+                </label>
+
+                <input
+                    id="beforeAfterAfter"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    required
+                >
+
+
+                <div class="form-buttons">
+
+                    <button
+                        type="submit"
+                        class="primary-button"
+                    >
+                        Upload
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="secondary-btn"
+                        id="cancelBeforeAfterBtn"
+                    >
+                        Cancel
+                    </button>
+
+                </div>
+
+
+            </form>
+
+        </div>
+
+    `;
+
+
+    document
+        .getElementById(
+            "cancelBeforeAfterBtn"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                area.innerHTML = "";
+
+            }
+        );
+
+
+    document
+        .getElementById(
+            "beforeAfterForm"
+        )
+        ?.addEventListener(
+            "submit",
+            async event => {
+
+                event.preventDefault();
+
+                await saveBeforeAfter();
+
+            }
+        );
+}
+
+
+async function saveBeforeAfter() {
+
+    try {
+
+        const title =
+            document
+                .getElementById(
+                    "beforeAfterTitle"
+                )
+                ?.value
+                .trim();
+
+
+        const beforeFile =
+            document
+                .getElementById(
+                    "beforeAfterBefore"
+                )
+                ?.files[0];
+
+
+        const afterFile =
+            document
+                .getElementById(
+                    "beforeAfterAfter"
+                )
+                ?.files[0];
+
+
+        if (!title) {
+
+            throw new Error(
+                "Title is required."
+            );
+        }
+
+
+        if (!beforeFile ||
+            !afterFile) {
+
+            throw new Error(
+                "Please select both images."
+            );
+        }
+
+
+        const beforeUrl =
+            await uploadStorageFile(
+                "before-after",
+                beforeFile
+            );
+
+
+        const afterUrl =
+            await uploadStorageFile(
+                "before-after",
+                afterFile
+            );
+
+
+        const {
+            error
+        } = await supabaseClient
+            .from("before_after")
+            .insert({
+
+                title,
+
+                before_image_url:
+                    beforeUrl,
+
+                after_image_url:
+                    afterUrl
+
+            });
+
+
+        if (error) {
+
+            throw error;
+        }
+
+
+        showMessage(
+            "Before/After saved successfully."
+        );
+
+
+        await loadBeforeAfter();
+
+
+    } catch (error) {
+
+        console.error(
+            error
+        );
+
+        showMessage(
+            error.message,
+            "error"
+        );
+    }
+}
+
+
+// ============================================================
+// BRIDAL PACKAGES
+// ============================================================
+
+async function loadBridalPackages() {
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("bridal_packages")
+        .select("*")
+        .order(
+            "created_at",
+            {
+                ascending: false
+            }
+        );
+
+
+    if (error) {
+
+        showDatabaseError(error);
+
+        return;
+    }
+
+
+    moduleContent.innerHTML = `
+
+        <div class="admin-module">
+
+            <div class="module-header">
+
+                <div>
+
+                    <h2>
+                        Bridal Packages
+                    </h2>
+
+                    <p>
+                        Manage bridal packages.
+                    </p>
+
+                </div>
+
+
+                <button
+                    id="addBridalPackageBtn"
+                    class="primary-btn"
+                >
+                    + Add Package
+                </button>
+
+            </div>
+
+
+            <div
+                id="bridalPackageFormArea"
+            ></div>
+
+
+            ${
+                data?.length
+                    ? `
+
+                    <div class="admin-table-wrap">
+
+                        <table class="admin-table">
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>Name</th>
+                                    <th>Price</th>
+                                    <th>Description</th>
+                                    <th>Action</th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody>
+
+                                ${data.map(item => `
+
+                                    <tr>
+
+                                        <td>
+                                            ${escapeHTML(
+                                                item.name ||
+                                                item.title ||
+                                                "—"
+                                            )}
+                                        </td>
+
+                                        <td>
+                                            ${escapeHTML(
+                                                item.price ??
+                                                "—"
+                                            )}
+                                        </td>
+
+                                        <td>
+                                            ${escapeHTML(
+                                                item.description ||
+                                                "—"
+                                            )}
+                                        </td>
+
+                                        <td>
+
+                                            <button
+                                                class="delete-btn"
+                                                data-delete-table="bridal_packages"
+                                                data-delete-id="${escapeAttribute(
+                                                    item.id
+                                                )}"
+                                            >
+                                                Delete
+                                            </button>
+
+                                        </td>
+
+                                    </tr>
+
+                                `).join("")}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                `
+                    : `
+
+                    <div class="empty-state">
+
+                        No bridal packages added yet.
+
+                    </div>
+
+                `
+            }
+
+        </div>
+
+    `;
+
+
+    document
+        .getElementById(
+            "addBridalPackageBtn"
+        )
+        ?.addEventListener(
+            "click",
+            showBridalPackageForm
+        );
+
+
+    attachDeleteButtons();
+}
+
+
+function showBridalPackageForm() {
+
+    const area =
+        document.getElementById(
+            "bridalPackageFormArea"
+        );
+
+    if (!area) return;
+
+
+    area.innerHTML = `
+
+        <div class="admin-form-card">
+
+            <h3>
+                Add Bridal Package
+            </h3>
+
+
+            <form id="bridalPackageForm">
+
+
+                <label>
+                    Package Name
+                </label>
+
+                <input
+                    id="bridalPackageName"
+                    required
+                >
+
+
+                <label>
+                    Price
+                </label>
+
+                <input
+                    id="bridalPackagePrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                >
+
+
+                <label>
+                    Description
+                </label>
+
+                <textarea
+                    id="bridalPackageDescription"
+                    rows="5"
+                ></textarea>
+
+
+                <div class="form-buttons">
+
+                    <button
+                        type="submit"
+                        class="primary-button"
+                    >
+                        Save Package
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="secondary-btn"
+                        id="cancelBridalPackageBtn"
+                    >
+                        Cancel
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    `;
+
+
+    document
+        .getElementById(
+            "cancelBridalPackageBtn"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                area.innerHTML = "";
+
+            }
+        );
+
+
+    document
+        .getElementById(
+            "bridalPackageForm"
+        )
+        ?.addEventListener(
+            "submit",
+            async event => {
+
+                event.preventDefault();
+
+                const payload = {
+
+                    name:
+                        document
+                            .getElementById(
+                                "bridalPackageName"
+                            )
+                            ?.value
+                            .trim(),
+
+                    price:
+                        document
+                            .getElementById(
+                                "bridalPackagePrice"
+                            )
+                            ?.value ||
+                        null,
+
+                    description:
+                        document
+                            .getElementById(
+                                "bridalPackageDescription"
+                            )
+                            ?.value
+                            .trim() ||
+                        null
+
+                };
+
+
+                const {
+                    error
+                } = await supabaseClient
+                    .from(
+                        "bridal_packages"
+                    )
+                    .insert(
+                        payload
+                    );
+
+
+                if (error) {
+
+                    showMessage(
+                        error.message,
+                        "error"
+                    );
+
+                    return;
+                }
+
+
+                showMessage(
+                    "Bridal package saved."
+                );
+
+
+                await loadBridalPackages();
+
+            }
+        );
+}
+
+
+// ============================================================
+// SIMPLE TABLES
+// TEAM / TESTIMONIALS
+// ============================================================
+
+async function loadSimpleTable(
+    table,
+    title,
+    description
+) {
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from(table)
+        .select("*")
+        .order(
+            "created_at",
+            {
+                ascending: false
+            }
+        );
+
+
+    if (error) {
+
+        showDatabaseError(error);
+
+        return;
+    }
+
+
+    moduleContent.innerHTML = `
+
+        <div class="admin-module">
+
+            <div class="module-header">
+
+                <div>
+
+                    <h2>
+                        ${escapeHTML(title)}
+                    </h2>
+
+                    <p>
+                        ${escapeHTML(description)}
+                    </p>
+
+                </div>
+
+
                 <button
                     id="addSimpleBtn"
                     class="primary-btn"
@@ -2534,73 +3637,94 @@ async function loadSimpleTable(
 
             </div>
 
-            <div id="simpleFormArea"></div>
+
+            <div
+                id="simpleFormArea"
+            ></div>
+
 
             ${
                 data?.length
-                ? `
-                <div class="admin-table-wrap">
+                    ? `
 
-                    <table class="admin-table">
+                    <div class="admin-table-wrap">
 
-                        <thead>
+                        <table class="admin-table">
 
-                            <tr>
-                                <th>Name</th>
-                                <th>Description</th>
-                                <th>Action</th>
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-
-                            ${data.map(item => `
+                            <thead>
 
                                 <tr>
 
-                                    <td>
-                                        ${escapeHTML(
-                                            item.name ||
-                                            "—"
-                                        )}
-                                    </td>
-
-                                    <td>
-                                        ${escapeHTML(
-                                            item.description ||
-                                            item.message ||
-                                            item.title ||
-                                            "—"
-                                        )}
-                                    </td>
-
-                                    <td>
-
-                                        <button
-                                            class="delete-btn"
-                                            data-delete-table="${table}"
-                                            data-delete-id="${item.id}"
-                                        >
-                                            Delete
-                                        </button>
-
-                                    </td>
+                                    <th>Name</th>
+                                    <th>Details</th>
+                                    <th>Action</th>
 
                                 </tr>
 
-                            `).join("")}
+                            </thead>
 
-                        </tbody>
 
-                    </table>
+                            <tbody>
 
-                </div>
-                `
-                : `
-                    <div class="empty-state">
-                        No entries yet.
+                                ${data.map(item => `
+
+                                    <tr>
+
+                                        <td>
+                                            ${escapeHTML(
+                                                item.name ||
+                                                item.title ||
+                                                item.customer_name ||
+                                                "—"
+                                            )}
+                                        </td>
+
+                                        <td>
+
+                                            ${escapeHTML(
+                                                item.role ||
+                                                item.message ||
+                                                item.description ||
+                                                "—"
+                                            )}
+
+                                        </td>
+
+                                        <td>
+
+                                            <button
+                                                class="delete-btn"
+                                                data-delete-table="${escapeAttribute(
+                                                    table
+                                                )}"
+                                                data-delete-id="${escapeAttribute(
+                                                    item.id
+                                                )}"
+                                            >
+                                                Delete
+                                            </button>
+
+                                        </td>
+
+                                    </tr>
+
+                                `).join("")}
+
+                            </tbody>
+
+                        </table>
+
                     </div>
+
+                `
+                    : `
+
+                    <div class="empty-state">
+
+                        No records added yet.
+
+                    </div>
+
                 `
             }
 
@@ -2608,8 +3732,11 @@ async function loadSimpleTable(
 
     `;
 
+
     document
-        .getElementById("addSimpleBtn")
+        .getElementById(
+            "addSimpleBtn"
+        )
         ?.addEventListener(
             "click",
             () => {
@@ -2621,6 +3748,7 @@ async function loadSimpleTable(
 
             }
         );
+
 
     attachDeleteButtons();
 }
@@ -2638,6 +3766,11 @@ function showSimpleForm(
 
     if (!area) return;
 
+
+    const isTeam =
+        table === "team";
+
+
     area.innerHTML = `
 
         <div class="admin-form-card">
@@ -2646,54 +3779,97 @@ function showSimpleForm(
                 Add ${escapeHTML(title)}
             </h3>
 
+
             <form id="simpleForm">
 
-                <div>
 
-                    <label>Name</label>
+                <label>
+                    ${
+                        isTeam
+                            ? "Name"
+                            : "Customer Name"
+                    }
+                </label>
 
-                    <input
-                        id="simpleName"
-                        required
-                    >
+                <input
+                    id="simpleName"
+                    required
+                >
 
-                </div>
 
-                <div>
+                ${
+                    isTeam
+                        ? `
 
-                    <label>Description / Message</label>
+                            <label>
+                                Role
+                            </label>
 
-                    <textarea
-                        id="simpleDescription"
-                        rows="5"
-                    ></textarea>
+                            <input
+                                id="simpleRole"
+                                placeholder="Makeup Artist"
+                            >
 
-                </div>
+                        `
+                        : `
 
-                <div class="form-actions">
+                            <label>
+                                Rating
+                            </label>
+
+                            <input
+                                id="simpleRating"
+                                type="number"
+                                min="1"
+                                max="5"
+                            >
+
+                        `
+                }
+
+
+                <label>
+                    ${
+                        isTeam
+                            ? "Bio"
+                            : "Review"
+                    }
+                </label>
+
+                <textarea
+                    id="simpleDescription"
+                    rows="5"
+                    required
+                ></textarea>
+
+
+                <div class="form-buttons">
 
                     <button
                         type="submit"
-                        class="primary-btn"
+                        class="primary-button"
                     >
                         Save
                     </button>
 
+
                     <button
                         type="button"
-                        id="cancelSimpleBtn"
                         class="secondary-btn"
+                        id="cancelSimpleBtn"
                     >
                         Cancel
                     </button>
 
                 </div>
 
+
             </form>
 
         </div>
 
     `;
+
 
     document
         .getElementById(
@@ -2702,9 +3878,12 @@ function showSimpleForm(
         ?.addEventListener(
             "click",
             () => {
+
                 area.innerHTML = "";
+
             }
         );
+
 
     document
         .getElementById(
@@ -2716,52 +3895,87 @@ function showSimpleForm(
 
                 event.preventDefault();
 
-                const name =
-                    document
-                        .getElementById(
-                            "simpleName"
-                        )
-                        .value
-                        .trim();
-
-                const description =
-                    document
-                        .getElementById(
-                            "simpleDescription"
-                        )
-                        .value
-                        .trim();
 
                 let payload;
 
-                if (table === "testimonials") {
+
+                if (isTeam) {
+
+                    /*
+                     * IMPORTANT:
+                     * Do not send "description".
+                     * The previous database error showed
+                     * that team.description does not exist.
+                     */
 
                     payload = {
-                        name,
-                        description,
-                        message: description
+
+                        name:
+                            document
+                                .getElementById(
+                                    "simpleName"
+                                )
+                                ?.value
+                                .trim(),
+
+                        role:
+                            document
+                                .getElementById(
+                                    "simpleRole"
+                                )
+                                ?.value
+                                .trim() ||
+                            null
+
                     };
 
                 } else {
 
+                    /*
+                     * Testimonials use "message".
+                     */
+
                     payload = {
-                        name,
-                        description
+
+                        customer_name:
+                            document
+                                .getElementById(
+                                    "simpleName"
+                                )
+                                ?.value
+                                .trim(),
+
+                        rating:
+                            document
+                                .getElementById(
+                                    "simpleRating"
+                                )
+                                ?.value ||
+                            null,
+
+                        message:
+                            document
+                                .getElementById(
+                                    "simpleDescription"
+                                )
+                                ?.value
+                                .trim()
+
                     };
 
                 }
+
 
                 const {
                     error
                 } = await supabaseClient
                     .from(table)
-                    .insert(payload);
+                    .insert(
+                        payload
+                    );
+
 
                 if (error) {
-
-                    console.error(
-                        error
-                    );
 
                     showMessage(
                         error.message,
@@ -2771,15 +3985,18 @@ function showSimpleForm(
                     return;
                 }
 
+
                 showMessage(
                     "Saved successfully."
                 );
 
-                loadSimpleTable(
+
+                await loadSimpleTable(
                     table,
                     title,
-                    "Manage your entries."
+                    ""
                 );
+
             }
         );
 }
@@ -2791,32 +4008,27 @@ function showSimpleForm(
 
 async function loadFAQs() {
 
-    const { data, error } =
-        await supabaseClient
-            .from("faqs")
-            .select("*")
-            .order("created_at", {
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("faqs")
+        .select("*")
+        .order(
+            "created_at",
+            {
                 ascending: false
-            });
+            }
+        );
+
 
     if (error) {
 
-        console.error(
-            "FAQs error:",
-            error
-        );
-
-        moduleContent.innerHTML = `
-            <div class="admin-module">
-                <h2>FAQs</h2>
-                <p>${escapeHTML(
-                    error.message
-                )}</p>
-            </div>
-        `;
+        showDatabaseError(error);
 
         return;
     }
+
 
     moduleContent.innerHTML = `
 
@@ -2829,10 +4041,11 @@ async function loadFAQs() {
                     <h2>FAQs</h2>
 
                     <p>
-                        Frequently asked questions.
+                        Manage frequently asked questions.
                     </p>
 
                 </div>
+
 
                 <button
                     id="addFaqBtn"
@@ -2843,69 +4056,84 @@ async function loadFAQs() {
 
             </div>
 
+
             <div id="faqFormArea"></div>
+
 
             ${
                 data?.length
-                ? `
-                <div class="admin-table-wrap">
+                    ? `
 
-                    <table class="admin-table">
+                    <div class="admin-table-wrap">
 
-                        <thead>
+                        <table class="admin-table">
 
-                            <tr>
-                                <th>Question</th>
-                                <th>Answer</th>
-                                <th>Action</th>
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-
-                            ${data.map(item => `
+                            <thead>
 
                                 <tr>
 
-                                    <td>
-                                        ${escapeHTML(
-                                            item.question
-                                        )}
-                                    </td>
-
-                                    <td>
-                                        ${escapeHTML(
-                                            item.answer
-                                        )}
-                                    </td>
-
-                                    <td>
-
-                                        <button
-                                            class="delete-btn"
-                                            data-delete-table="faqs"
-                                            data-delete-id="${item.id}"
-                                        >
-                                            Delete
-                                        </button>
-
-                                    </td>
+                                    <th>Question</th>
+                                    <th>Answer</th>
+                                    <th>Action</th>
 
                                 </tr>
 
-                            `).join("")}
+                            </thead>
 
-                        </tbody>
 
-                    </table>
+                            <tbody>
 
-                </div>
-                `
-                : `
-                    <div class="empty-state">
-                        No FAQs added yet.
+                                ${data.map(item => `
+
+                                    <tr>
+
+                                        <td>
+                                            ${escapeHTML(
+                                                item.question ||
+                                                "—"
+                                            )}
+                                        </td>
+
+                                        <td>
+                                            ${escapeHTML(
+                                                item.answer ||
+                                                "—"
+                                            )}
+                                        </td>
+
+                                        <td>
+
+                                            <button
+                                                class="delete-btn"
+                                                data-delete-table="faqs"
+                                                data-delete-id="${escapeAttribute(
+                                                    item.id
+                                                )}"
+                                            >
+                                                Delete
+                                            </button>
+
+                                        </td>
+
+                                    </tr>
+
+                                `).join("")}
+
+                            </tbody>
+
+                        </table>
+
                     </div>
+
+                `
+                    : `
+
+                    <div class="empty-state">
+
+                        No FAQs added yet.
+
+                    </div>
+
                 `
             }
 
@@ -2913,16 +4141,16 @@ async function loadFAQs() {
 
     `;
 
+
     document
         .getElementById(
             "addFaqBtn"
         )
         ?.addEventListener(
             "click",
-            () => {
-                showFAQForm();
-            }
+            showFAQForm
         );
+
 
     attachDeleteButtons();
 }
@@ -2937,61 +4165,67 @@ function showFAQForm() {
 
     if (!area) return;
 
+
     area.innerHTML = `
 
         <div class="admin-form-card">
 
-            <h3>Add FAQ</h3>
+            <h3>
+                Add FAQ
+            </h3>
+
 
             <form id="faqForm">
 
-                <div>
 
-                    <label>Question</label>
+                <label>
+                    Question
+                </label>
 
-                    <input
-                        id="faqQuestion"
-                        required
-                    >
+                <input
+                    id="faqQuestion"
+                    required
+                >
 
-                </div>
 
-                <div>
+                <label>
+                    Answer
+                </label>
 
-                    <label>Answer</label>
+                <textarea
+                    id="faqAnswer"
+                    rows="5"
+                    required
+                ></textarea>
 
-                    <textarea
-                        id="faqAnswer"
-                        rows="5"
-                        required
-                    ></textarea>
 
-                </div>
-
-                <div class="form-actions">
+                <div class="form-buttons">
 
                     <button
                         type="submit"
-                        class="primary-btn"
+                        class="primary-button"
                     >
                         Save FAQ
                     </button>
 
+
                     <button
                         type="button"
-                        id="cancelFaqBtn"
                         class="secondary-btn"
+                        id="cancelFaqBtn"
                     >
                         Cancel
                     </button>
 
                 </div>
 
+
             </form>
 
         </div>
 
     `;
+
 
     document
         .getElementById(
@@ -3000,9 +4234,12 @@ function showFAQForm() {
         ?.addEventListener(
             "click",
             () => {
+
                 area.innerHTML = "";
+
             }
         );
+
 
     document
         .getElementById(
@@ -3014,6 +4251,7 @@ function showFAQForm() {
 
                 event.preventDefault();
 
+
                 const payload = {
 
                     question:
@@ -3021,7 +4259,7 @@ function showFAQForm() {
                             .getElementById(
                                 "faqQuestion"
                             )
-                            .value
+                            ?.value
                             .trim(),
 
                     answer:
@@ -3029,22 +4267,22 @@ function showFAQForm() {
                             .getElementById(
                                 "faqAnswer"
                             )
-                            .value
+                            ?.value
                             .trim()
 
                 };
+
 
                 const {
                     error
                 } = await supabaseClient
                     .from("faqs")
-                    .insert(payload);
+                    .insert(
+                        payload
+                    );
+
 
                 if (error) {
-
-                    console.error(
-                        error
-                    );
 
                     showMessage(
                         error.message,
@@ -3054,11 +4292,14 @@ function showFAQForm() {
                     return;
                 }
 
+
                 showMessage(
                     "FAQ saved successfully."
                 );
 
-                loadFAQs();
+
+                await loadFAQs();
+
             }
         );
 }
@@ -3070,37 +4311,44 @@ function showFAQForm() {
 
 async function loadSettings() {
 
-    const { data, error } =
-        await supabaseClient
-            .from("settings")
-            .select("*")
-            .order("key");
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("settings")
+        .select(
+            "id, setting_key, setting_value, updated_at"
+        )
+        .order(
+            "updated_at",
+            {
+                ascending: false
+            }
+        );
+
 
     if (error) {
 
-        console.error(
-            "Settings error:",
-            error
-        );
-
-        moduleContent.innerHTML = `
-            <div class="admin-module">
-                <h2>Settings</h2>
-                <p>${escapeHTML(
-                    error.message
-                )}</p>
-            </div>
-        `;
+        showDatabaseError(error);
 
         return;
     }
 
+
     const settings = {};
 
-    (data || []).forEach(item => {
-        settings[item.key] =
-            item.value || "";
-    });
+
+    (data || []).forEach(
+        item => {
+
+            settings[
+                item.setting_key
+            ] =
+                item.setting_value;
+
+        }
+    );
+
 
     moduleContent.innerHTML = `
 
@@ -3113,130 +4361,114 @@ async function loadSettings() {
                     <h2>Settings</h2>
 
                     <p>
-                        Manage basic website settings.
+                        Manage business contact information.
                     </p>
 
                 </div>
 
             </div>
 
-            <form id="settingsForm"
-                  class="admin-form-card">
 
-                <div>
+            <div class="admin-form-card">
 
-                    <label>Business Name</label>
+                <form id="settingsForm">
+
+
+                    <label>
+                        Business Name
+                    </label>
 
                     <input
                         id="settingBusinessName"
-                        value="${escapeHTML(
+                        value="${escapeAttribute(
                             settings.business_name ||
-                            "Manju's The World of Glamour"
+                            ""
                         )}"
                     >
 
-                </div>
 
-                <div>
+                    <label>
+                        Artist Name
+                    </label>
 
-                    <label>Phone</label>
+                    <input
+                        id="settingArtistName"
+                        value="${escapeAttribute(
+                            settings.artist_name ||
+                            ""
+                        )}"
+                    >
+
+
+                    <label>
+                        Phone
+                    </label>
 
                     <input
                         id="settingPhone"
-                        value="${escapeHTML(
+                        value="${escapeAttribute(
                             settings.phone ||
-                            "+91 88267 74495"
+                            ""
                         )}"
                     >
 
-                </div>
 
-                <div>
-
-                    <label>WhatsApp</label>
+                    <label>
+                        WhatsApp
+                    </label>
 
                     <input
-                        id="settingWhatsApp"
-                        value="${escapeHTML(
+                        id="settingWhatsapp"
+                        value="${escapeAttribute(
                             settings.whatsapp ||
-                            "918826774495"
+                            ""
                         )}"
                     >
 
-                </div>
 
-                <div>
-
-                    <label>Email</label>
+                    <label>
+                        Email
+                    </label>
 
                     <input
                         id="settingEmail"
-                        value="${escapeHTML(
+                        type="email"
+                        value="${escapeAttribute(
                             settings.email ||
-                            "manjustudio83@gmail.com"
+                            ""
                         )}"
                     >
 
-                </div>
 
-                <div>
-
-                    <label>Address</label>
+                    <label>
+                        Address
+                    </label>
 
                     <textarea
                         id="settingAddress"
                         rows="4"
                     >${escapeHTML(
                         settings.address ||
-                        "F-22/170, 2nd Floor, Sector 3, Rohini, New Delhi - 110085"
+                        ""
                     )}</textarea>
 
-                </div>
-
-                <div>
-
-                    <label>Instagram</label>
-
-                    <input
-                        id="settingInstagram"
-                        value="${escapeHTML(
-                            settings.instagram ||
-                            "https://instagram.com/manjuchaudharyy"
-                        )}"
-                    >
-
-                </div>
-
-                <div>
-
-                    <label>YouTube</label>
-
-                    <input
-                        id="settingYoutube"
-                        value="${escapeHTML(
-                            settings.youtube ||
-                            "https://youtube.com/c/ManjuStudio"
-                        )}"
-                    >
-
-                </div>
-
-                <div class="form-actions">
 
                     <button
                         type="submit"
-                        class="primary-btn"
+                        class="primary-button"
                     >
                         Save Settings
                     </button>
 
-                </div>
 
-            </form>
+                </form>
+
+            </div>
 
         </div>
 
     `;
+
 
     document
         .getElementById(
@@ -3244,221 +4476,319 @@ async function loadSettings() {
         )
         ?.addEventListener(
             "submit",
-            saveSettings
-        );
-}
+            async event => {
+
+                event.preventDefault();
 
 
-async function saveSettings(event) {
+                const values = {
 
-    event.preventDefault();
+                    business_name:
+                        document
+                            .getElementById(
+                                "settingBusinessName"
+                            )
+                            ?.value
+                            .trim(),
 
-    const settings = {
+                    artist_name:
+                        document
+                            .getElementById(
+                                "settingArtistName"
+                            )
+                            ?.value
+                            .trim(),
 
-        business_name:
-            document
-                .getElementById(
-                    "settingBusinessName"
-                )
-                .value
-                .trim(),
+                    phone:
+                        document
+                            .getElementById(
+                                "settingPhone"
+                            )
+                            ?.value
+                            .trim(),
 
-        phone:
-            document
-                .getElementById(
-                    "settingPhone"
-                )
-                .value
-                .trim(),
+                    whatsapp:
+                        document
+                            .getElementById(
+                                "settingWhatsapp"
+                            )
+                            ?.value
+                            .trim(),
 
-        whatsapp:
-            document
-                .getElementById(
-                    "settingWhatsApp"
-                )
-                .value
-                .trim(),
+                    email:
+                        document
+                            .getElementById(
+                                "settingEmail"
+                            )
+                            ?.value
+                            .trim(),
 
-        email:
-            document
-                .getElementById(
-                    "settingEmail"
-                )
-                .value
-                .trim(),
+                    address:
+                        document
+                            .getElementById(
+                                "settingAddress"
+                            )
+                            ?.value
+                            .trim()
 
-        address:
-            document
-                .getElementById(
-                    "settingAddress"
-                )
-                .value
-                .trim(),
+                };
 
-        instagram:
-            document
-                .getElementById(
-                    "settingInstagram"
-                )
-                .value
-                .trim(),
 
-        youtube:
-            document
-                .getElementById(
-                    "settingYoutube"
-                )
-                .value
-                .trim()
-
-    };
-
-    try {
-
-        for (
-            const [key, value]
-            of Object.entries(settings)
-        ) {
-
-            const {
-                data: existing,
-                error: findError
-            } = await supabaseClient
-                .from("settings")
-                .select("id")
-                .eq("key", key)
-                .maybeSingle();
-
-            if (findError) {
-                throw findError;
-            }
-
-            if (existing?.id) {
-
-                const {
-                    error
-                } = await supabaseClient
-                    .from("settings")
-                    .update({ value })
-                    .eq("id", existing.id);
-
-                if (error) {
-                    throw error;
-                }
-
-            } else {
-
-                const {
-                    error
-                } = await supabaseClient
-                    .from("settings")
-                    .insert({
+                for (
+                    const [
                         key,
                         value
-                    });
+                    ]
+                    of Object.entries(
+                        values
+                    )
+                ) {
 
-                if (error) {
-                    throw error;
+                    const {
+                        data: existing
+                    } = await supabaseClient
+                        .from("settings")
+                        .select("id")
+                        .eq(
+                            "setting_key",
+                            key
+                        )
+                        .maybeSingle();
+
+
+                    let result;
+
+
+                    if (existing?.id) {
+
+                        result =
+                            await supabaseClient
+                                .from(
+                                    "settings"
+                                )
+                                .update({
+
+                                    setting_value:
+                                        value,
+
+                                    updated_at:
+                                        new Date()
+                                            .toISOString()
+
+                                })
+                                .eq(
+                                    "id",
+                                    existing.id
+                                );
+
+                    } else {
+
+                        result =
+                            await supabaseClient
+                                .from(
+                                    "settings"
+                                )
+                                .insert({
+
+                                    setting_key:
+                                        key,
+
+                                    setting_value:
+                                        value
+
+                                });
+
+                    }
+
+
+                    if (result.error) {
+
+                        showMessage(
+                            result.error.message,
+                            "error"
+                        );
+
+                        return;
+                    }
+
                 }
+
+
+                showMessage(
+                    "Settings saved successfully."
+                );
+
+
+                await loadSettings();
+
             }
-        }
-
-        showMessage(
-            "Settings saved successfully."
         );
-
-    } catch (error) {
-
-        console.error(
-            "Settings save error:",
-            error
-        );
-
-        showMessage(
-            error.message,
-            "error"
-        );
-    }
 }
 
 
 // ============================================================
-// DELETE BUTTONS
+// DELETE
 // ============================================================
 
 function attachDeleteButtons() {
 
-    moduleContent
-        ?.querySelectorAll(
+    const buttons =
+        document.querySelectorAll(
             "[data-delete-table]"
-        )
-        .forEach(button => {
+        );
+
+
+    buttons.forEach(
+        button => {
+
+            if (
+                button.dataset
+                    .deleteBound
+            ) {
+                return;
+            }
+
+
+            button.dataset.deleteBound =
+                "true";
+
 
             button.addEventListener(
                 "click",
                 async () => {
 
-                    await deleteRecord(
-                        button.dataset.deleteTable,
-                        button.dataset.deleteId
+                    const table =
+                        button.dataset
+                            .deleteTable;
+
+                    const id =
+                        button.dataset
+                            .deleteId;
+
+
+                    if (!table || !id) {
+                        return;
+                    }
+
+
+                    const confirmed =
+                        window.confirm(
+                            "Are you sure you want to delete this item?"
+                        );
+
+
+                    if (!confirmed) {
+                        return;
+                    }
+
+
+                    const {
+                        error
+                    } = await supabaseClient
+                        .from(table)
+                        .delete()
+                        .eq(
+                            "id",
+                            id
+                        );
+
+
+                    if (error) {
+
+                        showMessage(
+                            error.message,
+                            "error"
+                        );
+
+                        return;
+                    }
+
+
+                    showMessage(
+                        "Deleted successfully."
+                    );
+
+
+                    await openModule(
+                        currentModule
                     );
 
                 }
             );
 
-        });
+        }
+    );
 }
 
 
 // ============================================================
-// STARTUP
+// SUPABASE AUTH STATE
 // ============================================================
 
-if (loginForm) {
+supabaseClient.auth.onAuthStateChange(
+    async (_event, session) => {
 
-    loginForm.addEventListener(
-        "submit",
-        handleLogin
-    );
+        const loginSection =
+            document.getElementById(
+                "loginSection"
+            );
 
-}
-
-if (logoutBtn) {
-
-    logoutBtn.addEventListener(
-        "click",
-        handleLogout
-    );
-
-}
+        const adminPanel =
+            document.getElementById(
+                "adminPanel"
+            );
 
 
-if (window.supabaseClient) {
+        if (session) {
 
-    supabaseClient.auth.onAuthStateChange(
-        (event, session) => {
+            if (loginSection) {
+                loginSection.style.display =
+                    "none";
+            }
 
-            currentUser =
-                session?.user || null;
+            if (adminPanel) {
+                adminPanel.style.display =
+                    "block";
+            }
 
-            if (session) {
-                showAdmin();
-            } else {
-                showLogin();
+            setTimeout(
+                () => {
+
+                    initializeAdmin();
+
+                },
+                0
+            );
+
+        } else {
+
+            if (loginSection) {
+                loginSection.style.display =
+                    "flex";
+            }
+
+            if (adminPanel) {
+                adminPanel.style.display =
+                    "none";
             }
 
         }
-    );
 
-    checkAuth();
+    }
+);
 
-} else {
 
-    console.error(
-        "supabaseClient is not available. Make sure supabase-config.js loads before admin.js."
-    );
-
-}
 // ============================================================
-// END OF ADMIN.JS
+// START
 // ============================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        setupLogin();
+
+        await checkAdminSession();
+
+    }
+);
