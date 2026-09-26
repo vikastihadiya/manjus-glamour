@@ -1,965 +1,913 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-<meta charset="UTF-8">
-
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
->
-
-<!-- Favicon -->
-<link
-    rel="icon"
-    type="image/svg+xml"
-    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23f4eee7'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-size='55' font-family='Georgia,serif' fill='%232b2927'%3EM%3C/text%3E%3C/svg%3E"
->
-
-<title>Admin Panel | Manju's The World of Glamour</title>
-
-<meta
-    name="description"
-    content="Secure administration panel for Manju's The World of Glamour."
->
-
-<style>
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-:root {
-    --ivory: #f8f5ef;
-    --cream: #eee7dc;
-    --charcoal: #262321;
-    --gold: #b49663;
-    --gold-dark: #8f7445;
-    --white: #ffffff;
-    --muted: #77716a;
-    --border: #ddd5ca;
-    --danger: #a33b3b;
-    --success: #39734a;
-}
-
-body {
-    min-height: 100vh;
-    background: var(--ivory);
-    color: var(--charcoal);
-    font-family: Arial, Helvetica, sans-serif;
-}
-
-/* =====================================================
-   LOGIN
-===================================================== */
-
-#loginSection {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-}
-
-.login-card {
-    width: 100%;
-    max-width: 450px;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 42px 34px;
-    box-shadow: 0 25px 70px rgba(0,0,0,.10);
-}
-
-.brand {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.brand-small {
-    font-size: 11px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--gold-dark);
-    margin-bottom: 10px;
-}
-
-.brand h1 {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 30px;
-    font-weight: 500;
-    line-height: 1.2;
-}
-
-.brand p {
-    margin-top: 10px;
-    color: var(--muted);
-    font-size: 14px;
-}
-
-.form-group {
-    margin-bottom: 18px;
-}
-
-label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-input,
-select,
-textarea {
-    width: 100%;
-    padding: 13px 14px;
-    border: 1px solid var(--border);
-    border-radius: 9px;
-    background: #fff;
-    color: var(--charcoal);
-    font-size: 14px;
-    outline: none;
-}
-
-textarea {
-    min-height: 110px;
-    resize: vertical;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-    border-color: var(--gold);
-    box-shadow: 0 0 0 3px rgba(180,150,99,.12);
-}
-
-.login-btn {
-    width: 100%;
-    border: 0;
-    border-radius: 9px;
-    padding: 15px;
-    background: var(--charcoal);
-    color: #fff;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    cursor: pointer;
-}
-
-.login-btn:hover {
-    background: var(--gold-dark);
-}
-
-.message {
-    margin-top: 15px;
-    padding: 12px;
-    border-radius: 8px;
-    display: none;
-    font-size: 13px;
-}
-
-.message.error {
-    display: block;
-    background: #f9e8e8;
-    color: var(--danger);
-}
-
-.message.success {
-    display: block;
-    background: #e8f4eb;
-    color: var(--success);
-}
-
-.forgot,
-.back-home {
-    display: block;
-    text-align: center;
-    margin-top: 18px;
-    color: var(--gold-dark);
-    text-decoration: none;
-    font-size: 13px;
-}
-
-.back-home {
-    color: var(--muted);
-    margin-top: 22px;
-}
-
-/* =====================================================
-   ADMIN PANEL
-===================================================== */
-
-#adminPanel {
-    display: none;
-    min-height: 100vh;
-}
-
-/* =====================================================
-   TOP BAR
-===================================================== */
-
-.topbar {
-    min-height: 72px;
-    background: var(--charcoal);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    padding: 14px 28px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-
-.topbar-title {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 21px;
-}
-
-.topbar-subtitle {
-    color: #cfc8bd;
-    font-size: 11px;
-    margin-top: 3px;
-    letter-spacing: 1px;
-}
-
-.logout-btn {
-    border: 1px solid rgba(255,255,255,.35);
-    background: transparent;
-    color: #fff;
-    padding: 10px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.logout-btn:hover {
-    background: rgba(255,255,255,.12);
-}
-
-/* =====================================================
-   LAYOUT
-===================================================== */
-
-.admin-layout {
-    display: grid;
-    grid-template-columns: 250px minmax(0,1fr);
-    min-height: calc(100vh - 72px);
-}
-
-/* =====================================================
-   SIDEBAR
-===================================================== */
-
-.sidebar {
-    background: #fff;
-    border-right: 1px solid var(--border);
-    padding: 20px 14px;
-}
-
-.sidebar-title {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: var(--gold-dark);
-    padding: 10px 12px;
-    margin-bottom: 8px;
-}
-
-.nav-btn {
-    width: 100%;
-    display: block;
-    border: 0;
-    background: transparent;
-    text-align: left;
-    padding: 12px 13px;
-    margin-bottom: 4px;
-    border-radius: 8px;
-    color: var(--charcoal);
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.nav-btn:hover,
-.nav-btn.active {
-    background: var(--cream);
-    color: var(--gold-dark);
-}
-
-/* =====================================================
-   CONTENT
-===================================================== */
-
-.main-content {
-    min-width: 0;
-    padding: 28px;
-}
-
-.module-header {
-    margin-bottom: 25px;
-}
-
-.module-title {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 32px;
-    font-weight: 500;
-}
-
-.module-description {
-    margin-top: 7px;
-    color: var(--muted);
-    font-size: 14px;
-}
-
-#moduleArea {
-    display: block;
-}
-
-#moduleContent {
-    min-height: 300px;
-}
-
-/* =====================================================
-   DASHBOARD
-===================================================== */
-
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0,1fr));
-    gap: 16px;
-}
-
-.dashboard-card {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 13px;
-    padding: 22px;
-    cursor: pointer;
-    transition: .2s ease;
-}
-
-.dashboard-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--gold);
-    box-shadow: 0 10px 30px rgba(0,0,0,.07);
-}
-
-.dashboard-card h3 {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 28px;
-    font-weight: 500;
-}
-
-.dashboard-card p {
-    color: var(--muted);
-    font-size: 13px;
-    margin-top: 7px;
-}
-
-/* =====================================================
-   ADMIN CARDS
-===================================================== */
-
-.admin-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0,1fr));
-    gap: 16px;
-}
-
-.admin-card {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 13px;
-    padding: 20px;
-}
-
-.admin-card h3 {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 21px;
-    font-weight: 500;
-}
-
-.admin-card p {
-    color: var(--muted);
-    font-size: 13px;
-    margin-top: 8px;
-    line-height: 1.5;
-}
-
-/* =====================================================
-   COMMON MODULE
-===================================================== */
-
-.admin-module {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 22px;
-    overflow-x: auto;
-}
-
-.module-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-}
-
-.primary-btn {
-    border: 0;
-    background: var(--charcoal);
-    color: #fff;
-    padding: 11px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.primary-btn:hover {
-    background: var(--gold-dark);
-}
-
-.secondary-btn {
-    border: 1px solid var(--border);
-    background: #fff;
-    color: var(--charcoal);
-    padding: 10px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.secondary-btn:hover {
-    border-color: var(--gold);
-}
-
-.danger-btn,
-.delete-btn {
-    border: 0;
-    background: #f5dddd;
-    color: var(--danger);
-    padding: 9px 12px;
-    border-radius: 7px;
-    cursor: pointer;
-}
-
-.delete-btn:hover,
-.danger-btn:hover {
-    background: #efd0d0;
-}
-
-/* =====================================================
-   TABLE
-===================================================== */
-
-.admin-table-wrap {
-    width: 100%;
-    overflow-x: auto;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 700px;
-}
-
-th,
-td {
-    padding: 12px;
-    border-bottom: 1px solid var(--border);
-    text-align: left;
-    font-size: 13px;
-    vertical-align: top;
-}
-
-th {
-    color: var(--gold-dark);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-tr:hover td {
-    background: #fcfaf7;
-}
-
-/* =====================================================
-   EMPTY / LOADING
-===================================================== */
-
-.empty-state {
-    padding: 50px 20px;
-    text-align: center;
-    color: var(--muted);
-}
-
-.module-loading {
-    padding: 50px;
-    text-align: center;
-    color: var(--muted);
-}
-
-/* =====================================================
-   FORMS
-===================================================== */
-
-.admin-form {
-    display: grid;
-    gap: 15px;
-}
-
-.admin-form-card {
-    background: #fbf8f3;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 22px;
-}
-
-.admin-form-card h3 {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 22px;
-    font-weight: 500;
-    margin-bottom: 18px;
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(2,minmax(0,1fr));
-    gap: 15px;
-}
-
-.form-row {
-    display: grid;
-    grid-template-columns: repeat(2,minmax(0,1fr));
-    gap: 15px;
-}
-
-.form-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-    flex-wrap: wrap;
-}
-
-/* =====================================================
-   CHECKBOX
-===================================================== */
-
-input[type="checkbox"] {
-    width: auto;
-    margin-right: 8px;
-}
-
-/* =====================================================
-   IMAGE
-===================================================== */
-
-.admin-image {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-}
-
-/* =====================================================
-   MESSAGE
-===================================================== */
-
-#adminMessage {
-    position: fixed;
-    right: 20px;
-    bottom: 20px;
-    z-index: 9999;
-    max-width: 360px;
-    padding: 14px 18px;
-    border-radius: 10px;
-    background: var(--charcoal);
-    color: #fff;
-    box-shadow: 0 12px 40px rgba(0,0,0,.18);
-}
-
-/* =====================================================
-   MOBILE
-===================================================== */
-
-@media (max-width: 1000px) {
-
-    .admin-grid,
-    .dashboard-grid {
-        grid-template-columns: repeat(2,minmax(0,1fr));
-    }
-
-    .admin-layout {
-        grid-template-columns: 210px minmax(0,1fr);
-    }
-}
-
-@media (max-width: 700px) {
-
-    .topbar {
-        padding: 14px 16px;
-    }
-
-    .topbar-title {
-        font-size: 17px;
-    }
-
-    .admin-layout {
-        display: block;
-    }
-
-    .sidebar {
-        border-right: 0;
-        border-bottom: 1px solid var(--border);
-        overflow-x: auto;
-        white-space: nowrap;
-        padding: 10px;
-    }
-
-    .sidebar-title {
-        display: none;
-    }
-
-    .nav-btn {
-        width: auto;
-        display: inline-block;
-        margin-right: 4px;
-    }
-
-    .main-content {
-        padding: 18px 14px;
-    }
-
-    .module-title {
-        font-size: 27px;
-    }
-
-    .admin-grid,
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .form-row,
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .login-card {
-        padding: 32px 22px;
-    }
-
-    .admin-module {
-        padding: 16px;
-    }
-
-}
-
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Panel | Manju's The World of Glamour</title>
+
+    <meta
+        name="description"
+        content="Secure administration panel for Manju's The World of Glamour."
+    >
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --ivory: #f8f5ef;
+            --cream: #eee7dc;
+            --charcoal: #262321;
+            --gold: #b49663;
+            --gold-dark: #8f7445;
+            --white: #ffffff;
+            --muted: #77716a;
+            --border: #ddd5ca;
+            --danger: #a33b3b;
+            --success: #39734a;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--ivory);
+            color: var(--charcoal);
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        button,
+        input,
+        textarea,
+        select {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        /* =====================================================
+           LOGIN
+        ===================================================== */
+
+        #loginSection {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background:
+                radial-gradient(
+                    circle at top right,
+                    rgba(180, 150, 99, 0.16),
+                    transparent 35%
+                ),
+                var(--ivory);
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 450px;
+            background: rgba(255,255,255,.97);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 42px 34px;
+            box-shadow: 0 25px 70px rgba(0,0,0,.10);
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .brand-small {
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--gold-dark);
+            margin-bottom: 10px;
+        }
+
+        .brand h1 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 29px;
+            line-height: 1.15;
+            font-weight: 500;
+        }
+
+        .brand p {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 7px;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 12px 13px;
+            background: #fff;
+            color: var(--charcoal);
+            outline: none;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(180,150,99,.12);
+        }
+
+        .login-btn {
+            width: 100%;
+            border: 0;
+            border-radius: 10px;
+            padding: 15px;
+            background: var(--charcoal);
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .login-btn:hover {
+            background: var(--gold-dark);
+        }
+
+        #loginMessage {
+            margin-top: 15px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .forgot,
+        .back-home {
+            display: block;
+            text-align: center;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .forgot {
+            margin-top: 18px;
+            color: var(--gold-dark);
+        }
+
+        .back-home {
+            margin-top: 22px;
+            color: var(--muted);
+        }
+
+        /* =====================================================
+           ADMIN PANEL
+        ===================================================== */
+
+        #adminPanel {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .admin-layout {
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* =====================================================
+           SIDEBAR
+        ===================================================== */
+
+        .admin-sidebar {
+            width: 260px;
+            flex-shrink: 0;
+            background: var(--charcoal);
+            color: white;
+            min-height: 100vh;
+            padding: 24px 15px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            padding: 8px 10px 25px;
+            border-bottom: 1px solid rgba(255,255,255,.12);
+            margin-bottom: 18px;
+        }
+
+        .sidebar-brand small {
+            display: block;
+            color: #c9bfae;
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-brand strong {
+            display: block;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 19px;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .nav-btn {
+            width: 100%;
+            text-align: left;
+            border: 0;
+            background: transparent;
+            color: #ddd7ce;
+            padding: 11px 12px;
+            border-radius: 9px;
+            font-size: 13px;
+            transition: .2s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255,255,255,.08);
+            color: white;
+        }
+
+        .nav-btn.active {
+            background: rgba(180,150,99,.22);
+            color: white;
+        }
+
+        .sidebar-bottom {
+            margin-top: 25px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255,255,255,.12);
+        }
+
+        .sidebar-email {
+            font-size: 11px;
+            color: #aaa39a;
+            word-break: break-word;
+            margin-bottom: 12px;
+            padding: 0 10px;
+        }
+
+        .logout-btn {
+            width: 100%;
+            border: 1px solid rgba(255,255,255,.22);
+            background: transparent;
+            color: white;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,.08);
+        }
+
+        /* =====================================================
+           MAIN
+        ===================================================== */
+
+        .admin-main {
+            flex: 1;
+            min-width: 0;
+            background: var(--ivory);
+        }
+
+        .admin-topbar {
+            min-height: 76px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 30px;
+            gap: 20px;
+        }
+
+        .admin-topbar h1 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 25px;
+            font-weight: 500;
+        }
+
+        .admin-topbar p {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .admin-user {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        #moduleArea {
+            padding: 30px;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        #moduleContent {
+            min-width: 0;
+        }
+
+        /* =====================================================
+           COMMON MODULE STYLES
+        ===================================================== */
+
+        .module-loading {
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .admin-module {
+            width: 100%;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(190px, 1fr));
+            gap: 16px;
+        }
+
+        .dashboard-card {
+            appearance: none;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 14px;
+            padding: 22px;
+            min-height: 125px;
+            box-shadow: 0 8px 30px rgba(0,0,0,.04);
+            color: var(--charcoal);
+            transition: .2s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(0,0,0,.08);
+            border-color: var(--gold);
+        }
+
+        .dashboard-card h3 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 25px;
+            font-weight: 500;
+        }
+
+        .dashboard-card p {
+            color: var(--muted);
+            margin-top: 7px;
+            font-size: 13px;
+        }
+
+        .admin-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        .admin-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .admin-table th {
+            background: #f3eee7;
+            color: var(--charcoal);
+            font-size: 12px;
+            text-align: left;
+            padding: 13px;
+            white-space: nowrap;
+        }
+
+        .admin-table td {
+            padding: 13px;
+            border-top: 1px solid #eee8df;
+            font-size: 13px;
+            vertical-align: top;
+        }
+
+        .admin-table tr:hover td {
+            background: #fffdfa;
+        }
+
+        .primary-btn,
+        .secondary-btn,
+        .delete-btn {
+            border-radius: 8px;
+            padding: 9px 13px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .primary-btn {
+            border: 0;
+            background: var(--charcoal);
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background: var(--gold-dark);
+        }
+
+        .secondary-btn {
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--charcoal);
+        }
+
+        .secondary-btn:hover {
+            border-color: var(--gold);
+        }
+
+        .delete-btn {
+            border: 1px solid #e2bcbc;
+            background: #fff5f5;
+            color: var(--danger);
+        }
+
+        .delete-btn:hover {
+            background: #fbe5e5;
+        }
+
+        .admin-form-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+        }
+
+        .admin-card-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .empty-admin {
+            background: white;
+            border: 1px dashed var(--border);
+            border-radius: 14px;
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .admin-error {
+            background: #fff7f7;
+            border: 1px solid #efc8c8;
+            border-radius: 14px;
+            padding: 25px;
+        }
+
+        .admin-error h3 {
+            color: var(--danger);
+            margin-bottom: 8px;
+        }
+
+        .admin-error p {
+            color: #733;
+            word-break: break-word;
+        }
+
+        .admin-message {
+            padding: 12px 14px;
+            border-radius: 9px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .admin-message.success {
+            background: #eaf5ed;
+            color: var(--success);
+        }
+
+        .admin-message.error {
+            background: #faeaea;
+            color: var(--danger);
+        }
+
+        /* =====================================================
+           MOBILE
+        ===================================================== */
+
+        .mobile-top {
+            display: none;
+        }
+
+        @media (max-width: 900px) {
+
+            .admin-layout {
+                display: block;
+            }
+
+            .admin-sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                min-height: auto;
+            }
+
+            .sidebar-nav {
+                display: grid;
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .sidebar-bottom {
+                margin-top: 18px;
+            }
+
+            .admin-topbar {
+                padding: 15px 20px;
+            }
+
+            #moduleArea {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 600px) {
+
+            #loginSection {
+                padding: 15px;
+            }
+
+            .login-card {
+                padding: 30px 20px;
+            }
+
+            .brand h1 {
+                font-size: 25px;
+            }
+
+            .sidebar-nav {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .nav-btn {
+                font-size: 12px;
+                padding: 10px 8px;
+            }
+
+            .admin-topbar {
+                display: block;
+            }
+
+            .admin-topbar h1 {
+                font-size: 21px;
+            }
+
+            .admin-user {
+                margin-top: 8px;
+            }
+
+            #moduleArea {
+                padding: 15px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-<!-- =====================================================
-     LOGIN
-===================================================== -->
+    <!-- =====================================================
+         LOGIN
+    ====================================================== -->
 
-<section id="loginSection">
+    <section id="loginSection">
 
-    <div class="login-card">
+        <div class="login-card">
 
-        <div class="brand">
+            <div class="brand">
 
-            <div class="brand-small">
-                Private Administration
-            </div>
+                <div class="brand-small">
+                    Private Administration
+                </div>
 
-            <h1>
-                Manju's The World of Glamour
-            </h1>
+                <h1>
+                    Manju's The World of Glamour
+                </h1>
 
-            <p>
-                Secure Admin Panel
-            </p>
-
-        </div>
-
-        <form id="loginForm">
-
-            <div class="form-group">
-
-                <label for="adminEmail">
-                    Email
-                </label>
-
-                <input
-                    type="email"
-                    id="adminEmail"
-                    placeholder="Enter admin email"
-                    autocomplete="email"
-                    required
-                >
+                <p>
+                    Secure Admin Panel
+                </p>
 
             </div>
 
-            <div class="form-group">
+            <form id="loginForm">
 
-                <label for="adminPassword">
-                    Password
-                </label>
+                <div class="form-group">
 
-                <input
-                    type="password"
-                    id="adminPassword"
-                    placeholder="Enter password"
-                    autocomplete="current-password"
-                    required
-                >
+                    <label for="adminEmail">
+                        Email
+                    </label>
 
-            </div>
-
-            <button
-                type="submit"
-                class="login-btn"
-            >
-                SIGN IN
-            </button>
-
-            <div
-                id="loginMessage"
-                class="message"
-            ></div>
-
-        </form>
-
-        <a
-            href="reset-password.html"
-            class="forgot"
-        >
-            Forgot password?
-        </a>
-
-        <a
-            href="index.html"
-            class="back-home"
-        >
-            ← Back to website
-        </a>
-
-    </div>
-
-</section>
-
-
-<!-- =====================================================
-     ADMIN PANEL
-===================================================== -->
-
-<section id="adminPanel">
-
-    <header class="topbar">
-
-        <div>
-
-            <div class="topbar-title">
-                Manju's The World of Glamour
-            </div>
-
-            <div class="topbar-subtitle">
-                ADMINISTRATION
-            </div>
-
-        </div>
-
-        <button
-            id="logoutBtn"
-            class="logout-btn"
-            type="button"
-        >
-            Logout
-        </button>
-
-    </header>
-
-
-    <div class="admin-layout">
-
-        <!-- =================================================
-             SIDEBAR
-        ================================================== -->
-
-        <aside class="sidebar">
-
-            <div class="sidebar-title">
-                Management
-            </div>
-
-            <button
-                type="button"
-                class="nav-btn active"
-                data-module="dashboard"
-            >
-                Dashboard
-            </button>
-
-            <button
-                type="button"
-                class="nav-btn"
-                data-module="appointments"
-            >
-                Appointments
-            </button>
-
-            <button
-                type="button"
-                class="nav-btn"
-                data-module="services"
-            >
-                Services
-            </button>
-
-            <button
-                type="button"
-                class="nav-btn"
-                data-module="offers"
-            >
-                Offers
-            </button>
-
-            <button
-                type="button"
-                class="nav-btn"
-                data-module="gallery"
-            >
-                Our Work Gallery
-            </button>
-
-            <button
-                type="button"
-                class="nav-btn"
-                data-module="bride_gallery"
-            >
-                Bride / Girls Gallery
-            </button>
-
-            <button
-                type="button"
-                class="nav-btn"
-                data-module="customer_gallery"
-            >
-                Customer Gallery
-            </button>
-
-            <button
-                type="button"
-                class="nav-btn"
-                data-module="before_after"
-            >
-                Before / After
-            </button>
-
-            <button
-                type="button"
-                class="nav-btn"
-                data-module="bridal_packages"
-            >
-                Bridal Packages
-            </button>
-
-            <button
-                type="button"
-                class="nav-btn"
-                data-module="team"
-            >
-                Team
-            </button>
-
-            <button
-                type="button"
-                class="nav-btn"
-                data-module="testimonials"
-            >
-                Testimonials
-            </button>
-
-            <button
-                type="button"
-                class="nav-btn"
-                data-module="faqs"
-            >
-                FAQs
-            </button>
-
-            <button
-                type="button"
-                class="nav-btn"
-                data-module="settings"
-            >
-                Settings
-            </button>
-
-        </aside>
-
-
-        <!-- =================================================
-             MAIN CONTENT
-        ================================================== -->
-
-        <main class="main-content">
-
-            <div id="moduleArea">
-
-                <div class="module-header">
-
-                    <h1
-                        id="moduleTitle"
-                        class="module-title"
+                    <input
+                        type="email"
+                        id="adminEmail"
+                        placeholder="Enter admin email"
+                        autocomplete="email"
+                        required
                     >
-                        Dashboard
-                    </h1>
-
-                    <p
-                        id="moduleDescription"
-                        class="module-description"
-                    >
-                        Manage your beauty business website.
-                    </p>
 
                 </div>
 
-                <div id="moduleContent">
+                <div class="form-group">
 
-                    <div class="module-loading">
-                        Loading dashboard...
+                    <label for="adminPassword">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="adminPassword"
+                        placeholder="Enter password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                </div>
+
+                <button
+                    type="submit"
+                    class="login-btn"
+                >
+                    SIGN IN
+                </button>
+
+                <div id="loginMessage"></div>
+
+            </form>
+
+            <a
+                href="reset-password.html"
+                class="forgot"
+            >
+                Forgot password?
+            </a>
+
+            <a
+                href="index.html"
+                class="back-home"
+            >
+                ← Back to website
+            </a>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         ADMIN PANEL
+    ====================================================== -->
+
+    <section id="adminPanel">
+
+        <div class="admin-layout">
+
+            <!-- SIDEBAR -->
+
+            <aside class="admin-sidebar">
+
+                <div class="sidebar-brand">
+
+                    <small>
+                        Administration
+                    </small>
+
+                    <strong>
+                        Manju's The World of Glamour
+                    </strong>
+
+                </div>
+
+
+                <nav class="sidebar-nav">
+
+                    <button
+                        type="button"
+                        class="nav-btn active"
+                        data-module="dashboard"
+                    >
+                        📊 Dashboard
+                    </button>
+
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        data-module="appointments"
+                    >
+                        📅 Appointments
+                    </button>
+
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        data-module="services"
+                    >
+                        💄 Services
+                    </button>
+
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        data-module="offers"
+                    >
+                        🎁 Offers
+                    </button>
+
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        data-module="gallery"
+                    >
+                        🖼️ Gallery
+                    </button>
+
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        data-module="bride_gallery"
+                    >
+                        👰 Bride & Girls
+                    </button>
+
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        data-module="customer_gallery"
+                    >
+                        👩 Customers
+                    </button>
+
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        data-module="before_after"
+                    >
+                        ✨ Before / After
+                    </button>
+
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        data-module="bridal_packages"
+                    >
+                        💍 Bridal Packages
+                    </button>
+
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        data-module="team"
+                    >
+                        👩‍🎨 Team
+                    </button>
+
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        data-module="testimonials"
+                    >
+                        ⭐ Testimonials
+                    </button>
+
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        data-module="faqs"
+                    >
+                        ❓ FAQs
+                    </button>
+
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        data-module="settings"
+                    >
+                        ⚙️ Settings
+                    </button>
+
+                </nav>
+
+
+                <div class="sidebar-bottom">
+
+                    <div
+                        class="sidebar-email"
+                        data-admin-email
+                    ></div>
+
+                    <button
+                        type="button"
+                        id="logoutBtn"
+                        class="logout-btn"
+                    >
+                        Logout
+                    </button>
+
+                </div>
+
+            </aside>
+
+
+            <!-- MAIN CONTENT -->
+
+            <main class="admin-main">
+
+                <header class="admin-topbar">
+
+                    <div>
+
+                        <h1 id="moduleTitle">
+                            Dashboard
+                        </h1>
+
+                        <p id="moduleDescription">
+                            Overview of your salon website data.
+                        </p>
+
                     </div>
 
-                </div>
+                    <div
+                        class="admin-user"
+                        data-admin-email
+                    ></div>
 
-            </div>
-
-        </main>
-
-    </div>
-
-</section>
+                </header>
 
 
-<!-- =====================================================
-     SUPABASE
-===================================================== -->
+                <section id="moduleArea">
 
-<script
-    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-></script>
+                    <div id="moduleContent">
 
-<script src="supabase-config.js"></script>
+                        <div class="module-loading">
+                            Loading dashboard...
+                        </div>
 
-<script src="admin.js"></script>
+                    </div>
 
+                </section>
+
+            </main>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         SCRIPTS
+    ====================================================== -->
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    </script>
+
+    <script src="supabase-config.js"></script>
+
+    <script src="admin.js"></script>
 
 </body>
 </html>
