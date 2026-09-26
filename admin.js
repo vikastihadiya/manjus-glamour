@@ -1,126 +1,38 @@
 /* ============================================================
    MANJU'S THE WORLD OF GLAMOUR
-   ADMIN PANEL
-   COMPLETE ADMIN.JS
+   SCHEMA-MATCHED SUPABASE ADMIN PANEL
    ============================================================ */
 
 "use strict";
 
-
 /* ============================================================
    GLOBAL STATE
-   ============================================================ */
-
-let supabaseClient = null;
+============================================================ */
 
 let currentUser = null;
-let currentModule = "dashboard";
-
-let moduleArea = null;
+let activeModule = "dashboard";
 let moduleContent = null;
 
-let loginSection = null;
-let adminPanel = null;
-let loginForm = null;
-let logoutBtn = null;
-
-let adminEmail = null;
-let adminPassword = null;
-
-
 /* ============================================================
-   DOM INITIALIZATION
-   ============================================================ */
+   SUPABASE CHECK
+============================================================ */
 
-function initializeAdminElements() {
-
-    moduleArea =
-        document.getElementById("moduleArea");
-
-    moduleContent =
-        document.getElementById("moduleContent");
-
-    loginSection =
-        document.getElementById("loginSection");
-
-    adminPanel =
-        document.getElementById("adminPanel");
-
-    loginForm =
-        document.getElementById("loginForm");
-
-    logoutBtn =
-        document.getElementById("logoutBtn");
-
-    adminEmail =
-        document.getElementById("adminEmail");
-
-    adminPassword =
-        document.getElementById("adminPassword");
-
-    console.log("Admin elements initialized:", {
-        moduleArea: !!moduleArea,
-        moduleContent: !!moduleContent,
-        loginSection: !!loginSection,
-        adminPanel: !!adminPanel,
-        loginForm: !!loginForm,
-        logoutBtn: !!logoutBtn,
-        adminEmail: !!adminEmail,
-        adminPassword: !!adminPassword
-    });
-
-    if (!moduleContent) {
-        console.error(
-            "CRITICAL: #moduleContent was not found."
-        );
-
-        return false;
-    }
-
-    return true;
-}
-
-
-/* ============================================================
-   SUPABASE INITIALIZATION
-   ============================================================ */
-
-function initializeSupabase() {
-
-    if (
-        window.supabaseClient &&
-        typeof window.supabaseClient.from === "function"
-    ) {
-        supabaseClient =
-            window.supabaseClient;
-
-        console.log(
-            "Supabase client loaded."
-        );
-
-        return true;
-    }
-
+if (typeof supabaseClient === "undefined") {
     console.error(
-        "Supabase client not found. Check supabase-config.js."
+        "Supabase client not found. Make sure supabase-config.js loads before admin.js."
     );
-
-    return false;
 }
 
-
 /* ============================================================
-   HTML HELPERS
-   ============================================================ */
+   DOM HELPERS
+============================================================ */
+
+function $(id) {
+    return document.getElementById(id);
+}
 
 function escapeHTML(value) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
-        return "";
-    }
+    if (value === null || value === undefined) return "";
 
     return String(value)
         .replace(/&/g, "&amp;")
@@ -130,66 +42,49 @@ function escapeHTML(value) {
         .replace(/'/g, "&#039;");
 }
 
-
-function escapeAttribute(value) {
+function escapeAttr(value) {
     return escapeHTML(value);
 }
 
-
 function formatDate(value) {
-
-    if (!value) {
-        return "—";
-    }
+    if (!value) return "—";
 
     try {
-
-        return new Date(value)
-            .toLocaleDateString(
-                "en-IN",
-                {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric"
-                }
-            );
-
+        return new Date(value).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        });
     } catch {
-
-        return String(value);
+        return value;
     }
 }
-
 
 function formatDateTime(value) {
-
-    if (!value) {
-        return "—";
-    }
+    if (!value) return "—";
 
     try {
-
-        return new Date(value)
-            .toLocaleString(
-                "en-IN",
-                {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit"
-                }
-            );
-
+        return new Date(value).toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
     } catch {
-
-        return String(value);
+        return value;
     }
 }
 
+function money(value) {
+    if (value === null || value === undefined || value === "") {
+        return "Price on enquiry";
+    }
+
+    return "₹" + Number(value).toLocaleString("en-IN");
+}
 
 function slugify(value) {
-
     return String(value || "")
         .toLowerCase()
         .trim()
@@ -197,360 +92,385 @@ function slugify(value) {
         .replace(/^-+|-+$/g, "");
 }
 
+function showMessage(message, type = "success") {
+    let box = $("adminMessage");
 
-/* ============================================================
-   MESSAGE
-   ============================================================ */
-
-function showMessage(
-    message,
-    type = "success"
-) {
-
-    const old =
-        document.getElementById(
-            "adminMessage"
-        );
-
-    if (old) {
-        old.remove();
+    if (!box) {
+        box = document.createElement("div");
+        box.id = "adminMessage";
+        document.body.appendChild(box);
     }
 
-    const box =
-        document.createElement("div");
+    box.textContent = message;
 
-    box.id = "adminMessage";
+    box.style.position = "fixed";
+    box.style.top = "20px";
+    box.style.right = "20px";
+    box.style.zIndex = "99999";
+    box.style.padding = "14px 18px";
+    box.style.borderRadius = "12px";
+    box.style.maxWidth = "420px";
+    box.style.fontSize = "14px";
+    box.style.boxShadow = "0 10px 30px rgba(0,0,0,.15)";
+    box.style.background =
+        type === "error" ? "#fee2e2" : "#dcfce7";
+    box.style.color =
+        type === "error" ? "#991b1b" : "#166534";
 
-    box.textContent =
-        message;
+    clearTimeout(window.__adminMessageTimer);
 
-    box.style.position =
-        "fixed";
-
-    box.style.right =
-        "20px";
-
-    box.style.bottom =
-        "20px";
-
-    box.style.zIndex =
-        "99999";
-
-    box.style.padding =
-        "14px 18px";
-
-    box.style.borderRadius =
-        "10px";
-
-    box.style.fontSize =
-        "14px";
-
-    box.style.maxWidth =
-        "380px";
-
-    box.style.boxShadow =
-        "0 10px 35px rgba(0,0,0,.15)";
-
-    if (type === "error") {
-
-        box.style.background =
-            "#fee2e2";
-
-        box.style.color =
-            "#991b1b";
-
-    } else {
-
-        box.style.background =
-            "#dcfce7";
-
-        box.style.color =
-            "#166534";
-    }
-
-    document.body.appendChild(box);
-
-    setTimeout(
-        () => {
-            box.remove();
-        },
-        4000
-    );
+    window.__adminMessageTimer = setTimeout(() => {
+        box.remove();
+    }, 4500);
 }
 
+function showError(error) {
+    console.error(error);
+    showMessage(
+        error?.message || String(error) || "Something went wrong.",
+        "error"
+    );
+}
 
 /* ============================================================
    AUTHENTICATION
-   ============================================================ */
+============================================================ */
 
 async function checkAuth() {
-
-    if (!supabaseClient) {
-        return;
-    }
-
     try {
-
         const {
-            data,
+            data: { session },
             error
-        } =
-            await supabaseClient
-                .auth
-                .getSession();
+        } = await supabaseClient.auth.getSession();
 
         if (error) {
-
-            console.error(
-                "Session error:",
-                error
-            );
-
+            console.error("Auth session error:", error);
             showLogin();
             return;
         }
 
-        if (data?.session) {
-
-            currentUser =
-                data.session.user;
-
+        if (session?.user) {
+            currentUser = session.user;
             showAdmin();
-
         } else {
-
+            currentUser = null;
             showLogin();
         }
-
     } catch (error) {
-
-        console.error(
-            "Auth check failed:",
-            error
-        );
-
+        console.error(error);
         showLogin();
     }
 }
 
-
-function showLogin() {
-
-    if (loginSection) {
-
-        loginSection.style.display =
-            "flex";
-    }
-
-    if (adminPanel) {
-
-        adminPanel.style.display =
-            "none";
-    }
-}
-
-
-function showAdmin() {
-
-    if (loginSection) {
-
-        loginSection.style.display =
-            "none";
-    }
-
-    if (adminPanel) {
-
-        adminPanel.style.display =
-            "block";
-    }
-
-    openModule(
-        "dashboard"
-    );
-}
-
-
 async function handleLogin(event) {
-
     event.preventDefault();
 
-    if (!supabaseClient) {
+    const email =
+        $("adminEmail")?.value.trim() ||
+        $("email")?.value.trim();
 
-        showMessage(
-            "Supabase is not connected.",
-            "error"
-        );
+    const password =
+        $("adminPassword")?.value ||
+        $("password")?.value;
 
+    if (!email || !password) {
+        showMessage("Enter your email and password.", "error");
         return;
     }
 
-    const email =
-        adminEmail?.value?.trim();
+    const button =
+        event.submitter ||
+        $("loginButton") ||
+        $("loginBtn");
 
-    const password =
-        adminPassword?.value || "";
-
-    if (!email || !password) {
-
-        showMessage(
-            "Please enter your email and password.",
-            "error"
-        );
-
-        return;
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Signing in...";
     }
 
     try {
+        const { data, error } =
+            await supabaseClient.auth.signInWithPassword({
+                email,
+                password
+            });
 
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .auth
-                .signInWithPassword({
-                    email,
-                    password
-                });
+        if (error) throw error;
 
-        if (error) {
+        currentUser = data.user;
 
-            console.error(
-                "Login error:",
-                error
-            );
-
-            showMessage(
-                error.message,
-                "error"
-            );
-
-            return;
-        }
-
-        currentUser =
-            data.user;
-
+        showMessage("Login successful.");
         showAdmin();
 
     } catch (error) {
-
-        console.error(
-            "Login exception:",
-            error
-        );
-
+        console.error("Login error:", error);
         showMessage(
-            "Login failed. Please try again.",
+            error.message || "Login failed.",
             "error"
         );
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Login";
+        }
     }
 }
 
-
 async function handleLogout() {
+    try {
+        await supabaseClient.auth.signOut();
+        currentUser = null;
+        showLogin();
+    } catch (error) {
+        showError(error);
+    }
+}
 
-    if (!supabaseClient) {
+function showLogin() {
+    const loginSection = $("loginSection");
+    const adminPanel = $("adminPanel");
+    const adminApp = $("adminApp");
+
+    if (loginSection) {
+        loginSection.style.display = "";
+    }
+
+    if (adminPanel) {
+        adminPanel.style.display = "none";
+    }
+
+    if (adminApp) {
+        adminApp.style.display = "";
+    }
+}
+
+function showAdmin() {
+    const loginSection = $("loginSection");
+    const adminPanel = $("adminPanel");
+    const adminApp = $("adminApp");
+
+    if (loginSection) {
+        loginSection.style.display = "none";
+    }
+
+    if (adminPanel) {
+        adminPanel.style.display = "";
+    }
+
+    if (adminApp) {
+        adminApp.style.display = "";
+    }
+
+    setupAdminInterface();
+}
+
+/* ============================================================
+   ADMIN INTERFACE
+============================================================ */
+
+function setupAdminInterface() {
+    let panel = $("adminPanel");
+
+    if (!panel) {
+        console.error("adminPanel not found.");
         return;
     }
 
-    try {
+    /*
+       We intentionally create our own management area.
+       This prevents the old admin.html/admin.js mismatch
+       from producing a blank page.
+    */
 
-        await supabaseClient
-            .auth
-            .signOut();
+    let manager = $("schemaMatchedAdmin");
 
-        currentUser = null;
-
-        showLogin();
-
-    } catch (error) {
-
-        console.error(
-            "Logout error:",
-            error
-        );
+    if (!manager) {
+        manager = document.createElement("div");
+        manager.id = "schemaMatchedAdmin";
+        panel.appendChild(manager);
     }
-}
 
+    manager.innerHTML = `
+        <div class="sm-admin">
 
-/* ============================================================
-   NAVIGATION
-   ============================================================ */
+            <div class="sm-admin-header">
+                <div>
+                    <h1>Manju's Admin</h1>
+                    <p>Website Management Dashboard</p>
+                </div>
 
-function setupNavigation() {
+                <div class="sm-admin-account">
+                    <span>${escapeHTML(
+                        currentUser?.email || ""
+                    )}</span>
+
+                    <button
+                        type="button"
+                        id="schemaLogoutBtn"
+                        class="sm-btn sm-btn-danger"
+                    >
+                        Logout
+                    </button>
+                </div>
+            </div>
+
+            <div class="sm-admin-nav">
+
+                ${adminNavButton(
+                    "dashboard",
+                    "⌂",
+                    "Dashboard"
+                )}
+
+                ${adminNavButton(
+                    "appointments",
+                    "📅",
+                    "Appointments"
+                )}
+
+                ${adminNavButton(
+                    "categories",
+                    "▦",
+                    "Categories"
+                )}
+
+                ${adminNavButton(
+                    "services",
+                    "💄",
+                    "Services"
+                )}
+
+                ${adminNavButton(
+                    "offers",
+                    "🎁",
+                    "Offers"
+                )}
+
+                ${adminNavButton(
+                    "gallery",
+                    "🖼",
+                    "Gallery"
+                )}
+
+                ${adminNavButton(
+                    "bride_gallery",
+                    "👰",
+                    "Bride & Girls"
+                )}
+
+                ${adminNavButton(
+                    "customer_gallery",
+                    "👩",
+                    "Customers"
+                )}
+
+                ${adminNavButton(
+                    "before_after",
+                    "✨",
+                    "Before / After"
+                )}
+
+                ${adminNavButton(
+                    "bridal_packages",
+                    "💍",
+                    "Bridal Packages"
+                )}
+
+                ${adminNavButton(
+                    "team",
+                    "👩‍🎨",
+                    "Team"
+                )}
+
+                ${adminNavButton(
+                    "testimonials",
+                    "⭐",
+                    "Reviews"
+                )}
+
+                ${adminNavButton(
+                    "faqs",
+                    "❓",
+                    "FAQs"
+                )}
+
+                ${adminNavButton(
+                    "settings",
+                    "⚙",
+                    "Settings"
+                )}
+
+            </div>
+
+            <div id="moduleContent"></div>
+
+        </div>
+    `;
+
+    moduleContent = $("moduleContent");
+
+    addAdminStyles();
+
+    $("schemaLogoutBtn")?.addEventListener(
+        "click",
+        handleLogout
+    );
 
     document
-        .querySelectorAll(
-            "[data-module]"
-        )
+        .querySelectorAll(".sm-module-btn")
         .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const moduleName =
-                        this.dataset.module;
-
-                    if (!moduleName) {
-                        return;
-                    }
-
-                    document
-                        .querySelectorAll(
-                            ".nav-btn"
-                        )
-                        .forEach(item => {
-
-                            item.classList.remove(
-                                "active"
-                            );
-
-                        });
-
-                    this.classList.add(
-                        "active"
-                    );
-
-                    openModule(
-                        moduleName
-                    );
-                }
-            );
+            button.addEventListener("click", () => {
+                openModule(button.dataset.module);
+            });
         });
+
+    openModule("dashboard");
 }
 
+function adminNavButton(id, icon, title) {
+    return `
+        <button
+            type="button"
+            class="sm-module-btn"
+            data-module="${id}"
+        >
+            <span>${icon}</span>
+            <strong>${title}</strong>
+        </button>
+    `;
+}
 
 /* ============================================================
    MODULE ROUTER
-   ============================================================ */
+============================================================ */
 
-async function openModule(
-    moduleName
-) {
+async function openModule(module) {
+    activeModule = module;
 
-    currentModule =
-        moduleName;
+    moduleContent = $("moduleContent");
 
     if (!moduleContent) {
-
-        console.error(
-            "moduleContent not found."
-        );
-
+        console.error("moduleContent not found.");
         return;
     }
 
+    document
+        .querySelectorAll(".sm-module-btn")
+        .forEach(button => {
+            button.classList.toggle(
+                "active",
+                button.dataset.module === module
+            );
+        });
+
     moduleContent.innerHTML = `
-        <div class="module-loading">
-            Loading...
+        <div class="sm-loading">
+            Loading ${escapeHTML(module)}...
         </div>
     `;
 
     try {
-
-        switch (moduleName) {
+        switch (module) {
 
             case "dashboard":
                 await loadDashboard();
@@ -558,6 +478,10 @@ async function openModule(
 
             case "appointments":
                 await loadAppointments();
+                break;
+
+            case "categories":
+                await loadCategories();
                 break;
 
             case "services":
@@ -609,75 +533,92 @@ async function openModule(
         }
 
     } catch (error) {
-
-        console.error(
-            "Module error:",
-            error
-        );
+        console.error("Module error:", error);
 
         moduleContent.innerHTML = `
-            <div class="admin-module">
-
-                <h2>Something went wrong</h2>
-
-                <p style="margin-top:10px;color:#a33b3b;">
-                    ${escapeHTML(error.message)}
-                </p>
-
+            <div class="sm-error">
+                <h3>Something went wrong</h3>
+                <p>${escapeHTML(
+                    error.message || "Unknown error"
+                )}</p>
             </div>
         `;
     }
 }
 
+/* ============================================================
+   MODULE HEADER
+============================================================ */
+
+function moduleHeader(title, description, buttonText = "") {
+    return `
+        <div class="sm-module-header">
+
+            <div>
+                <h2>${escapeHTML(title)}</h2>
+                <p>${escapeHTML(description)}</p>
+            </div>
+
+            ${
+                buttonText
+                    ? `
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-primary"
+                            id="moduleAddBtn"
+                        >
+                            + ${escapeHTML(buttonText)}
+                        </button>
+                    `
+                    : ""
+            }
+
+        </div>
+    `;
+}
+
+function emptyState(text) {
+    return `
+        <div class="sm-empty">
+            <div>○</div>
+            <p>${escapeHTML(text)}</p>
+        </div>
+    `;
+}
 
 /* ============================================================
    DASHBOARD
-   ============================================================ */
+============================================================ */
 
-async function getCount(
-    table
-) {
+async function getCount(table, filter = null) {
+    let query = supabaseClient
+        .from(table)
+        .select("*", {
+            count: "exact",
+            head: true
+        });
 
-    try {
+    if (filter) {
+        query = filter(query);
+    }
 
-        const {
-            count,
+    const { count, error } = await query;
+
+    if (error) {
+        console.error(
+            `Count error ${table}:`,
             error
-        } =
-            await supabaseClient
-                .from(table)
-                .select(
-                    "*",
-                    {
-                        count: "exact",
-                        head: true
-                    }
-                );
-
-        if (error) {
-
-            console.error(
-                `Count error: ${table}`,
-                error
-            );
-
-            return 0;
-        }
-
-        return count || 0;
-
-    } catch {
-
+        );
         return 0;
     }
+
+    return count || 0;
 }
 
-
 async function loadDashboard() {
-
     const tables = [
-
         "appointments",
+        "categories",
         "services",
         "offers",
         "gallery",
@@ -688,268 +629,384 @@ async function loadDashboard() {
         "team",
         "testimonials",
         "faqs"
-
     ];
-
-    const results =
-        await Promise.all(
-            tables.map(
-                table =>
-                    getCount(table)
-            )
-        );
 
     const counts = {};
 
-    tables.forEach(
-        (table, index) => {
-
+    await Promise.all(
+        tables.map(async table => {
             counts[table] =
-                results[index];
-
-        }
+                await getCount(table);
+        })
     );
 
+    const pendingAppointments =
+        await getCount(
+            "appointments",
+            query =>
+                query.eq("status", "New")
+        );
+
+    const activeOffers =
+        await getCount(
+            "offers",
+            query =>
+                query
+                    .eq("active", true)
+                    .or(
+                        "valid_until.is.null,valid_until.gte." +
+                        new Date().toISOString().slice(0, 10)
+                    )
+        );
+
     moduleContent.innerHTML = `
+        ${moduleHeader(
+            "Dashboard",
+            "Manage Manju's The World of Glamour."
+        )}
 
-        <div class="admin-module">
+        <div class="sm-stats-grid">
 
-            <div class="module-actions">
+            ${dashboardStat(
+                "📅",
+                counts.appointments,
+                "Appointments",
+                "appointments"
+            )}
 
-                <div>
-                    <h2>Dashboard</h2>
+            ${dashboardStat(
+                "🆕",
+                pendingAppointments,
+                "New Requests",
+                "appointments"
+            )}
 
-                    <p>
-                        Manage Manju's The World of Glamour.
-                    </p>
-                </div>
+            ${dashboardStat(
+                "💄",
+                counts.services,
+                "Services",
+                "services"
+            )}
 
-            </div>
+            ${dashboardStat(
+                "🎁",
+                activeOffers,
+                "Active Offers",
+                "offers"
+            )}
 
+            ${dashboardStat(
+                "🖼",
+                counts.gallery,
+                "Gallery",
+                "gallery"
+            )}
 
-            <div class="admin-grid">
+            ${dashboardStat(
+                "👰",
+                counts.bride_gallery,
+                "Bride & Girls",
+                "bride_gallery"
+            )}
 
-                ${dashboardCard(
-                    "Appointments",
-                    counts.appointments,
-                    "appointments"
-                )}
+            ${dashboardStat(
+                "👩",
+                counts.customer_gallery,
+                "Customers",
+                "customer_gallery"
+            )}
 
-                ${dashboardCard(
-                    "Services",
-                    counts.services,
-                    "services"
-                )}
+            ${dashboardStat(
+                "✨",
+                counts.before_after,
+                "Before / After",
+                "before_after"
+            )}
 
-                ${dashboardCard(
-                    "Offers",
-                    counts.offers,
-                    "offers"
-                )}
+            ${dashboardStat(
+                "💍",
+                counts.bridal_packages,
+                "Bridal Packages",
+                "bridal_packages"
+            )}
 
-                ${dashboardCard(
-                    "Our Work",
-                    counts.gallery,
-                    "gallery"
-                )}
+            ${dashboardStat(
+                "👩‍🎨",
+                counts.team,
+                "Team",
+                "team"
+            )}
 
-                ${dashboardCard(
-                    "Bride / Girls",
-                    counts.bride_gallery,
-                    "bride_gallery"
-                )}
+            ${dashboardStat(
+                "⭐",
+                counts.testimonials,
+                "Reviews",
+                "testimonials"
+            )}
 
-                ${dashboardCard(
-                    "Customers",
-                    counts.customer_gallery,
-                    "customer_gallery"
-                )}
-
-                ${dashboardCard(
-                    "Before / After",
-                    counts.before_after,
-                    "before_after"
-                )}
-
-                ${dashboardCard(
-                    "Bridal Packages",
-                    counts.bridal_packages,
-                    "bridal_packages"
-                )}
-
-                ${dashboardCard(
-                    "Team",
-                    counts.team,
-                    "team"
-                )}
-
-                ${dashboardCard(
-                    "Testimonials",
-                    counts.testimonials,
-                    "testimonials"
-                )}
-
-                ${dashboardCard(
-                    "FAQs",
-                    counts.faqs,
-                    "faqs"
-                )}
-
-            </div>
+            ${dashboardStat(
+                "❓",
+                counts.faqs,
+                "FAQs",
+                "faqs"
+            )}
 
         </div>
     `;
 
-    moduleContent
-        .querySelectorAll(
-            "[data-open-module]"
-        )
+    document
+        .querySelectorAll("[data-dashboard-module]")
         .forEach(card => {
-
             card.addEventListener(
                 "click",
-                () => {
-
-                    openModule(
-                        card.dataset.openModule
-                    );
-
-                }
+                () => openModule(
+                    card.dataset.dashboardModule
+                )
             );
-
         });
 }
 
-
-function dashboardCard(
-    title,
-    count,
+function dashboardStat(
+    icon,
+    number,
+    label,
     module
 ) {
-
     return `
-
-        <div
-            class="admin-card"
-            data-open-module="${module}"
-            style="cursor:pointer;"
+        <button
+            type="button"
+            class="sm-stat"
+            data-dashboard-module="${module}"
         >
-
-            <h3>
-                ${escapeHTML(count)}
-            </h3>
-
-            <p>
-                ${escapeHTML(title)}
-            </p>
-
-        </div>
+            <span class="sm-stat-icon">${icon}</span>
+            <strong>${number}</strong>
+            <small>${escapeHTML(label)}</small>
+        </button>
     `;
 }
-
 
 /* ============================================================
    APPOINTMENTS
-   ============================================================ */
+   Actual schema:
+   id
+   service_id
+   customer_name
+   phone
+   email
+   appointment_date
+   appointment_time
+   message
+   status
+   whatsapp_requested
+   privacy_consent
+   created_at
+   updated_at
+============================================================ */
 
 async function loadAppointments() {
-
-    const {
-        data,
-        error
-    } =
+    const { data, error } =
         await supabaseClient
             .from("appointments")
-            .select("*")
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            );
+            .select(`
+                *,
+                services (
+                    name
+                )
+            `)
+            .order("created_at", {
+                ascending: false
+            });
 
     if (error) {
-
-        showDatabaseError(
-            "Appointments",
-            error
-        );
-
+        showError(error);
         return;
     }
 
-    moduleContent.innerHTML = `
+    let html = moduleHeader(
+        "Appointments",
+        "Manage customer appointment requests."
+    );
 
-        <div class="admin-module">
+    if (!data?.length) {
+        html += emptyState(
+            "No appointment requests yet."
+        );
+    } else {
+        html += `
+            <div class="sm-table-wrap">
+                <table class="sm-table">
 
-            <div class="module-actions">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Service</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
 
-                <div>
+                    <tbody>
+        `;
 
-                    <h2>Appointments</h2>
+        data.forEach(item => {
+            html += `
+                <tr>
 
-                    <p>
-                        Customer appointment requests.
-                    </p>
+                    <td>
+                        <strong>
+                            ${escapeHTML(
+                                item.customer_name
+                            )}
+                        </strong>
 
-                </div>
+                        ${
+                            item.email
+                                ? `<small>${escapeHTML(
+                                    item.email
+                                )}</small>`
+                                : ""
+                        }
+                    </td>
 
+                    <td>
+                        ${escapeHTML(
+                            item.services?.name ||
+                            "General enquiry"
+                        )}
+                    </td>
+
+                    <td>
+                        ${formatDate(
+                            item.appointment_date
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            item.appointment_time ||
+                            "—"
+                        )}
+                    </td>
+
+                    <td>
+                        <a
+                            href="tel:${escapeAttr(
+                                item.phone
+                            )}"
+                        >
+                            ${escapeHTML(
+                                item.phone
+                            )}
+                        </a>
+                    </td>
+
+                    <td>
+                        <select
+                            class="sm-status-select"
+                            data-appointment-status="${item.id}"
+                        >
+                            ${[
+                                "New",
+                                "Confirmed",
+                                "Completed",
+                                "Cancelled",
+                                "No-show"
+                            ]
+                                .map(status => `
+                                    <option
+                                        value="${status}"
+                                        ${
+                                            item.status === status
+                                                ? "selected"
+                                                : ""
+                                        }
+                                    >
+                                        ${status}
+                                    </option>
+                                `)
+                                .join("")}
+                        </select>
+                    </td>
+
+                    <td>
+                        ${formatDateTime(
+                            item.created_at
+                        )}
+                    </td>
+
+                    <td>
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small"
+                            data-appointment-view="${item.id}"
+                        >
+                            View
+                        </button>
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small sm-btn-danger"
+                            data-delete-table="appointments"
+                            data-delete-id="${item.id}"
+                        >
+                            Delete
+                        </button>
+                    </td>
+
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
             </div>
+        `;
+    }
 
+    moduleContent.innerHTML = html;
 
-            ${
-                data?.length
-                ? appointmentTable(data)
-                : emptyState(
-                    "No appointment requests yet."
-                )
-            }
-
-        </div>
-    `;
-
-    moduleContent
+    document
         .querySelectorAll(
-            ".appointment-status"
+            "[data-appointment-status]"
         )
         .forEach(select => {
-
             select.addEventListener(
                 "change",
-                async event => {
+                async () => {
+                    await updateAppointmentStatus(
+                        select.dataset.appointmentStatus,
+                        select.value
+                    );
+                }
+            );
+        });
 
-                    const id =
-                        event.target.dataset.id;
-
-                    const status =
-                        event.target.value;
-
-                    const {
-                        error
-                    } =
-                        await supabaseClient
-                            .from("appointments")
-                            .update({
-                                status
-                            })
-                            .eq(
-                                "id",
-                                id
-                            );
-
-                    if (error) {
-
-                        showMessage(
-                            error.message,
-                            "error"
+    document
+        .querySelectorAll(
+            "[data-appointment-view]"
+        )
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    const appointment =
+                        data.find(
+                            item =>
+                                item.id ===
+                                button.dataset
+                                    .appointmentView
                         );
 
-                        return;
+                    if (appointment) {
+                        showAppointmentDetails(
+                            appointment
+                        );
                     }
-
-                    showMessage(
-                        "Appointment status updated."
-                    );
                 }
             );
         });
@@ -957,3361 +1014,4431 @@ async function loadAppointments() {
     attachDeleteButtons();
 }
 
-
-function appointmentTable(data) {
-
-    return `
-
-        <div style="overflow-x:auto;">
-
-            <table>
-
-                <thead>
-
-                    <tr>
-                        <th>Name</th>
-                        <th>Phone</th>
-                        <th>Email</th>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Message</th>
-                        <th>Status</th>
-                        <th>Created</th>
-                        <th>Delete</th>
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    ${data.map(item => `
-
-                        <tr>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.customer_name ||
-                                    "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.phone ||
-                                    "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.email ||
-                                    "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.appointment_date ||
-                                    "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.appointment_time ||
-                                    "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.message ||
-                                    "—"
-                                )}
-                            </td>
-
-                            <td>
-
-                                <select
-                                    class="appointment-status"
-                                    data-id="${item.id}"
-                                >
-
-                                    ${appointmentStatuses(
-                                        item.status
-                                    )}
-
-                                </select>
-
-                            </td>
-
-                            <td>
-                                ${formatDateTime(
-                                    item.created_at
-                                )}
-                            </td>
-
-                            <td>
-
-                                <button
-                                    class="danger-btn"
-                                    data-delete-table="appointments"
-                                    data-delete-id="${item.id}"
-                                >
-                                    Delete
-                                </button>
-
-                            </td>
-
-                        </tr>
-
-                    `).join("")}
-
-                </tbody>
-
-            </table>
-
-        </div>
-    `;
-}
-
-
-function appointmentStatuses(
-    current
+async function updateAppointmentStatus(
+    id,
+    status
 ) {
+    const { error } =
+        await supabaseClient
+            .from("appointments")
+            .update({
+                status,
+                updated_at:
+                    new Date().toISOString()
+            })
+            .eq("id", id);
 
-    const statuses = [
-        "New",
-        "Confirmed",
-        "Completed",
-        "Cancelled",
-        "No-show"
-    ];
-
-    return statuses.map(
-        status => `
-
-            <option
-                value="${status}"
-                ${current === status
-                    ? "selected"
-                    : ""}
-            >
-                ${status}
-            </option>
-
-        `
-    ).join("");
-}
-
-
-/* ============================================================
-   SERVICES
-   IMPORTANT:
-   VERIFIED DATABASE:
-   category_id
-   duration_minutes
-   slug
-   ============================================================ */
-
-async function loadServices() {
-
-    const [
-        servicesResult,
-        categoriesResult
-    ] =
-        await Promise.all([
-
-            supabaseClient
-                .from("services")
-                .select("*")
-                .order(
-                    "display_order",
-                    {
-                        ascending: true
-                    }
-                ),
-
-            supabaseClient
-                .from("categories")
-                .select("*")
-                .eq(
-                    "active",
-                    true
-                )
-                .order(
-                    "display_order",
-                    {
-                        ascending: true
-                    }
-                )
-
-        ]);
-
-    if (servicesResult.error) {
-
-        showDatabaseError(
-            "Services",
-            servicesResult.error
-        );
-
+    if (error) {
+        showError(error);
         return;
     }
 
-    const services =
-        servicesResult.data || [];
+    showMessage(
+        "Appointment status updated."
+    );
+}
 
-    const categories =
-        categoriesResult.data || [];
+function showAppointmentDetails(item) {
+    alert(
+        [
+            `Customer: ${item.customer_name}`,
+            `Phone: ${item.phone}`,
+            `Email: ${item.email || "—"}`,
+            `Date: ${item.appointment_date || "—"}`,
+            `Time: ${item.appointment_time || "—"}`,
+            `Status: ${item.status || "New"}`,
+            `WhatsApp requested: ${
+                item.whatsapp_requested
+                    ? "Yes"
+                    : "No"
+            }`,
+            `Privacy consent: ${
+                item.privacy_consent
+                    ? "Yes"
+                    : "No"
+            }`,
+            "",
+            `Message: ${item.message || "—"}`
+        ].join("\n")
+    );
+}
 
-    moduleContent.innerHTML = `
+/* ============================================================
+   CATEGORIES
+   Actual schema:
+   id
+   name
+   slug
+   description
+   image_url
+   display_order
+   active
+   created_at
+============================================================ */
 
-        <div class="admin-module">
+async function loadCategories() {
+    const { data, error } =
+        await supabaseClient
+            .from("categories")
+            .select("*")
+            .order("display_order", {
+                ascending: true
+            })
+            .order("name", {
+                ascending: true
+            });
 
-            <div class="module-actions">
+    if (error) {
+        showError(error);
+        return;
+    }
 
-                <div>
+    let html = moduleHeader(
+        "Service Categories",
+        "Create the categories used by your services.",
+        "Add Category"
+    );
 
-                    <h2>Services</h2>
+    html += `
+        <div id="categoryFormArea"></div>
 
-                    <p>
-                        Manage services, categories,
-                        prices and durations.
-                    </p>
-
-                </div>
-
-                <button
-                    class="primary-btn"
-                    id="addServiceBtn"
-                >
-                    + Add Service
-                </button>
-
-            </div>
-
-
-            <div id="serviceFormArea"></div>
-
-
-            ${
-                services.length
-                ? servicesTable(
-                    services,
-                    categories
-                )
-                : emptyState(
-                    "No services added yet."
-                )
-            }
-
-        </div>
+        <div class="sm-card-list">
     `;
 
-    document
-        .getElementById(
-            "addServiceBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-                showServiceForm(
-                    null,
-                    categories
-                );
-
-            }
+    if (!data?.length) {
+        html += emptyState(
+            "No categories created yet."
         );
+    } else {
+        data.forEach(item => {
+            html += `
+                <div class="sm-list-card">
+
+                    <div>
+                        <h3>${escapeHTML(
+                            item.name
+                        )}</h3>
+
+                        <p>
+                            Slug:
+                            ${escapeHTML(
+                                item.slug
+                            )}
+                        </p>
+
+                        ${
+                            item.description
+                                ? `<p>${escapeHTML(
+                                    item.description
+                                )}</p>`
+                                : ""
+                        }
+
+                        <small>
+                            ${
+                                item.active
+                                    ? "Active"
+                                    : "Inactive"
+                            }
+                        </small>
+                    </div>
+
+                    <div class="sm-actions">
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small"
+                            data-edit-category="${item.id}"
+                        >
+                            Edit
+                        </button>
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small sm-btn-danger"
+                            data-delete-table="categories"
+                            data-delete-id="${item.id}"
+                        >
+                            Delete
+                        </button>
+
+                    </div>
+
+                </div>
+            `;
+        });
+    }
+
+    html += "</div>";
+
+    moduleContent.innerHTML = html;
+
+    $("moduleAddBtn")?.addEventListener(
+        "click",
+        () => showCategoryForm()
+    );
+
+    document
+        .querySelectorAll("[data-edit-category]")
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    const item =
+                        data.find(
+                            x =>
+                                x.id ===
+                                button.dataset
+                                    .editCategory
+                        );
+
+                    if (item) {
+                        showCategoryForm(item);
+                    }
+                }
+            );
+        });
 
     attachDeleteButtons();
 }
 
+function showCategoryForm(item = null) {
+    const area = $("categoryFormArea");
 
-function servicesTable(
-    services,
-    categories
-) {
+    if (!area) return;
 
-    const categoryMap = {};
+    area.innerHTML = `
+        <form id="categoryForm" class="sm-form">
 
-    categories.forEach(
-        category => {
+            <h3>
+                ${item ? "Edit Category" : "Add Category"}
+            </h3>
 
-            categoryMap[
-                category.id
-            ] =
-                category.name;
+            <input
+                type="text"
+                id="categoryName"
+                placeholder="Category name"
+                value="${escapeAttr(
+                    item?.name || ""
+                )}"
+                required
+            >
 
+            <input
+                type="text"
+                id="categorySlug"
+                placeholder="Slug"
+                value="${escapeAttr(
+                    item?.slug || ""
+                )}"
+                required
+            >
+
+            <textarea
+                id="categoryDescription"
+                placeholder="Description"
+            >${escapeHTML(
+                item?.description || ""
+            )}</textarea>
+
+            <input
+                type="url"
+                id="categoryImage"
+                placeholder="Image URL"
+                value="${escapeAttr(
+                    item?.image_url || ""
+                )}"
+            >
+
+            <input
+                type="number"
+                id="categoryOrder"
+                placeholder="Display order"
+                value="${item?.display_order ?? 0}"
+            >
+
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="categoryActive"
+                    ${
+                        item?.active !== false
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Active
+            </label>
+
+            <div class="sm-form-actions">
+
+                <button
+                    type="submit"
+                    class="sm-btn sm-btn-primary"
+                >
+                    ${item ? "Update" : "Save"} Category
+                </button>
+
+                <button
+                    type="button"
+                    class="sm-btn"
+                    id="cancelCategory"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </form>
+    `;
+
+    $("categoryName")?.addEventListener(
+        "input",
+        event => {
+            const slug =
+                $("categorySlug");
+
+            if (
+                slug &&
+                !item
+            ) {
+                slug.value =
+                    slugify(
+                        event.target.value
+                    );
+            }
         }
     );
 
-    return `
-
-        <div style="overflow-x:auto;">
-
-            <table>
-
-                <thead>
-
-                    <tr>
-
-                        <th>Name</th>
-                        <th>Category</th>
-                        <th>Price</th>
-                        <th>Price Label</th>
-                        <th>Duration</th>
-                        <th>Active</th>
-                        <th>Action</th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    ${services.map(item => `
-
-                        <tr>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.name
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    categoryMap[
-                                        item.category_id
-                                    ] || "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${item.price !== null
-                                    ? escapeHTML(
-                                        item.price
-                                    )
-                                    : "—"}
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.price_label ||
-                                    "Price on enquiry"
-                                )}
-                            </td>
-
-                            <td>
-                                ${item.duration_minutes
-                                    ? escapeHTML(
-                                        item.duration_minutes +
-                                        " min"
-                                    )
-                                    : "—"}
-                            </td>
-
-                            <td>
-                                ${item.active
-                                    ? "Yes"
-                                    : "No"}
-                            </td>
-
-                            <td>
-
-                                <button
-                                    class="danger-btn"
-                                    data-delete-table="services"
-                                    data-delete-id="${item.id}"
-                                >
-                                    Delete
-                                </button>
-
-                            </td>
-
-                        </tr>
-
-                    `).join("")}
-
-                </tbody>
-
-            </table>
-
-        </div>
-    `;
-}
-
-
-async function showServiceForm(
-    service,
-    categories
-) {
-
-    const area =
-        document.getElementById(
-            "serviceFormArea"
-        );
-
-    if (!area) {
-        return;
-    }
-
-    area.innerHTML = `
-
-        <div
-            style="
-                border:1px solid #ddd5ca;
-                padding:20px;
-                border-radius:12px;
-                margin-bottom:20px;
-                background:#faf8f4;
-            "
-        >
-
-            <h3 style="margin-bottom:18px;">
-                ${service
-                    ? "Edit Service"
-                    : "Add Service"}
-            </h3>
-
-
-            <form id="serviceForm">
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Service Name
-                        </label>
-
-                        <input
-                            id="serviceName"
-                            required
-                            value="${escapeAttribute(
-                                service?.name || ""
-                            )}"
-                        >
-
-                    </div>
-
-
-                    <div>
-
-                        <label>
-                            Category
-                        </label>
-
-                        <select
-                            id="serviceCategory"
-                        >
-
-                            <option value="">
-                                Select category
-                            </option>
-
-                            ${categories.map(
-                                category => `
-
-                                <option
-                                    value="${category.id}"
-                                    ${
-                                        service?.category_id ===
-                                        category.id
-                                        ? "selected"
-                                        : ""
-                                    }
-                                >
-                                    ${escapeHTML(
-                                        category.name
-                                    )}
-                                </option>
-
-                            `
-                            ).join("")}
-
-                        </select>
-
-                    </div>
-
-                </div>
-
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Price
-                        </label>
-
-                        <input
-                            id="servicePrice"
-                            type="number"
-                            step="0.01"
-                            value="${escapeAttribute(
-                                service?.price ?? ""
-                            )}"
-                        >
-
-                    </div>
-
-
-                    <div>
-
-                        <label>
-                            Price Label
-                        </label>
-
-                        <input
-                            id="servicePriceLabel"
-                            value="${escapeAttribute(
-                                service?.price_label ||
-                                "Price on enquiry"
-                            )}"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Duration in minutes
-                        </label>
-
-                        <input
-                            id="serviceDuration"
-                            type="number"
-                            min="0"
-                            value="${escapeAttribute(
-                                service?.duration_minutes ||
-                                ""
-                            )}"
-                        >
-
-                    </div>
-
-
-                    <div>
-
-                        <label>
-                            Display Order
-                        </label>
-
-                        <input
-                            id="serviceOrder"
-                            type="number"
-                            value="${escapeAttribute(
-                                service?.display_order ||
-                                0
-                            )}"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Description
-                    </label>
-
-                    <textarea
-                        id="serviceDescription"
-                    >${escapeHTML(
-                        service?.description || ""
-                    )}</textarea>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        <input
-                            type="checkbox"
-                            id="serviceFeatured"
-                            ${
-                                service?.featured
-                                ? "checked"
-                                : ""
-                            }
-                        >
-                        Featured
-                    </label>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        <input
-                            type="checkbox"
-                            id="serviceActive"
-                            ${
-                                service?.active !== false
-                                ? "checked"
-                                : ""
-                            }
-                        >
-                        Active
-                    </label>
-
-                </div>
-
-
-                <div class="form-actions">
-
-                    <button
-                        class="primary-btn"
-                        type="submit"
-                    >
-                        Save Service
-                    </button>
-
-                    <button
-                        class="secondary-btn"
-                        type="button"
-                        id="cancelService"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-    `;
-
-
-    document
-        .getElementById(
-            "cancelService"
-        )
+    $("cancelCategory")
         ?.addEventListener(
             "click",
             () => {
-
-                area.innerHTML =
-                    "";
-
+                area.innerHTML = "";
             }
         );
 
-
-    document
-        .getElementById(
-            "serviceForm"
-        )
+    $("categoryForm")
         ?.addEventListener(
             "submit",
             async event => {
-
                 event.preventDefault();
 
-                const name =
-                    document
-                        .getElementById(
-                            "serviceName"
-                        )
-                        .value
-                        .trim();
-
-                const categoryId =
-                    document
-                        .getElementById(
-                            "serviceCategory"
-                        )
-                        .value || null;
-
-                const priceRaw =
-                    document
-                        .getElementById(
-                            "servicePrice"
-                        )
-                        .value;
-
-                const durationRaw =
-                    document
-                        .getElementById(
-                            "serviceDuration"
-                        )
-                        .value;
-
                 const payload = {
-
-                    category_id:
-                        categoryId,
-
-                    name,
+                    name:
+                        $("categoryName")
+                            .value.trim(),
 
                     slug:
-                        slugify(name),
+                        $("categorySlug")
+                            .value.trim(),
 
                     description:
-                        document
-                            .getElementById(
-                                "serviceDescription"
-                            )
-                            .value
-                            .trim(),
+                        $("categoryDescription")
+                            .value.trim() ||
+                        null,
 
-                    price:
-                        priceRaw === ""
-                        ? null
-                        : Number(priceRaw),
-
-                    price_label:
-                        document
-                            .getElementById(
-                                "servicePriceLabel"
-                            )
-                            .value
-                            .trim() ||
-                        "Price on enquiry",
-
-                    duration_minutes:
-                        durationRaw === ""
-                        ? null
-                        : Number(durationRaw),
-
-                    featured:
-                        document
-                            .getElementById(
-                                "serviceFeatured"
-                            )
-                            .checked,
-
-                    active:
-                        document
-                            .getElementById(
-                                "serviceActive"
-                            )
-                            .checked,
+                    image_url:
+                        $("categoryImage")
+                            .value.trim() ||
+                        null,
 
                     display_order:
                         Number(
-                            document
-                                .getElementById(
-                                    "serviceOrder"
-                                )
+                            $("categoryOrder")
                                 .value || 0
-                        )
-
-                };
-
-
-                let result;
-
-                if (service?.id) {
-
-                    result =
-                        await supabaseClient
-                            .from("services")
-                            .update(payload)
-                            .eq(
-                                "id",
-                                service.id
-                            );
-
-                } else {
-
-                    result =
-                        await supabaseClient
-                            .from("services")
-                            .insert(
-                                payload
-                            );
-                }
-
-
-                if (result.error) {
-
-                    console.error(
-                        "Service save error:",
-                        result.error
-                    );
-
-                    showMessage(
-                        result.error.message,
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                showMessage(
-                    "Service saved successfully."
-                );
-
-                await loadServices();
-
-            }
-        );
-}
-
-
-/* ============================================================
-   OFFERS
-   ============================================================ */
-
-async function loadOffers() {
-
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("offers")
-            .select("*")
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            );
-
-    if (error) {
-
-        showDatabaseError(
-            "Offers",
-            error
-        );
-
-        return;
-    }
-
-    moduleContent.innerHTML = `
-
-        <div class="admin-module">
-
-            <div class="module-actions">
-
-                <div>
-
-                    <h2>Offers</h2>
-
-                    <p>
-                        Manage promotional offers and prices.
-                    </p>
-
-                </div>
-
-                <button
-                    class="primary-btn"
-                    id="addOfferBtn"
-                >
-                    + Add Offer
-                </button>
-
-            </div>
-
-            <div id="offerFormArea"></div>
-
-            ${
-                data?.length
-                ? offersTable(data)
-                : emptyState(
-                    "No offers added yet."
-                )
-            }
-
-        </div>
-    `;
-
-    document
-        .getElementById(
-            "addOfferBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-
-                showOfferForm();
-
-            }
-        );
-
-    attachDeleteButtons();
-}
-
-
-function offersTable(data) {
-
-    return `
-
-        <div style="overflow-x:auto;">
-
-            <table>
-
-                <thead>
-
-                    <tr>
-
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Original Price</th>
-                        <th>Offer Price</th>
-                        <th>Start</th>
-                        <th>End</th>
-                        <th>Active</th>
-                        <th>Delete</th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    ${data.map(item => `
-
-                        <tr>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.name || "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.description || "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.original_price ??
-                                    item.price ??
-                                    "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.offer_price ??
-                                    item.discount_price ??
-                                    "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.start_date ||
-                                    "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.end_date ||
-                                    "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${
-                                    item.active !== false
-                                    ? "Yes"
-                                    : "No"
-                                }
-                            </td>
-
-                            <td>
-
-                                <button
-                                    class="danger-btn"
-                                    data-delete-table="offers"
-                                    data-delete-id="${item.id}"
-                                >
-                                    Delete
-                                </button>
-
-                            </td>
-
-                        </tr>
-
-                    `).join("")}
-
-                </tbody>
-
-            </table>
-
-        </div>
-    `;
-}
-
-
-function showOfferForm(
-    offer = null
-) {
-
-    const area =
-        document.getElementById(
-            "offerFormArea"
-        );
-
-    if (!area) {
-        return;
-    }
-
-    area.innerHTML = `
-
-        <div
-            style="
-                background:#faf8f4;
-                border:1px solid #ddd5ca;
-                padding:20px;
-                border-radius:12px;
-                margin-bottom:20px;
-            "
-        >
-
-            <h3 style="margin-bottom:18px;">
-                Add Offer
-            </h3>
-
-
-            <form id="offerForm">
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Offer Name
-                        </label>
-
-                        <input
-                            id="offerName"
-                            required
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            Original Price
-                        </label>
-
-                        <input
-                            id="offerOriginalPrice"
-                            type="number"
-                            step="0.01"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Offer Price
-                        </label>
-
-                        <input
-                            id="offerPrice"
-                            type="number"
-                            step="0.01"
-                        >
-
-                    </div>
-
-
-                    <div>
-
-                        <label>
-                            Image URL
-                        </label>
-
-                        <input
-                            id="offerImage"
-                            placeholder="Optional"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Start Date
-                        </label>
-
-                        <input
-                            id="offerStart"
-                            type="date"
-                        >
-
-                    </div>
-
-
-                    <div>
-
-                        <label>
-                            End Date
-                        </label>
-
-                        <input
-                            id="offerEnd"
-                            type="date"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Description
-                    </label>
-
-                    <textarea
-                        id="offerDescription"
-                    ></textarea>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        <input
-                            type="checkbox"
-                            id="offerActive"
-                            checked
-                        >
-                        Active
-                    </label>
-
-                </div>
-
-
-                <div class="form-actions">
-
-                    <button
-                        class="primary-btn"
-                        type="submit"
-                    >
-                        Save Offer
-                    </button>
-
-                    <button
-                        class="secondary-btn"
-                        type="button"
-                        id="cancelOffer"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-    `;
-
-
-    document
-        .getElementById(
-            "cancelOffer"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
-                area.innerHTML = "";
-            }
-        );
-
-
-    document
-        .getElementById(
-            "offerForm"
-        )
-        ?.addEventListener(
-            "submit",
-            async event => {
-
-                event.preventDefault();
-
-                const payload = {
-
-                    name:
-                        document
-                            .getElementById(
-                                "offerName"
-                            )
-                            .value
-                            .trim(),
-
-                    description:
-                        document
-                            .getElementById(
-                                "offerDescription"
-                            )
-                            .value
-                            .trim(),
-
-                    original_price:
-                        document
-                            .getElementById(
-                                "offerOriginalPrice"
-                            )
-                            .value === ""
-                        ? null
-                        : Number(
-                            document
-                                .getElementById(
-                                    "offerOriginalPrice"
-                                )
-                                .value
                         ),
-
-                    offer_price:
-                        document
-                            .getElementById(
-                                "offerPrice"
-                            )
-                            .value === ""
-                        ? null
-                        : Number(
-                            document
-                                .getElementById(
-                                    "offerPrice"
-                                )
-                                .value
-                        ),
-
-                    start_date:
-                        document
-                            .getElementById(
-                                "offerStart"
-                            )
-                            .value || null,
-
-                    end_date:
-                        document
-                            .getElementById(
-                                "offerEnd"
-                            )
-                            .value || null,
-
-                    image_url:
-                        document
-                            .getElementById(
-                                "offerImage"
-                            )
-                            .value
-                            .trim() || null,
 
                     active:
-                        document
-                            .getElementById(
-                                "offerActive"
-                            )
+                        $("categoryActive")
                             .checked
-
                 };
 
-
-                const {
-                    error
-                } =
-                    await supabaseClient
-                        .from("offers")
-                        .insert(
-                            payload
-                        );
-
-
-                if (error) {
-
-                    console.error(
-                        "Offer save error:",
-                        error
-                    );
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                showMessage(
-                    "Offer saved successfully."
+                await saveRecord(
+                    "categories",
+                    payload,
+                    item?.id
                 );
-
-                await loadOffers();
-
             }
         );
 }
 
-
 /* ============================================================
-   GALLERY HELPERS
-   ============================================================ */
+   SERVICES
+   Actual schema:
+   category_id
+   name
+   slug
+   description
+   price
+   price_label
+   duration_minutes
+   image_url
+   featured
+   active
+   display_order
+============================================================ */
 
-async function loadGallery() {
-
-    await loadImageGallery(
-        "gallery",
-        "Our Work Gallery",
-        "gallery"
-    );
-}
-
-
-async function loadBrideGallery() {
-
-    await loadImageGallery(
-        "bride_gallery",
-        "Bride / Girls Gallery",
-        "bride-gallery"
-    );
-}
-
-
-async function loadCustomerGallery() {
-
-    await loadImageGallery(
-        "customer_gallery",
-        "Customer Gallery",
-        "customer-gallery"
-    );
-}
-
-
-async function loadImageGallery(
-    table,
-    title,
-    bucket
-) {
-
-    const {
-        data,
-        error
-    } =
+async function loadServices() {
+    const { data, error } =
         await supabaseClient
-            .from(table)
-            .select("*")
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            );
+            .from("services")
+            .select(`
+                *,
+                categories (
+                    name
+                )
+            `)
+            .order("display_order", {
+                ascending: true
+            })
+            .order("name", {
+                ascending: true
+            });
 
     if (error) {
-
-        showDatabaseError(
-            title,
-            error
-        );
-
+        showError(error);
         return;
     }
 
-    moduleContent.innerHTML = `
+    const categories =
+        await getCategories();
 
-        <div class="admin-module">
+    let html = moduleHeader(
+        "Services",
+        "Manage salon services, categories, prices and durations.",
+        "Add Service"
+    );
 
-            <div class="module-actions">
+    html += `
+        <div id="serviceFormArea"></div>
 
-                <div>
-
-                    <h2>
-                        ${escapeHTML(title)}
-                    </h2>
-
-                    <p>
-                        Upload and manage images.
-                    </p>
-
-                </div>
-
-                <button
-                    class="primary-btn"
-                    id="uploadImageBtn"
-                >
-                    + Upload Image
-                </button>
-
-            </div>
-
-
-            <div id="imageUploadArea"></div>
-
-
-            ${
-                data?.length
-                ? galleryTable(
-                    data,
-                    table
-                )
-                : emptyState(
-                    "No images uploaded yet."
-                )
-            }
-
-        </div>
+        <div class="sm-card-list">
     `;
 
+    if (!data?.length) {
+        html += emptyState(
+            "No services added yet."
+        );
+    } else {
+        data.forEach(item => {
+            html += `
+                <div class="sm-list-card">
+
+                    <div>
+
+                        ${
+                            item.image_url
+                                ? `
+                                    <img
+                                        src="${escapeAttr(
+                                            item.image_url
+                                        )}"
+                                        class="sm-thumb"
+                                        alt=""
+                                    >
+                                `
+                                : ""
+                        }
+
+                        <div>
+                            <h3>
+                                ${escapeHTML(
+                                    item.name
+                                )}
+                            </h3>
+
+                            <p>
+                                Category:
+                                ${escapeHTML(
+                                    item.categories
+                                        ?.name ||
+                                    "Uncategorised"
+                                )}
+                            </p>
+
+                            <p>
+                                ${
+                                    item.price !==
+                                        null &&
+                                    item.price !==
+                                        undefined
+                                        ? money(
+                                            item.price
+                                        )
+                                        : escapeHTML(
+                                            item.price_label ||
+                                            "Price on enquiry"
+                                        )
+                                }
+
+                                ${
+                                    item.duration_minutes
+                                        ? ` • ${item.duration_minutes} min`
+                                        : ""
+                                }
+                            </p>
+
+                            <small>
+                                ${
+                                    item.active
+                                        ? "Active"
+                                        : "Inactive"
+                                }
+
+                                ${
+                                    item.featured
+                                        ? " • Featured"
+                                        : ""
+                                }
+                            </small>
+                        </div>
+
+                    </div>
+
+                    <div class="sm-actions">
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small"
+                            data-edit-service="${item.id}"
+                        >
+                            Edit
+                        </button>
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small sm-btn-danger"
+                            data-delete-table="services"
+                            data-delete-id="${item.id}"
+                        >
+                            Delete
+                        </button>
+
+                    </div>
+
+                </div>
+            `;
+        });
+    }
+
+    html += "</div>";
+
+    moduleContent.innerHTML = html;
+
+    $("moduleAddBtn")?.addEventListener(
+        "click",
+        () => showServiceForm(null, categories)
+    );
 
     document
-        .getElementById(
-            "uploadImageBtn"
-        )
-        ?.addEventListener(
-            "click",
-            () => {
+        .querySelectorAll("[data-edit-service]")
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    const item =
+                        data.find(
+                            x =>
+                                x.id ===
+                                button.dataset
+                                    .editService
+                        );
 
-                showImageUploadForm(
-                    table,
-                    bucket
-                );
-
-            }
-        );
-
+                    if (item) {
+                        showServiceForm(
+                            item,
+                            categories
+                        );
+                    }
+                }
+            );
+        });
 
     attachDeleteButtons();
 }
 
+async function getCategories() {
+    const { data, error } =
+        await supabaseClient
+            .from("categories")
+            .select("*")
+            .eq("active", true)
+            .order("display_order", {
+                ascending: true
+            });
 
-function galleryTable(
-    data,
-    table
-) {
-
-    return `
-
-        <div style="overflow-x:auto;">
-
-            <table>
-
-                <thead>
-
-                    <tr>
-                        <th>Image</th>
-                        <th>Title</th>
-                        <th>Description</th>
-                        <th>Created</th>
-                        <th>Delete</th>
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    ${data.map(item => `
-
-                        <tr>
-
-                            <td>
-
-                                ${
-                                    item.image_url
-                                    ? `
-                                        <img
-                                            src="${escapeAttribute(
-                                                item.image_url
-                                            )}"
-                                            style="
-                                                width:80px;
-                                                height:80px;
-                                                object-fit:cover;
-                                                border-radius:8px;
-                                            "
-                                        >
-                                    `
-                                    : "—"
-                                }
-
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.title ||
-                                    item.name ||
-                                    "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    item.description ||
-                                    "—"
-                                )}
-                            </td>
-
-                            <td>
-                                ${formatDate(
-                                    item.created_at
-                                )}
-                            </td>
-
-                            <td>
-
-                                <button
-                                    class="danger-btn"
-                                    data-delete-table="${table}"
-                                    data-delete-id="${item.id}"
-                                >
-                                    Delete
-                                </button>
-
-                            </td>
-
-                        </tr>
-
-                    `).join("")}
-
-                </tbody>
-
-            </table>
-
-        </div>
-    `;
-}
-
-
-function showImageUploadForm(
-    table,
-    bucket
-) {
-
-    const area =
-        document.getElementById(
-            "imageUploadArea"
-        );
-
-    if (!area) {
-        return;
+    if (error) {
+        console.error(error);
+        return [];
     }
 
+    return data || [];
+}
+
+function showServiceForm(
+    item = null,
+    categories = []
+) {
+    const area = $("serviceFormArea");
+
+    if (!area) return;
+
     area.innerHTML = `
+        <form id="serviceForm" class="sm-form">
 
-        <div
-            style="
-                padding:20px;
-                border:1px solid #ddd5ca;
-                background:#faf8f4;
-                border-radius:12px;
-                margin-bottom:20px;
-            "
-        >
+            <h3>
+                ${item ? "Edit Service" : "Add Service"}
+            </h3>
 
-            <form
-                id="imageUploadForm"
+            <select id="serviceCategory">
+                <option value="">
+                    Select category
+                </option>
+
+                ${categories
+                    .map(category => `
+                        <option
+                            value="${category.id}"
+                            ${
+                                item?.category_id ===
+                                category.id
+                                    ? "selected"
+                                    : ""
+                            }
+                        >
+                            ${escapeHTML(
+                                category.name
+                            )}
+                        </option>
+                    `)
+                    .join("")}
+            </select>
+
+            <input
+                type="text"
+                id="serviceName"
+                placeholder="Service name"
+                value="${escapeAttr(
+                    item?.name || ""
+                )}"
+                required
             >
 
-                <div class="form-row">
+            <input
+                type="text"
+                id="serviceSlug"
+                placeholder="Slug"
+                value="${escapeAttr(
+                    item?.slug || ""
+                )}"
+                required
+            >
 
-                    <div>
+            <textarea
+                id="serviceDescription"
+                placeholder="Description"
+            >${escapeHTML(
+                item?.description || ""
+            )}</textarea>
 
-                        <label>
-                            Title
-                        </label>
+            <input
+                type="number"
+                step="0.01"
+                id="servicePrice"
+                placeholder="Price (optional)"
+                value="${
+                    item?.price ??
+                    ""
+                }"
+            >
 
-                        <input
-                            id="galleryTitle"
-                        >
+            <input
+                type="text"
+                id="servicePriceLabel"
+                placeholder="Price label"
+                value="${escapeAttr(
+                    item?.price_label ||
+                    "Price on enquiry"
+                )}"
+            >
 
-                    </div>
+            <input
+                type="number"
+                id="serviceDuration"
+                placeholder="Duration in minutes"
+                value="${
+                    item?.duration_minutes ??
+                    ""
+                }"
+            >
 
+            <input
+                type="url"
+                id="serviceImage"
+                placeholder="Image URL"
+                value="${escapeAttr(
+                    item?.image_url || ""
+                )}"
+            >
 
-                    <div>
+            <input
+                type="file"
+                id="serviceImageFile"
+                accept="image/jpeg,image/png,image/webp"
+            >
 
-                        <label>
-                            Image
-                        </label>
+            <input
+                type="number"
+                id="serviceOrder"
+                placeholder="Display order"
+                value="${item?.display_order ?? 0}"
+            >
 
-                        <input
-                            type="file"
-                            id="galleryFile"
-                            accept="image/jpeg,image/png,image/webp"
-                            required
-                        >
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="serviceFeatured"
+                    ${
+                        item?.featured
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Featured
+            </label>
 
-                    </div>
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="serviceActive"
+                    ${
+                        item?.active !== false
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Active
+            </label>
 
-                </div>
+            <div class="sm-form-actions">
 
+                <button
+                    type="submit"
+                    class="sm-btn sm-btn-primary"
+                >
+                    ${item ? "Update" : "Save"} Service
+                </button>
 
-                <div>
+                <button
+                    type="button"
+                    class="sm-btn"
+                    id="cancelService"
+                >
+                    Cancel
+                </button>
 
-                    <label>
-                        Description
-                    </label>
+            </div>
 
-                    <textarea
-                        id="galleryDescription"
-                    ></textarea>
-
-                </div>
-
-
-                <div class="form-actions">
-
-                    <button
-                        class="primary-btn"
-                        type="submit"
-                    >
-                        Upload
-                    </button>
-
-                    <button
-                        class="secondary-btn"
-                        type="button"
-                        id="cancelGalleryUpload"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
+        </form>
     `;
 
-
-    document
-        .getElementById(
-            "cancelGalleryUpload"
-        )
+    $("serviceName")
         ?.addEventListener(
-            "click",
-            () => {
-
-                area.innerHTML = "";
-
+            "input",
+            event => {
+                if (!item) {
+                    $("serviceSlug").value =
+                        slugify(
+                            event.target.value
+                        );
+                }
             }
         );
 
+    $("cancelService")
+        ?.addEventListener(
+            "click",
+            () => {
+                area.innerHTML = "";
+            }
+        );
 
-    document
-        .getElementById(
-            "imageUploadForm"
-        )
+    $("serviceForm")
         ?.addEventListener(
             "submit",
             async event => {
-
                 event.preventDefault();
 
+                let imageUrl =
+                    $("serviceImage")
+                        .value.trim() ||
+                    null;
+
                 const file =
-                    document
-                        .getElementById(
-                            "galleryFile"
-                        )
-                        .files[0];
+                    $("serviceImageFile")
+                        ?.files?.[0];
 
-                if (!file) {
-                    return;
+                if (file) {
+                    try {
+                        imageUrl =
+                            await uploadImage(
+                                file,
+                                "services"
+                            );
+                    } catch (error) {
+                        showError(error);
+                        return;
+                    }
                 }
 
-                if (
-                    file.size >
-                    10 * 1024 * 1024
-                ) {
+                const rawPrice =
+                    $("servicePrice")
+                        .value.trim();
 
-                    showMessage(
-                        "Image must be under 10 MB.",
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                const extension =
-                    file.name
-                        .split(".")
-                        .pop()
-                        .toLowerCase();
-
-
-                const filename =
-                    `${Date.now()}-${Math.random()
-                        .toString(36)
-                        .slice(2)}.${extension}`;
-
-
-                const path =
-                    filename;
-
-
-                const {
-                    error:
-                        uploadError
-                } =
-                    await supabaseClient
-                        .storage
-                        .from(bucket)
-                        .upload(
-                            path,
-                            file,
-                            {
-                                upsert: false,
-                                contentType:
-                                    file.type
-                            }
-                        );
-
-
-                if (uploadError) {
-
-                    console.error(
-                        uploadError
-                    );
-
-                    showMessage(
-                        uploadError.message,
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                const {
-                    data:
-                        publicData
-                } =
-                    supabaseClient
-                        .storage
-                        .from(bucket)
-                        .getPublicUrl(
-                            path
-                        );
-
-
-                const imageUrl =
-                    publicData.publicUrl;
-
-
-                /*
-                   IMPORTANT:
-                   customer_gallery previously had a
-                   missing category column, so this generic
-                   uploader does NOT send category.
-                */
+                const rawDuration =
+                    $("serviceDuration")
+                        .value.trim();
 
                 const payload = {
+                    category_id:
+                        $("serviceCategory")
+                            .value ||
+                        null,
+
+                    name:
+                        $("serviceName")
+                            .value.trim(),
+
+                    slug:
+                        $("serviceSlug")
+                            .value.trim(),
+
+                    description:
+                        $("serviceDescription")
+                            .value.trim() ||
+                        null,
+
+                    price:
+                        rawPrice === ""
+                            ? null
+                            : Number(rawPrice),
+
+                    price_label:
+                        $("servicePriceLabel")
+                            .value.trim() ||
+                        "Price on enquiry",
+
+                    duration_minutes:
+                        rawDuration === ""
+                            ? null
+                            : Number(
+                                rawDuration
+                            ),
 
                     image_url:
                         imageUrl,
 
-                    title:
-                        document
-                            .getElementById(
-                                "galleryTitle"
-                            )
-                            .value
-                            .trim(),
+                    featured:
+                        $("serviceFeatured")
+                            .checked,
 
-                    description:
-                        document
-                            .getElementById(
-                                "galleryDescription"
-                            )
-                            .value
-                            .trim()
+                    active:
+                        $("serviceActive")
+                            .checked,
 
+                    display_order:
+                        Number(
+                            $("serviceOrder")
+                                .value || 0
+                        )
                 };
 
-
-                const {
-                    error:
-                        insertError
-                } =
-                    await supabaseClient
-                        .from(table)
-                        .insert(
-                            payload
-                        );
-
-
-                if (insertError) {
-
-                    console.error(
-                        insertError
-                    );
-
-                    showMessage(
-                        insertError.message,
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                showMessage(
-                    "Image uploaded successfully."
+                await saveRecord(
+                    "services",
+                    payload,
+                    item?.id
                 );
-
-
-                if (
-                    table === "gallery"
-                ) {
-                    await loadGallery();
-
-                } else if (
-                    table === "bride_gallery"
-                ) {
-                    await loadBrideGallery();
-
-                } else {
-                    await loadCustomerGallery();
-                }
-
             }
         );
 }
 
+/* ============================================================
+   OFFERS
+   Actual schema:
+   name
+   description
+   image_url
+   original_price
+   offer_price
+   discount_percent
+   valid_from
+   valid_until
+   included_services
+   terms
+   active
+   featured
+   end_date
+   start_date
+============================================================ */
+
+async function loadOffers() {
+    const { data, error } =
+        await supabaseClient
+            .from("offers")
+            .select("*")
+            .order("created_at", {
+                ascending: false
+            });
+
+    if (error) {
+        showError(error);
+        return;
+    }
+
+    let html = moduleHeader(
+        "Offers",
+        "Manage promotional offers, prices and validity.",
+        "Add Offer"
+    );
+
+    html += `
+        <div id="offerFormArea"></div>
+        <div class="sm-card-list">
+    `;
+
+    if (!data?.length) {
+        html += emptyState(
+            "No offers created yet."
+        );
+    } else {
+        data.forEach(item => {
+            html += `
+                <div class="sm-list-card">
+
+                    <div>
+
+                        ${
+                            item.image_url
+                                ? `
+                                    <img
+                                        src="${escapeAttr(
+                                            item.image_url
+                                        )}"
+                                        class="sm-thumb"
+                                        alt=""
+                                    >
+                                `
+                                : ""
+                        }
+
+                        <div>
+
+                            <h3>
+                                ${escapeHTML(
+                                    item.name
+                                )}
+                            </h3>
+
+                            <p>
+                                ${
+                                    item.offer_price !==
+                                        null &&
+                                    item.offer_price !==
+                                        undefined
+                                        ? money(
+                                            item.offer_price
+                                        )
+                                        : "Price on enquiry"
+                                }
+
+                                ${
+                                    item.original_price !==
+                                        null &&
+                                    item.original_price !==
+                                        undefined
+                                        ? ` • Original ${money(
+                                            item.original_price
+                                        )}`
+                                        : ""
+                                }
+                            </p>
+
+                            <p>
+                                ${
+                                    item.discount_percent !==
+                                        null &&
+                                    item.discount_percent !==
+                                        undefined
+                                        ? `${item.discount_percent}% off`
+                                        : ""
+                                }
+                            </p>
+
+                            <small>
+                                ${
+                                    item.valid_from
+                                        ? `From ${formatDate(
+                                            item.valid_from
+                                        )}`
+                                        : ""
+                                }
+
+                                ${
+                                    item.valid_until
+                                        ? ` • Until ${formatDate(
+                                            item.valid_until
+                                        )}`
+                                        : ""
+                                }
+                            </small>
+
+                            <br>
+
+                            <small>
+                                ${
+                                    item.active
+                                        ? "Active"
+                                        : "Inactive"
+                                }
+
+                                ${
+                                    item.featured
+                                        ? " • Featured"
+                                        : ""
+                                }
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                    <div class="sm-actions">
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small"
+                            data-edit-offer="${item.id}"
+                        >
+                            Edit
+                        </button>
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small sm-btn-danger"
+                            data-delete-table="offers"
+                            data-delete-id="${item.id}"
+                        >
+                            Delete
+                        </button>
+
+                    </div>
+
+                </div>
+            `;
+        });
+    }
+
+    html += "</div>";
+
+    moduleContent.innerHTML = html;
+
+    $("moduleAddBtn")?.addEventListener(
+        "click",
+        () => showOfferForm(null)
+    );
+
+    document
+        .querySelectorAll("[data-edit-offer]")
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    const item =
+                        data.find(
+                            x =>
+                                x.id ===
+                                button.dataset
+                                    .editOffer
+                        );
+
+                    if (item) {
+                        showOfferForm(item);
+                    }
+                }
+            );
+        });
+
+    attachDeleteButtons();
+}
+
+function showOfferForm(item = null) {
+    const area = $("offerFormArea");
+
+    if (!area) return;
+
+    area.innerHTML = `
+        <form id="offerForm" class="sm-form">
+
+            <h3>
+                ${item ? "Edit Offer" : "Add Offer"}
+            </h3>
+
+            <input
+                type="text"
+                id="offerName"
+                placeholder="Offer name"
+                value="${escapeAttr(
+                    item?.name || ""
+                )}"
+                required
+            >
+
+            <textarea
+                id="offerDescription"
+                placeholder="Description"
+            >${escapeHTML(
+                item?.description || ""
+            )}</textarea>
+
+            <input
+                type="url"
+                id="offerImage"
+                placeholder="Image URL"
+                value="${escapeAttr(
+                    item?.image_url || ""
+                )}"
+            >
+
+            <input
+                type="file"
+                id="offerImageFile"
+                accept="image/jpeg,image/png,image/webp"
+            >
+
+            <input
+                type="number"
+                step="0.01"
+                id="offerOriginalPrice"
+                placeholder="Original price"
+                value="${
+                    item?.original_price ??
+                    ""
+                }"
+            >
+
+            <input
+                type="number"
+                step="0.01"
+                id="offerPrice"
+                placeholder="Offer price"
+                value="${
+                    item?.offer_price ??
+                    ""
+                }"
+            >
+
+            <input
+                type="number"
+                step="0.01"
+                id="offerDiscount"
+                placeholder="Discount %"
+                value="${
+                    item?.discount_percent ??
+                    ""
+                }"
+            >
+
+            <label>
+                Valid from
+                <input
+                    type="date"
+                    id="offerValidFrom"
+                    value="${escapeAttr(
+                        item?.valid_from || ""
+                    )}"
+                >
+            </label>
+
+            <label>
+                Valid until
+                <input
+                    type="date"
+                    id="offerValidUntil"
+                    value="${escapeAttr(
+                        item?.valid_until || ""
+                    )}"
+                >
+            </label>
+
+            <textarea
+                id="offerIncludedServices"
+                placeholder="Included services"
+            >${escapeHTML(
+                item?.included_services || ""
+            )}</textarea>
+
+            <textarea
+                id="offerTerms"
+                placeholder="Terms and conditions"
+            >${escapeHTML(
+                item?.terms || ""
+            )}</textarea>
+
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="offerActive"
+                    ${
+                        item?.active !== false
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Active
+            </label>
+
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="offerFeatured"
+                    ${
+                        item?.featured
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Featured
+            </label>
+
+            <div class="sm-form-actions">
+
+                <button
+                    type="submit"
+                    class="sm-btn sm-btn-primary"
+                >
+                    ${item ? "Update" : "Save"} Offer
+                </button>
+
+                <button
+                    type="button"
+                    class="sm-btn"
+                    id="cancelOffer"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </form>
+    `;
+
+    $("cancelOffer")
+        ?.addEventListener(
+            "click",
+            () => {
+                area.innerHTML = "";
+            }
+        );
+
+    $("offerForm")
+        ?.addEventListener(
+            "submit",
+            async event => {
+                event.preventDefault();
+
+                let imageUrl =
+                    $("offerImage")
+                        .value.trim() ||
+                    null;
+
+                const file =
+                    $("offerImageFile")
+                        ?.files?.[0];
+
+                if (file) {
+                    try {
+                        imageUrl =
+                            await uploadImage(
+                                file,
+                                "offers"
+                            );
+                    } catch (error) {
+                        showError(error);
+                        return;
+                    }
+                }
+
+                const original =
+                    $("offerOriginalPrice")
+                        .value.trim();
+
+                const offer =
+                    $("offerPrice")
+                        .value.trim();
+
+                const discount =
+                    $("offerDiscount")
+                        .value.trim();
+
+                const validFrom =
+                    $("offerValidFrom")
+                        .value ||
+                    null;
+
+                const validUntil =
+                    $("offerValidUntil")
+                        .value ||
+                    null;
+
+                const payload = {
+                    name:
+                        $("offerName")
+                            .value.trim(),
+
+                    description:
+                        $("offerDescription")
+                            .value.trim() ||
+                        null,
+
+                    image_url:
+                        imageUrl,
+
+                    original_price:
+                        original === ""
+                            ? null
+                            : Number(original),
+
+                    offer_price:
+                        offer === ""
+                            ? null
+                            : Number(offer),
+
+                    discount_percent:
+                        discount === ""
+                            ? null
+                            : Number(discount),
+
+                    valid_from:
+                        validFrom,
+
+                    valid_until:
+                        validUntil,
+
+                    included_services:
+                        $("offerIncludedServices")
+                            .value.trim() ||
+                        null,
+
+                    terms:
+                        $("offerTerms")
+                            .value.trim() ||
+                        null,
+
+                    active:
+                        $("offerActive")
+                            .checked,
+
+                    featured:
+                        $("offerFeatured")
+                            .checked,
+
+                    /*
+                       Keep the timestamp fields synchronized
+                       with the date fields.
+                    */
+
+                    start_date:
+                        validFrom
+                            ? `${validFrom}T00:00:00`
+                            : null,
+
+                    end_date:
+                        validUntil
+                            ? `${validUntil}T23:59:59`
+                            : null,
+
+                    updated_at:
+                        new Date().toISOString()
+                };
+
+                await saveRecord(
+                    "offers",
+                    payload,
+                    item?.id
+                );
+            }
+        );
+}
+
+/* ============================================================
+   GALLERY
+   Actual schema:
+   title
+   description
+   image_url
+   category
+   featured
+   visible
+   display_order
+============================================================ */
+
+async function loadGallery() {
+    const { data, error } =
+        await supabaseClient
+            .from("gallery")
+            .select("*")
+            .order("display_order", {
+                ascending: true
+            })
+            .order("created_at", {
+                ascending: false
+            });
+
+    if (error) {
+        showError(error);
+        return;
+    }
+
+    let html = moduleHeader(
+        "Gallery",
+        "Manage salon and portfolio images.",
+        "Add Image"
+    );
+
+    html += `
+        <div id="galleryFormArea"></div>
+
+        <div class="sm-gallery-grid">
+    `;
+
+    if (!data?.length) {
+        html += emptyState(
+            "No gallery images yet."
+        );
+    } else {
+        data.forEach(item => {
+            html += `
+                <div class="sm-gallery-card">
+
+                    <img
+                        src="${escapeAttr(
+                            item.image_url
+                        )}"
+                        alt="${escapeAttr(
+                            item.title || ""
+                        )}"
+                    >
+
+                    <div class="sm-gallery-info">
+
+                        <h3>
+                            ${escapeHTML(
+                                item.title ||
+                                "Untitled"
+                            )}
+                        </h3>
+
+                        <small>
+                            ${escapeHTML(
+                                item.category ||
+                                "General"
+                            )}
+                        </small>
+
+                        <div class="sm-actions">
+
+                            <button
+                                type="button"
+                                class="sm-btn sm-btn-small"
+                                data-edit-gallery="${item.id}"
+                            >
+                                Edit
+                            </button>
+
+                            <button
+                                type="button"
+                                class="sm-btn sm-btn-small sm-btn-danger"
+                                data-delete-table="gallery"
+                                data-delete-id="${item.id}"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            `;
+        });
+    }
+
+    html += "</div>";
+
+    moduleContent.innerHTML = html;
+
+    $("moduleAddBtn")?.addEventListener(
+        "click",
+        () => showGalleryForm(null)
+    );
+
+    document
+        .querySelectorAll("[data-edit-gallery]")
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    const item =
+                        data.find(
+                            x =>
+                                x.id ===
+                                button.dataset
+                                    .editGallery
+                        );
+
+                    if (item) {
+                        showGalleryForm(item);
+                    }
+                }
+            );
+        });
+
+    attachDeleteButtons();
+}
+
+function showGalleryForm(item = null) {
+    const area = $("galleryFormArea");
+
+    if (!area) return;
+
+    area.innerHTML = `
+        <form id="galleryForm" class="sm-form">
+
+            <h3>
+                ${item ? "Edit Gallery Image" : "Add Gallery Image"}
+            </h3>
+
+            <input
+                type="text"
+                id="galleryTitle"
+                placeholder="Title"
+                value="${escapeAttr(
+                    item?.title || ""
+                )}"
+            >
+
+            <textarea
+                id="galleryDescription"
+                placeholder="Description"
+            >${escapeHTML(
+                item?.description || ""
+            )}</textarea>
+
+            <input
+                type="text"
+                id="galleryCategory"
+                placeholder="Category"
+                value="${escapeAttr(
+                    item?.category || ""
+                )}"
+            >
+
+            <input
+                type="url"
+                id="galleryImage"
+                placeholder="Image URL"
+                value="${escapeAttr(
+                    item?.image_url || ""
+                )}"
+            >
+
+            <input
+                type="file"
+                id="galleryImageFile"
+                accept="image/jpeg,image/png,image/webp"
+            >
+
+            <input
+                type="number"
+                id="galleryOrder"
+                placeholder="Display order"
+                value="${item?.display_order ?? 0}"
+            >
+
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="galleryFeatured"
+                    ${
+                        item?.featured
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Featured
+            </label>
+
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="galleryVisible"
+                    ${
+                        item?.visible !== false
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Visible
+            </label>
+
+            <div class="sm-form-actions">
+
+                <button
+                    type="submit"
+                    class="sm-btn sm-btn-primary"
+                >
+                    ${item ? "Update" : "Save"} Image
+                </button>
+
+                <button
+                    type="button"
+                    class="sm-btn"
+                    id="cancelGallery"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </form>
+    `;
+
+    $("cancelGallery")
+        ?.addEventListener(
+            "click",
+            () => {
+                area.innerHTML = "";
+            }
+        );
+
+    $("galleryForm")
+        ?.addEventListener(
+            "submit",
+            async event => {
+                event.preventDefault();
+
+                let imageUrl =
+                    $("galleryImage")
+                        .value.trim() ||
+                    null;
+
+                const file =
+                    $("galleryImageFile")
+                        ?.files?.[0];
+
+                if (file) {
+                    try {
+                        imageUrl =
+                            await uploadImage(
+                                file,
+                                "gallery"
+                            );
+                    } catch (error) {
+                        showError(error);
+                        return;
+                    }
+                }
+
+                if (!imageUrl) {
+                    showMessage(
+                        "Please provide an image.",
+                        "error"
+                    );
+                    return;
+                }
+
+                const payload = {
+                    title:
+                        $("galleryTitle")
+                            .value.trim() ||
+                        null,
+
+                    description:
+                        $("galleryDescription")
+                            .value.trim() ||
+                        null,
+
+                    image_url:
+                        imageUrl,
+
+                    category:
+                        $("galleryCategory")
+                            .value.trim() ||
+                        null,
+
+                    featured:
+                        $("galleryFeatured")
+                            .checked,
+
+                    visible:
+                        $("galleryVisible")
+                            .checked,
+
+                    display_order:
+                        Number(
+                            $("galleryOrder")
+                                .value || 0
+                        )
+                };
+
+                await saveRecord(
+                    "gallery",
+                    payload,
+                    item?.id
+                );
+            }
+        );
+}
+
+/* ============================================================
+   BRIDE GALLERY
+   Actual schema:
+   title
+   description
+   image_url
+   category
+   photo_date
+   featured
+   visible
+   display_order
+============================================================ */
+
+async function loadBrideGallery() {
+    const { data, error } =
+        await supabaseClient
+            .from("bride_gallery")
+            .select("*")
+            .order("display_order", {
+                ascending: true
+            })
+            .order("created_at", {
+                ascending: false
+            });
+
+    if (error) {
+        showError(error);
+        return;
+    }
+
+    let html = moduleHeader(
+        "Bride & Girls Gallery",
+        "Upload bridal, bride and girls photos.",
+        "Add Photo"
+    );
+
+    html += `
+        <div id="brideFormArea"></div>
+        <div class="sm-gallery-grid">
+    `;
+
+    if (!data?.length) {
+        html += emptyState(
+            "No bride/girls photos yet."
+        );
+    } else {
+        data.forEach(item => {
+            html += `
+                <div class="sm-gallery-card">
+
+                    <img
+                        src="${escapeAttr(
+                            item.image_url
+                        )}"
+                        alt="${escapeAttr(
+                            item.title || ""
+                        )}"
+                    >
+
+                    <div class="sm-gallery-info">
+
+                        <h3>
+                            ${escapeHTML(
+                                item.title ||
+                                "Untitled"
+                            )}
+                        </h3>
+
+                        <small>
+                            ${escapeHTML(
+                                item.category ||
+                                "Bride"
+                            )}
+                        </small>
+
+                        ${
+                            item.photo_date
+                                ? `<small>
+                                    ${formatDate(
+                                        item.photo_date
+                                    )}
+                                </small>`
+                                : ""
+                        }
+
+                        <div class="sm-actions">
+
+                            <button
+                                type="button"
+                                class="sm-btn sm-btn-small"
+                                data-edit-bride="${item.id}"
+                            >
+                                Edit
+                            </button>
+
+                            <button
+                                type="button"
+                                class="sm-btn sm-btn-small sm-btn-danger"
+                                data-delete-table="bride_gallery"
+                                data-delete-id="${item.id}"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            `;
+        });
+    }
+
+    html += "</div>";
+
+    moduleContent.innerHTML = html;
+
+    $("moduleAddBtn")?.addEventListener(
+        "click",
+        () => showBrideForm(null)
+    );
+
+    document
+        .querySelectorAll("[data-edit-bride]")
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    const item =
+                        data.find(
+                            x =>
+                                x.id ===
+                                button.dataset
+                                    .editBride
+                        );
+
+                    if (item) {
+                        showBrideForm(item);
+                    }
+                }
+            );
+        });
+
+    attachDeleteButtons();
+}
+
+function showBrideForm(item = null) {
+    const area = $("brideFormArea");
+
+    if (!area) return;
+
+    area.innerHTML = `
+        <form id="brideForm" class="sm-form">
+
+            <h3>
+                ${item ? "Edit Bride/Girls Photo" : "Add Bride/Girls Photo"}
+            </h3>
+
+            <input
+                type="text"
+                id="brideTitle"
+                placeholder="Title"
+                value="${escapeAttr(
+                    item?.title || ""
+                )}"
+            >
+
+            <textarea
+                id="brideDescription"
+                placeholder="Description"
+            >${escapeHTML(
+                item?.description || ""
+            )}</textarea>
+
+            <input
+                type="text"
+                id="brideCategory"
+                placeholder="Category e.g. Bride, Girls"
+                value="${escapeAttr(
+                    item?.category || ""
+                )}"
+            >
+
+            <input
+                type="date"
+                id="brideDate"
+                value="${escapeAttr(
+                    item?.photo_date || ""
+                )}"
+            >
+
+            <input
+                type="url"
+                id="brideImage"
+                placeholder="Image URL"
+                value="${escapeAttr(
+                    item?.image_url || ""
+                )}"
+            >
+
+            <input
+                type="file"
+                id="brideImageFile"
+                accept="image/jpeg,image/png,image/webp"
+            >
+
+            <input
+                type="number"
+                id="brideOrder"
+                placeholder="Display order"
+                value="${item?.display_order ?? 0}"
+            >
+
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="brideFeatured"
+                    ${
+                        item?.featured
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Featured
+            </label>
+
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="brideVisible"
+                    ${
+                        item?.visible !== false
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Visible
+            </label>
+
+            <div class="sm-form-actions">
+
+                <button
+                    type="submit"
+                    class="sm-btn sm-btn-primary"
+                >
+                    ${item ? "Update" : "Save"} Photo
+                </button>
+
+                <button
+                    type="button"
+                    class="sm-btn"
+                    id="cancelBride"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </form>
+    `;
+
+    $("cancelBride")
+        ?.addEventListener(
+            "click",
+            () => {
+                area.innerHTML = "";
+            }
+        );
+
+    $("brideForm")
+        ?.addEventListener(
+            "submit",
+            async event => {
+                event.preventDefault();
+
+                let imageUrl =
+                    $("brideImage")
+                        .value.trim() ||
+                    null;
+
+                const file =
+                    $("brideImageFile")
+                        ?.files?.[0];
+
+                if (file) {
+                    try {
+                        imageUrl =
+                            await uploadImage(
+                                file,
+                                "bride-gallery"
+                            );
+                    } catch (error) {
+                        showError(error);
+                        return;
+                    }
+                }
+
+                if (!imageUrl) {
+                    showMessage(
+                        "Please provide an image.",
+                        "error"
+                    );
+                    return;
+                }
+
+                const payload = {
+                    title:
+                        $("brideTitle")
+                            .value.trim() ||
+                        null,
+
+                    description:
+                        $("brideDescription")
+                            .value.trim() ||
+                        null,
+
+                    image_url:
+                        imageUrl,
+
+                    category:
+                        $("brideCategory")
+                            .value.trim() ||
+                        null,
+
+                    photo_date:
+                        $("brideDate")
+                            .value ||
+                        null,
+
+                    featured:
+                        $("brideFeatured")
+                            .checked,
+
+                    visible:
+                        $("brideVisible")
+                            .checked,
+
+                    display_order:
+                        Number(
+                            $("brideOrder")
+                                .value || 0
+                        )
+                };
+
+                await saveRecord(
+                    "bride_gallery",
+                    payload,
+                    item?.id
+                );
+            }
+        );
+}
+
+/* ============================================================
+   CUSTOMER GALLERY
+   Actual schema:
+   customer_name
+   photo_url
+   service
+   testimonial
+   rating
+   photo_date
+   featured
+   visible
+   consent_given
+   display_order
+============================================================ */
+
+async function loadCustomerGallery() {
+    const { data, error } =
+        await supabaseClient
+            .from("customer_gallery")
+            .select("*")
+            .order("display_order", {
+                ascending: true
+            })
+            .order("created_at", {
+                ascending: false
+            });
+
+    if (error) {
+        showError(error);
+        return;
+    }
+
+    let html = moduleHeader(
+        "Customer Gallery",
+        "Manage customer photos and consent.",
+        "Add Customer"
+    );
+
+    html += `
+        <div id="customerFormArea"></div>
+        <div class="sm-gallery-grid">
+    `;
+
+    if (!data?.length) {
+        html += emptyState(
+            "No customer photos yet."
+        );
+    } else {
+        data.forEach(item => {
+            html += `
+                <div class="sm-gallery-card">
+
+                    <img
+                        src="${escapeAttr(
+                            item.photo_url
+                        )}"
+                        alt="${escapeAttr(
+                            item.customer_name ||
+                            "Customer"
+                        )}"
+                    >
+
+                    <div class="sm-gallery-info">
+
+                        <h3>
+                            ${escapeHTML(
+                                item.customer_name ||
+                                "Customer"
+                            )}
+                        </h3>
+
+                        ${
+                            item.service
+                                ? `<small>
+                                    ${escapeHTML(
+                                        item.service
+                                    )}
+                                </small>`
+                                : ""
+                        }
+
+                        ${
+                            item.rating
+                                ? `<small>
+                                    Rating: ${item.rating}/5
+                                </small>`
+                                : ""
+                        }
+
+                        <small>
+                            Consent:
+                            ${
+                                item.consent_given
+                                    ? "Yes"
+                                    : "No"
+                            }
+                        </small>
+
+                        <div class="sm-actions">
+
+                            <button
+                                type="button"
+                                class="sm-btn sm-btn-small"
+                                data-edit-customer="${item.id}"
+                            >
+                                Edit
+                            </button>
+
+                            <button
+                                type="button"
+                                class="sm-btn sm-btn-small sm-btn-danger"
+                                data-delete-table="customer_gallery"
+                                data-delete-id="${item.id}"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            `;
+        });
+    }
+
+    html += "</div>";
+
+    moduleContent.innerHTML = html;
+
+    $("moduleAddBtn")?.addEventListener(
+        "click",
+        () => showCustomerForm(null)
+    );
+
+    document
+        .querySelectorAll(
+            "[data-edit-customer]"
+        )
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    const item =
+                        data.find(
+                            x =>
+                                x.id ===
+                                button.dataset
+                                    .editCustomer
+                        );
+
+                    if (item) {
+                        showCustomerForm(item);
+                    }
+                }
+            );
+        });
+
+    attachDeleteButtons();
+}
+
+function showCustomerForm(item = null) {
+    const area = $("customerFormArea");
+
+    if (!area) return;
+
+    area.innerHTML = `
+        <form id="customerForm" class="sm-form">
+
+            <h3>
+                ${item ? "Edit Customer" : "Add Customer"}
+            </h3>
+
+            <input
+                type="text"
+                id="customerName"
+                placeholder="Customer name"
+                value="${escapeAttr(
+                    item?.customer_name || ""
+                )}"
+            >
+
+            <input
+                type="text"
+                id="customerService"
+                placeholder="Service"
+                value="${escapeAttr(
+                    item?.service || ""
+                )}"
+            >
+
+            <textarea
+                id="customerTestimonial"
+                placeholder="Customer testimonial"
+            >${escapeHTML(
+                item?.testimonial || ""
+            )}</textarea>
+
+            <input
+                type="number"
+                min="1"
+                max="5"
+                id="customerRating"
+                placeholder="Rating 1-5"
+                value="${
+                    item?.rating ??
+                    ""
+                }"
+            >
+
+            <input
+                type="date"
+                id="customerDate"
+                value="${escapeAttr(
+                    item?.photo_date || ""
+                )}"
+            >
+
+            <input
+                type="url"
+                id="customerImage"
+                placeholder="Photo URL"
+                value="${escapeAttr(
+                    item?.photo_url || ""
+                )}"
+            >
+
+            <input
+                type="file"
+                id="customerImageFile"
+                accept="image/jpeg,image/png,image/webp"
+            >
+
+            <input
+                type="number"
+                id="customerOrder"
+                placeholder="Display order"
+                value="${item?.display_order ?? 0}"
+            >
+
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="customerFeatured"
+                    ${
+                        item?.featured
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Featured
+            </label>
+
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="customerVisible"
+                    ${
+                        item?.visible !== false
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Visible
+            </label>
+
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="customerConsent"
+                    ${
+                        item?.consent_given
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Customer consent received
+            </label>
+
+            <div class="sm-form-actions">
+
+                <button
+                    type="submit"
+                    class="sm-btn sm-btn-primary"
+                >
+                    ${item ? "Update" : "Save"} Customer
+                </button>
+
+                <button
+                    type="button"
+                    class="sm-btn"
+                    id="cancelCustomer"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </form>
+    `;
+
+    $("cancelCustomer")
+        ?.addEventListener(
+            "click",
+            () => {
+                area.innerHTML = "";
+            }
+        );
+
+    $("customerForm")
+        ?.addEventListener(
+            "submit",
+            async event => {
+                event.preventDefault();
+
+                let imageUrl =
+                    $("customerImage")
+                        .value.trim() ||
+                    null;
+
+                const file =
+                    $("customerImageFile")
+                        ?.files?.[0];
+
+                if (file) {
+                    try {
+                        imageUrl =
+                            await uploadImage(
+                                file,
+                                "customer-gallery"
+                            );
+                    } catch (error) {
+                        showError(error);
+                        return;
+                    }
+                }
+
+                if (!imageUrl) {
+                    showMessage(
+                        "Please provide a customer photo.",
+                        "error"
+                    );
+                    return;
+                }
+
+                const rating =
+                    $("customerRating")
+                        .value.trim();
+
+                const payload = {
+                    customer_name:
+                        $("customerName")
+                            .value.trim() ||
+                        null,
+
+                    photo_url:
+                        imageUrl,
+
+                    service:
+                        $("customerService")
+                            .value.trim() ||
+                        null,
+
+                    testimonial:
+                        $("customerTestimonial")
+                            .value.trim() ||
+                        null,
+
+                    rating:
+                        rating === ""
+                            ? null
+                            : Number(rating),
+
+                    photo_date:
+                        $("customerDate")
+                            .value ||
+                        null,
+
+                    featured:
+                        $("customerFeatured")
+                            .checked,
+
+                    visible:
+                        $("customerVisible")
+                            .checked,
+
+                    consent_given:
+                        $("customerConsent")
+                            .checked,
+
+                    display_order:
+                        Number(
+                            $("customerOrder")
+                                .value || 0
+                        )
+                };
+
+                await saveRecord(
+                    "customer_gallery",
+                    payload,
+                    item?.id
+                );
+            }
+        );
+}
 
 /* ============================================================
    BEFORE / AFTER
-   ============================================================ */
+   Actual schema:
+   title
+   description
+   before_image_url
+   after_image_url
+   category
+   featured
+   visible
+   display_order
+============================================================ */
 
 async function loadBeforeAfter() {
-
-    const {
-        data,
-        error
-    } =
+    const { data, error } =
         await supabaseClient
             .from("before_after")
             .select("*")
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            );
+            .order("display_order", {
+                ascending: true
+            })
+            .order("created_at", {
+                ascending: false
+            });
 
     if (error) {
-
-        showDatabaseError(
-            "Before / After",
-            error
-        );
-
+        showError(error);
         return;
     }
 
-    moduleContent.innerHTML = `
+    let html = moduleHeader(
+        "Before / After",
+        "Manage beauty transformation photos.",
+        "Add Transformation"
+    );
 
-        <div class="admin-module">
+    html += `
+        <div id="beforeAfterFormArea"></div>
 
-            <div class="module-actions">
-
-                <div>
-
-                    <h2>
-                        Before / After
-                    </h2>
-
-                    <p>
-                        Manage transformation images.
-                    </p>
-
-                </div>
-
-                <button
-                    class="primary-btn"
-                    id="addBeforeAfterBtn"
-                >
-                    + Add Transformation
-                </button>
-
-            </div>
-
-
-            <div id="beforeAfterFormArea"></div>
-
-
-            ${
-                data?.length
-                ? simpleRecordTable(
-                    data,
-                    "before_after"
-                )
-                : emptyState(
-                    "No before / after records yet."
-                )
-            }
-
-        </div>
+        <div class="sm-before-grid">
     `;
 
+    if (!data?.length) {
+        html += emptyState(
+            "No before/after transformations yet."
+        );
+    } else {
+        data.forEach(item => {
+            html += `
+                <div class="sm-before-card">
+
+                    <div class="sm-before-images">
+
+                        <div>
+                            <small>Before</small>
+                            <img
+                                src="${escapeAttr(
+                                    item.before_image_url
+                                )}"
+                                alt="Before"
+                            >
+                        </div>
+
+                        <div>
+                            <small>After</small>
+                            <img
+                                src="${escapeAttr(
+                                    item.after_image_url
+                                )}"
+                                alt="After"
+                            >
+                        </div>
+
+                    </div>
+
+                    <h3>
+                        ${escapeHTML(
+                            item.title ||
+                            "Transformation"
+                        )}
+                    </h3>
+
+                    <small>
+                        ${escapeHTML(
+                            item.category ||
+                            "General"
+                        )}
+                    </small>
+
+                    <div class="sm-actions">
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small"
+                            data-edit-before-after="${item.id}"
+                        >
+                            Edit
+                        </button>
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small sm-btn-danger"
+                            data-delete-table="before_after"
+                            data-delete-id="${item.id}"
+                        >
+                            Delete
+                        </button>
+
+                    </div>
+
+                </div>
+            `;
+        });
+    }
+
+    html += "</div>";
+
+    moduleContent.innerHTML = html;
+
+    $("moduleAddBtn")?.addEventListener(
+        "click",
+        () => showBeforeAfterForm(null)
+    );
 
     document
-        .getElementById(
-            "addBeforeAfterBtn"
+        .querySelectorAll(
+            "[data-edit-before-after]"
         )
-        ?.addEventListener(
-            "click",
-            () => {
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    const item =
+                        data.find(
+                            x =>
+                                x.id ===
+                                button.dataset
+                                    .editBeforeAfter
+                        );
 
-                showBeforeAfterForm();
-
-            }
-        );
-
+                    if (item) {
+                        showBeforeAfterForm(
+                            item
+                        );
+                    }
+                }
+            );
+        });
 
     attachDeleteButtons();
 }
 
-
-function showBeforeAfterForm() {
-
+function showBeforeAfterForm(item = null) {
     const area =
-        document.getElementById(
-            "beforeAfterFormArea"
-        );
+        $("beforeAfterFormArea");
 
-    if (!area) {
-        return;
-    }
+    if (!area) return;
 
     area.innerHTML = `
-
-        <div
-            style="
-                background:#faf8f4;
-                border:1px solid #ddd5ca;
-                padding:20px;
-                border-radius:12px;
-                margin-bottom:20px;
-            "
+        <form
+            id="beforeAfterForm"
+            class="sm-form"
         >
 
-            <form id="beforeAfterForm">
+            <h3>
+                ${
+                    item
+                        ? "Edit Transformation"
+                        : "Add Transformation"
+                }
+            </h3>
 
-                <div class="form-row">
+            <input
+                type="text"
+                id="beforeAfterTitle"
+                placeholder="Title"
+                value="${escapeAttr(
+                    item?.title || ""
+                )}"
+            >
 
-                    <div>
+            <textarea
+                id="beforeAfterDescription"
+                placeholder="Description"
+            >${escapeHTML(
+                item?.description || ""
+            )}</textarea>
 
-                        <label>
-                            Title
-                        </label>
+            <input
+                type="text"
+                id="beforeAfterCategory"
+                placeholder="Category"
+                value="${escapeAttr(
+                    item?.category || ""
+                )}"
+            >
 
-                        <input
-                            id="beforeAfterTitle"
-                        >
+            <label>
+                Before image URL
+                <input
+                    type="url"
+                    id="beforeImage"
+                    value="${escapeAttr(
+                        item?.before_image_url ||
+                        ""
+                    )}"
+                >
+            </label>
 
-                    </div>
+            <input
+                type="file"
+                id="beforeImageFile"
+                accept="image/jpeg,image/png,image/webp"
+            >
 
+            <label>
+                After image URL
+                <input
+                    type="url"
+                    id="afterImage"
+                    value="${escapeAttr(
+                        item?.after_image_url ||
+                        ""
+                    )}"
+                >
+            </label>
 
-                    <div>
+            <input
+                type="file"
+                id="afterImageFile"
+                accept="image/jpeg,image/png,image/webp"
+            >
 
-                        <label>
-                            Before Image URL
-                        </label>
+            <input
+                type="number"
+                id="beforeAfterOrder"
+                value="${item?.display_order ?? 0}"
+                placeholder="Display order"
+            >
 
-                        <input
-                            id="beforeImage"
-                        >
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="beforeAfterFeatured"
+                    ${
+                        item?.featured
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Featured
+            </label>
 
-                    </div>
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="beforeAfterVisible"
+                    ${
+                        item?.visible !== false
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Visible
+            </label>
 
-                </div>
-
-
-                <div>
-
-                    <label>
-                        After Image URL
-                    </label>
-
-                    <input
-                        id="afterImage"
-                    >
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Description
-                    </label>
-
-                    <textarea
-                        id="beforeAfterDescription"
-                    ></textarea>
-
-                </div>
-
+            <div class="sm-form-actions">
 
                 <button
-                    class="primary-btn"
                     type="submit"
+                    class="sm-btn sm-btn-primary"
                 >
-                    Save
+                    ${item ? "Update" : "Save"}
                 </button>
 
-            </form>
+                <button
+                    type="button"
+                    class="sm-btn"
+                    id="cancelBeforeAfter"
+                >
+                    Cancel
+                </button>
 
-        </div>
+            </div>
+
+        </form>
     `;
 
+    $("cancelBeforeAfter")
+        ?.addEventListener(
+            "click",
+            () => {
+                area.innerHTML = "";
+            }
+        );
 
-    document
-        .getElementById(
-            "beforeAfterForm"
-        )
+    $("beforeAfterForm")
         ?.addEventListener(
             "submit",
             async event => {
-
                 event.preventDefault();
 
-                const payload = {
+                let beforeUrl =
+                    $("beforeImage")
+                        .value.trim() ||
+                    null;
 
-                    title:
-                        document
-                            .getElementById(
-                                "beforeAfterTitle"
-                            )
-                            .value
-                            .trim(),
+                let afterUrl =
+                    $("afterImage")
+                        .value.trim() ||
+                    null;
 
-                    before_image_url:
-                        document
-                            .getElementById(
-                                "beforeImage"
-                            )
-                            .value
-                            .trim(),
+                const beforeFile =
+                    $("beforeImageFile")
+                        ?.files?.[0];
 
-                    after_image_url:
-                        document
-                            .getElementById(
-                                "afterImage"
-                            )
-                            .value
-                            .trim(),
+                const afterFile =
+                    $("afterImageFile")
+                        ?.files?.[0];
 
-                    description:
-                        document
-                            .getElementById(
-                                "beforeAfterDescription"
-                            )
-                            .value
-                            .trim()
+                try {
+                    if (beforeFile) {
+                        beforeUrl =
+                            await uploadImage(
+                                beforeFile,
+                                "before-after"
+                            );
+                    }
 
-                };
-
-
-                const {
-                    error
-                } =
-                    await supabaseClient
-                        .from(
-                            "before_after"
-                        )
-                        .insert(
-                            payload
-                        );
-
-
-                if (error) {
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-
+                    if (afterFile) {
+                        afterUrl =
+                            await uploadImage(
+                                afterFile,
+                                "before-after"
+                            );
+                    }
+                } catch (error) {
+                    showError(error);
                     return;
                 }
 
+                if (!beforeUrl || !afterUrl) {
+                    showMessage(
+                        "Both before and after images are required.",
+                        "error"
+                    );
+                    return;
+                }
 
-                showMessage(
-                    "Before / After saved."
+                const payload = {
+                    title:
+                        $("beforeAfterTitle")
+                            .value.trim() ||
+                        null,
+
+                    description:
+                        $("beforeAfterDescription")
+                            .value.trim() ||
+                        null,
+
+                    before_image_url:
+                        beforeUrl,
+
+                    after_image_url:
+                        afterUrl,
+
+                    category:
+                        $("beforeAfterCategory")
+                            .value.trim() ||
+                        null,
+
+                    featured:
+                        $("beforeAfterFeatured")
+                            .checked,
+
+                    visible:
+                        $("beforeAfterVisible")
+                            .checked,
+
+                    display_order:
+                        Number(
+                            $("beforeAfterOrder")
+                                .value || 0
+                        )
+                };
+
+                await saveRecord(
+                    "before_after",
+                    payload,
+                    item?.id
                 );
-
-                await loadBeforeAfter();
-
             }
         );
 }
-
 
 /* ============================================================
    BRIDAL PACKAGES
-   ============================================================ */
+   Actual schema:
+   name
+   description
+   image_url
+   price
+   price_label
+   included_services
+   duration
+   featured
+   active
+   display_order
+============================================================ */
 
 async function loadBridalPackages() {
-
-    const {
-        data,
-        error
-    } =
+    const { data, error } =
         await supabaseClient
-            .from(
-                "bridal_packages"
-            )
+            .from("bridal_packages")
             .select("*")
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            );
+            .order("display_order", {
+                ascending: true
+            })
+            .order("created_at", {
+                ascending: false
+            });
 
     if (error) {
-
-        showDatabaseError(
-            "Bridal Packages",
-            error
-        );
-
+        showError(error);
         return;
     }
 
-    moduleContent.innerHTML = `
+    let html = moduleHeader(
+        "Bridal Packages",
+        "Manage bridal packages and pricing.",
+        "Add Package"
+    );
 
-        <div class="admin-module">
-
-            <div class="module-actions">
-
-                <div>
-
-                    <h2>
-                        Bridal Packages
-                    </h2>
-
-                    <p>
-                        Manage bridal packages.
-                    </p>
-
-                </div>
-
-                <button
-                    class="primary-btn"
-                    id="addBridalPackageBtn"
-                >
-                    + Add Package
-                </button>
-
-            </div>
-
-
-            <div id="bridalPackageFormArea"></div>
-
-
-            ${
-                data?.length
-                ? simpleRecordTable(
-                    data,
-                    "bridal_packages"
-                )
-                : emptyState(
-                    "No bridal packages added yet."
-                )
-            }
-
-        </div>
+    html += `
+        <div id="bridalPackageFormArea"></div>
+        <div class="sm-card-list">
     `;
 
+    if (!data?.length) {
+        html += emptyState(
+            "No bridal packages yet."
+        );
+    } else {
+        data.forEach(item => {
+            html += `
+                <div class="sm-list-card">
+
+                    <div>
+
+                        ${
+                            item.image_url
+                                ? `
+                                    <img
+                                        src="${escapeAttr(
+                                            item.image_url
+                                        )}"
+                                        class="sm-thumb"
+                                        alt=""
+                                    >
+                                `
+                                : ""
+                        }
+
+                        <div>
+
+                            <h3>
+                                ${escapeHTML(
+                                    item.name
+                                )}
+                            </h3>
+
+                            <p>
+                                ${
+                                    item.price !==
+                                        null &&
+                                    item.price !==
+                                        undefined
+                                        ? money(
+                                            item.price
+                                        )
+                                        : escapeHTML(
+                                            item.price_label ||
+                                            "Price on enquiry"
+                                        )
+                                }
+                            </p>
+
+                            ${
+                                item.duration
+                                    ? `<small>
+                                        ${escapeHTML(
+                                            item.duration
+                                        )}
+                                    </small>`
+                                    : ""
+                            }
+
+                            <br>
+
+                            <small>
+                                ${
+                                    item.active
+                                        ? "Active"
+                                        : "Inactive"
+                                }
+
+                                ${
+                                    item.featured
+                                        ? " • Featured"
+                                        : ""
+                                }
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                    <div class="sm-actions">
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small"
+                            data-edit-bridal="${item.id}"
+                        >
+                            Edit
+                        </button>
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small sm-btn-danger"
+                            data-delete-table="bridal_packages"
+                            data-delete-id="${item.id}"
+                        >
+                            Delete
+                        </button>
+
+                    </div>
+
+                </div>
+            `;
+        });
+    }
+
+    html += "</div>";
+
+    moduleContent.innerHTML = html;
+
+    $("moduleAddBtn")?.addEventListener(
+        "click",
+        () => showBridalPackageForm(null)
+    );
 
     document
-        .getElementById(
-            "addBridalPackageBtn"
+        .querySelectorAll(
+            "[data-edit-bridal]"
         )
-        ?.addEventListener(
-            "click",
-            showBridalPackageForm
-        );
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    const item =
+                        data.find(
+                            x =>
+                                x.id ===
+                                button.dataset
+                                    .editBridal
+                        );
 
+                    if (item) {
+                        showBridalPackageForm(
+                            item
+                        );
+                    }
+                }
+            );
+        });
 
     attachDeleteButtons();
 }
 
-
-function showBridalPackageForm() {
-
+function showBridalPackageForm(item = null) {
     const area =
-        document.getElementById(
-            "bridalPackageFormArea"
-        );
+        $("bridalPackageFormArea");
 
-    if (!area) {
-        return;
-    }
+    if (!area) return;
 
     area.innerHTML = `
-
-        <div
-            style="
-                background:#faf8f4;
-                border:1px solid #ddd5ca;
-                padding:20px;
-                border-radius:12px;
-                margin-bottom:20px;
-            "
+        <form
+            id="bridalPackageForm"
+            class="sm-form"
         >
 
-            <form id="bridalPackageForm">
+            <h3>
+                ${
+                    item
+                        ? "Edit Bridal Package"
+                        : "Add Bridal Package"
+                }
+            </h3>
 
-                <div class="form-row">
+            <input
+                type="text"
+                id="bridalName"
+                placeholder="Package name"
+                value="${escapeAttr(
+                    item?.name || ""
+                )}"
+                required
+            >
 
-                    <div>
+            <textarea
+                id="bridalDescription"
+                placeholder="Description"
+            >${escapeHTML(
+                item?.description || ""
+            )}</textarea>
 
-                        <label>
-                            Package Name
-                        </label>
+            <input
+                type="url"
+                id="bridalImage"
+                placeholder="Image URL"
+                value="${escapeAttr(
+                    item?.image_url || ""
+                )}"
+            >
 
-                        <input
-                            id="bridalPackageName"
-                            required
-                        >
+            <input
+                type="file"
+                id="bridalImageFile"
+                accept="image/jpeg,image/png,image/webp"
+            >
 
-                    </div>
+            <input
+                type="number"
+                step="0.01"
+                id="bridalPrice"
+                placeholder="Price"
+                value="${
+                    item?.price ??
+                    ""
+                }"
+            >
 
+            <input
+                type="text"
+                id="bridalPriceLabel"
+                placeholder="Price label"
+                value="${escapeAttr(
+                    item?.price_label ||
+                    "Price on enquiry"
+                )}"
+            >
 
-                    <div>
+            <textarea
+                id="bridalIncluded"
+                placeholder="Included services"
+            >${escapeHTML(
+                item?.included_services ||
+                ""
+            )}</textarea>
 
-                        <label>
-                            Price
-                        </label>
+            <input
+                type="text"
+                id="bridalDuration"
+                placeholder="Duration e.g. 4 hours"
+                value="${escapeAttr(
+                    item?.duration || ""
+                )}"
+            >
 
-                        <input
-                            id="bridalPackagePrice"
-                            type="number"
-                            step="0.01"
-                        >
+            <input
+                type="number"
+                id="bridalOrder"
+                placeholder="Display order"
+                value="${item?.display_order ?? 0}"
+            >
 
-                    </div>
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="bridalFeatured"
+                    ${
+                        item?.featured
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Featured
+            </label>
 
-                </div>
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="bridalActive"
+                    ${
+                        item?.active !== false
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Active
+            </label>
 
-
-                <div>
-
-                    <label>
-                        Description
-                    </label>
-
-                    <textarea
-                        id="bridalPackageDescription"
-                    ></textarea>
-
-                </div>
-
+            <div class="sm-form-actions">
 
                 <button
-                    class="primary-btn"
                     type="submit"
+                    class="sm-btn sm-btn-primary"
                 >
-                    Save Package
+                    ${item ? "Update" : "Save"} Package
                 </button>
 
-            </form>
-
-        </div>
-    `;
-
-
-    document
-        .getElementById(
-            "bridalPackageForm"
-        )
-        ?.addEventListener(
-            "submit",
-            async event => {
-
-                event.preventDefault();
-
-                const payload = {
-
-                    name:
-                        document
-                            .getElementById(
-                                "bridalPackageName"
-                            )
-                            .value
-                            .trim(),
-
-                    price:
-                        document
-                            .getElementById(
-                                "bridalPackagePrice"
-                            )
-                            .value === ""
-                        ? null
-                        : Number(
-                            document
-                                .getElementById(
-                                    "bridalPackagePrice"
-                                )
-                                .value
-                        ),
-
-                    description:
-                        document
-                            .getElementById(
-                                "bridalPackageDescription"
-                            )
-                            .value
-                            .trim()
-
-                };
-
-
-                const {
-                    error
-                } =
-                    await supabaseClient
-                        .from(
-                            "bridal_packages"
-                        )
-                        .insert(
-                            payload
-                        );
-
-
-                if (error) {
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                showMessage(
-                    "Bridal package saved."
-                );
-
-                await loadBridalPackages();
-
-            }
-        );
-}
-
-
-/* ============================================================
-   TEAM
-   ============================================================ */
-
-async function loadTeam() {
-
-    await loadSimpleManagementTable(
-        "team",
-        "Team",
-        "Add team members and artists."
-    );
-}
-
-
-/* ============================================================
-   TESTIMONIALS
-   ============================================================ */
-
-async function loadTestimonials() {
-
-    await loadSimpleManagementTable(
-        "testimonials",
-        "Testimonials",
-        "Manage customer testimonials."
-    );
-}
-
-
-/* ============================================================
-   GENERIC TEAM / TESTIMONIAL MANAGEMENT
-   ============================================================ */
-
-async function loadSimpleManagementTable(
-    table,
-    title,
-    description
-) {
-
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from(table)
-            .select("*")
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            );
-
-    if (error) {
-
-        showDatabaseError(
-            title,
-            error
-        );
-
-        return;
-    }
-
-
-    moduleContent.innerHTML = `
-
-        <div class="admin-module">
-
-            <div class="module-actions">
-
-                <div>
-
-                    <h2>
-                        ${escapeHTML(title)}
-                    </h2>
-
-                    <p>
-                        ${escapeHTML(description)}
-                    </p>
-
-                </div>
-
                 <button
-                    class="primary-btn"
-                    id="addSimpleBtn"
+                    type="button"
+                    class="sm-btn"
+                    id="cancelBridal"
                 >
-                    + Add
+                    Cancel
                 </button>
 
             </div>
 
-
-            <div id="simpleFormArea"></div>
-
-
-            ${
-                data?.length
-                ? simpleRecordTable(
-                    data,
-                    table
-                )
-                : emptyState(
-                    `No ${title.toLowerCase()} added yet.`
-                )
-            }
-
-        </div>
+        </form>
     `;
 
-
-    document
-        .getElementById(
-            "addSimpleBtn"
-        )
+    $("cancelBridal")
         ?.addEventListener(
             "click",
             () => {
-
-                showSimpleForm(
-                    table
-                );
-
+                area.innerHTML = "";
             }
         );
 
+    $("bridalPackageForm")
+        ?.addEventListener(
+            "submit",
+            async event => {
+                event.preventDefault();
+
+                let imageUrl =
+                    $("bridalImage")
+                        .value.trim() ||
+                    null;
+
+                const file =
+                    $("bridalImageFile")
+                        ?.files?.[0];
+
+                if (file) {
+                    try {
+                        imageUrl =
+                            await uploadImage(
+                                file,
+                                "gallery"
+                            );
+                    } catch (error) {
+                        showError(error);
+                        return;
+                    }
+                }
+
+                const rawPrice =
+                    $("bridalPrice")
+                        .value.trim();
+
+                const payload = {
+                    name:
+                        $("bridalName")
+                            .value.trim(),
+
+                    description:
+                        $("bridalDescription")
+                            .value.trim() ||
+                        null,
+
+                    image_url:
+                        imageUrl,
+
+                    price:
+                        rawPrice === ""
+                            ? null
+                            : Number(rawPrice),
+
+                    price_label:
+                        $("bridalPriceLabel")
+                            .value.trim() ||
+                        "Price on enquiry",
+
+                    included_services:
+                        $("bridalIncluded")
+                            .value.trim() ||
+                        null,
+
+                    duration:
+                        $("bridalDuration")
+                            .value.trim() ||
+                        null,
+
+                    featured:
+                        $("bridalFeatured")
+                            .checked,
+
+                    active:
+                        $("bridalActive")
+                            .checked,
+
+                    display_order:
+                        Number(
+                            $("bridalOrder")
+                                .value || 0
+                        ),
+
+                    updated_at:
+                        new Date().toISOString()
+                };
+
+                await saveRecord(
+                    "bridal_packages",
+                    payload,
+                    item?.id
+                );
+            }
+        );
+}
+
+/* ============================================================
+   TEAM
+   Actual schema:
+   name
+   role
+   bio
+   image_url
+   instagram_url
+   display_order
+   active
+
+   IMPORTANT:
+   There is NO description column.
+============================================================ */
+
+async function loadTeam() {
+    const { data, error } =
+        await supabaseClient
+            .from("team")
+            .select("*")
+            .order("display_order", {
+                ascending: true
+            })
+            .order("created_at", {
+                ascending: false
+            });
+
+    if (error) {
+        showError(error);
+        return;
+    }
+
+    let html = moduleHeader(
+        "Team",
+        "Manage artists and team members.",
+        "Add Team Member"
+    );
+
+    html += `
+        <div id="teamFormArea"></div>
+        <div class="sm-card-list">
+    `;
+
+    if (!data?.length) {
+        html += emptyState(
+            "No team members added yet."
+        );
+    } else {
+        data.forEach(item => {
+            html += `
+                <div class="sm-list-card">
+
+                    <div>
+
+                        ${
+                            item.image_url
+                                ? `
+                                    <img
+                                        src="${escapeAttr(
+                                            item.image_url
+                                        )}"
+                                        class="sm-thumb"
+                                        alt=""
+                                    >
+                                `
+                                : ""
+                        }
+
+                        <div>
+
+                            <h3>
+                                ${escapeHTML(
+                                    item.name
+                                )}
+                            </h3>
+
+                            <p>
+                                ${escapeHTML(
+                                    item.role ||
+                                    ""
+                                )}
+                            </p>
+
+                            ${
+                                item.bio
+                                    ? `<p>${escapeHTML(
+                                        item.bio
+                                    )}</p>`
+                                    : ""
+                            }
+
+                            <small>
+                                ${
+                                    item.active
+                                        ? "Active"
+                                        : "Inactive"
+                                }
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                    <div class="sm-actions">
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small"
+                            data-edit-team="${item.id}"
+                        >
+                            Edit
+                        </button>
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small sm-btn-danger"
+                            data-delete-table="team"
+                            data-delete-id="${item.id}"
+                        >
+                            Delete
+                        </button>
+
+                    </div>
+
+                </div>
+            `;
+        });
+    }
+
+    html += "</div>";
+
+    moduleContent.innerHTML = html;
+
+    $("moduleAddBtn")?.addEventListener(
+        "click",
+        () => showTeamForm(null)
+    );
+
+    document
+        .querySelectorAll("[data-edit-team]")
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    const item =
+                        data.find(
+                            x =>
+                                x.id ===
+                                button.dataset
+                                    .editTeam
+                        );
+
+                    if (item) {
+                        showTeamForm(item);
+                    }
+                }
+            );
+        });
 
     attachDeleteButtons();
 }
 
+function showTeamForm(item = null) {
+    const area = $("teamFormArea");
 
-function simpleRecordTable(
-    data,
-    table
-) {
+    if (!area) return;
 
-    if (!data?.length) {
-        return emptyState(
-            "No records found."
-        );
-    }
+    area.innerHTML = `
+        <form id="teamForm" class="sm-form">
 
-    const keys =
-        Object.keys(
-            data[0]
-        )
-        .filter(
-            key =>
-                ![
-                    "id",
-                    "created_at",
-                    "updated_at"
-                ].includes(key)
-        )
-        .slice(0, 5);
+            <h3>
+                ${item ? "Edit Team Member" : "Add Team Member"}
+            </h3>
 
+            <input
+                type="text"
+                id="teamName"
+                placeholder="Name"
+                value="${escapeAttr(
+                    item?.name || ""
+                )}"
+                required
+            >
 
-    return `
+            <input
+                type="text"
+                id="teamRole"
+                placeholder="Role"
+                value="${escapeAttr(
+                    item?.role || ""
+                )}"
+            >
 
-        <div style="overflow-x:auto;">
+            <textarea
+                id="teamBio"
+                placeholder="Bio"
+            >${escapeHTML(
+                item?.bio || ""
+            )}</textarea>
 
-            <table>
+            <input
+                type="url"
+                id="teamImage"
+                placeholder="Image URL"
+                value="${escapeAttr(
+                    item?.image_url || ""
+                )}"
+            >
 
-                <thead>
+            <input
+                type="file"
+                id="teamImageFile"
+                accept="image/jpeg,image/png,image/webp"
+            >
 
-                    <tr>
+            <input
+                type="url"
+                id="teamInstagram"
+                placeholder="Instagram URL"
+                value="${escapeAttr(
+                    item?.instagram_url || ""
+                )}"
+            >
 
-                        ${keys.map(
-                            key => `
-                                <th>
-                                    ${escapeHTML(
-                                        key
-                                    )}
-                                </th>
-                            `
-                        ).join("")}
+            <input
+                type="number"
+                id="teamOrder"
+                placeholder="Display order"
+                value="${item?.display_order ?? 0}"
+            >
 
-                        <th>
-                            Delete
-                        </th>
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="teamActive"
+                    ${
+                        item?.active !== false
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Active
+            </label>
 
-                    </tr>
+            <div class="sm-form-actions">
 
-                </thead>
+                <button
+                    type="submit"
+                    class="sm-btn sm-btn-primary"
+                >
+                    ${item ? "Update" : "Save"} Team Member
+                </button>
 
+                <button
+                    type="button"
+                    class="sm-btn"
+                    id="cancelTeam"
+                >
+                    Cancel
+                </button>
 
-                <tbody>
+            </div>
 
-                    ${data.map(
-                        item => `
-
-                            <tr>
-
-                                ${keys.map(
-                                    key => `
-
-                                        <td>
-                                            ${escapeHTML(
-                                                item[key] ??
-                                                "—"
-                                            )}
-                                        </td>
-
-                                    `
-                                ).join("")}
-
-                                <td>
-
-                                    <button
-                                        class="danger-btn"
-                                        data-delete-table="${table}"
-                                        data-delete-id="${item.id}"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </td>
-
-                            </tr>
-
-                        `
-                    ).join("")}
-
-                </tbody>
-
-            </table>
-
-        </div>
+        </form>
     `;
-}
 
-
-function showSimpleForm(
-    table
-) {
-
-    const area =
-        document.getElementById(
-            "simpleFormArea"
+    $("cancelTeam")
+        ?.addEventListener(
+            "click",
+            () => {
+                area.innerHTML = "";
+            }
         );
 
-    if (!area) {
-        return;
-    }
-
-
-    if (table === "team") {
-
-        area.innerHTML = `
-
-            <div
-                style="
-                    background:#faf8f4;
-                    padding:20px;
-                    border:1px solid #ddd5ca;
-                    border-radius:12px;
-                    margin-bottom:20px;
-                "
-            >
-
-                <form id="simpleForm">
-
-                    <div class="form-row">
-
-                        <div>
-
-                            <label>
-                                Name
-                            </label>
-
-                            <input
-                                id="simpleName"
-                                required
-                            >
-
-                        </div>
-
-
-                        <div>
-
-                            <label>
-                                Role
-                            </label>
-
-                            <input
-                                id="simpleRole"
-                            >
-
-                        </div>
-
-                    </div>
-
-
-                    <div>
-
-                        <label>
-                            Description
-                        </label>
-
-                        <textarea
-                            id="simpleDescription"
-                        ></textarea>
-
-                    </div>
-
-
-                    <button
-                        class="primary-btn"
-                        type="submit"
-                    >
-                        Save
-                    </button>
-
-                </form>
-
-            </div>
-        `;
-
-
-    } else {
-
-        area.innerHTML = `
-
-            <div
-                style="
-                    background:#faf8f4;
-                    padding:20px;
-                    border:1px solid #ddd5ca;
-                    border-radius:12px;
-                    margin-bottom:20px;
-                "
-            >
-
-                <form id="simpleForm">
-
-                    <div>
-
-                        <label>
-                            Customer Name
-                        </label>
-
-                        <input
-                            id="simpleName"
-                            required
-                        >
-
-                    </div>
-
-
-                    <div>
-
-                        <label>
-                            Testimonial
-                        </label>
-
-                        <textarea
-                            id="simpleDescription"
-                            required
-                        ></textarea>
-
-                    </div>
-
-
-                    <button
-                        class="primary-btn"
-                        type="submit"
-                    >
-                        Save
-                    </button>
-
-                </form>
-
-            </div>
-        `;
-    }
-
-
-    document
-        .getElementById(
-            "simpleForm"
-        )
+    $("teamForm")
         ?.addEventListener(
             "submit",
             async event => {
-
                 event.preventDefault();
 
+                let imageUrl =
+                    $("teamImage")
+                        .value.trim() ||
+                    null;
 
-                let payload;
+                const file =
+                    $("teamImageFile")
+                        ?.files?.[0];
 
-
-                if (table === "team") {
-
-                    payload = {
-
-                        name:
-                            document
-                                .getElementById(
-                                    "simpleName"
-                                )
-                                .value
-                                .trim(),
-
-                        role:
-                            document
-                                .getElementById(
-                                    "simpleRole"
-                                )
-                                .value
-                                .trim(),
-
-                        description:
-                            document
-                                .getElementById(
-                                    "simpleDescription"
-                                )
-                                .value
-                                .trim()
-
-                    };
-
-                } else {
-
-                    payload = {
-
-                        name:
-                            document
-                                .getElementById(
-                                    "simpleName"
-                                )
-                                .value
-                                .trim(),
-
-                        description:
-                            document
-                                .getElementById(
-                                    "simpleDescription"
-                                )
-                                .value
-                                .trim()
-
-                    };
+                if (file) {
+                    try {
+                        imageUrl =
+                            await uploadImage(
+                                file,
+                                "team"
+                            );
+                    } catch (error) {
+                        showError(error);
+                        return;
+                    }
                 }
 
+                const payload = {
+                    name:
+                        $("teamName")
+                            .value.trim(),
 
-                const {
-                    error
-                } =
-                    await supabaseClient
-                        .from(table)
-                        .insert(
-                            payload
-                        );
+                    role:
+                        $("teamRole")
+                            .value.trim() ||
+                        null,
 
+                    bio:
+                        $("teamBio")
+                            .value.trim() ||
+                        null,
 
-                if (error) {
+                    image_url:
+                        imageUrl,
 
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
+                    instagram_url:
+                        $("teamInstagram")
+                            .value.trim() ||
+                        null,
 
-                    return;
-                }
+                    display_order:
+                        Number(
+                            $("teamOrder")
+                                .value || 0
+                        ),
 
+                    active:
+                        $("teamActive")
+                            .checked
+                };
 
-                showMessage(
-                    "Saved successfully."
+                await saveRecord(
+                    "team",
+                    payload,
+                    item?.id
                 );
-
-
-                if (table === "team") {
-
-                    await loadTeam();
-
-                } else {
-
-                    await loadTestimonials();
-                }
-
             }
         );
 }
 
+/* ============================================================
+   TESTIMONIALS
+   Actual schema:
+   customer_name
+   testimonial
+   rating
+   image_url
+   service
+   featured
+   visible
+
+   IMPORTANT:
+   There is NO message column.
+============================================================ */
+
+async function loadTestimonials() {
+    const { data, error } =
+        await supabaseClient
+            .from("testimonials")
+            .select("*")
+            .order("created_at", {
+                ascending: false
+            });
+
+    if (error) {
+        showError(error);
+        return;
+    }
+
+    let html = moduleHeader(
+        "Testimonials / Reviews",
+        "Manage customer reviews.",
+        "Add Review"
+    );
+
+    html += `
+        <div id="testimonialFormArea"></div>
+        <div class="sm-card-list">
+    `;
+
+    if (!data?.length) {
+        html += emptyState(
+            "No testimonials yet."
+        );
+    } else {
+        data.forEach(item => {
+            html += `
+                <div class="sm-list-card">
+
+                    <div>
+
+                        <h3>
+                            ${escapeHTML(
+                                item.customer_name
+                            )}
+                        </h3>
+
+                        <p>
+                            ${escapeHTML(
+                                item.testimonial
+                            )}
+                        </p>
+
+                        ${
+                            item.rating
+                                ? `<small>
+                                    Rating: ${item.rating}/5
+                                </small>`
+                                : ""
+                        }
+
+                        ${
+                            item.service
+                                ? `<small>
+                                    • ${escapeHTML(
+                                        item.service
+                                    )}
+                                </small>`
+                                : ""
+                        }
+
+                        <br>
+
+                        <small>
+                            ${
+                                item.visible
+                                    ? "Visible"
+                                    : "Hidden"
+                            }
+
+                            ${
+                                item.featured
+                                    ? " • Featured"
+                                    : ""
+                            }
+                        </small>
+
+                    </div>
+
+                    <div class="sm-actions">
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small"
+                            data-edit-testimonial="${item.id}"
+                        >
+                            Edit
+                        </button>
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small sm-btn-danger"
+                            data-delete-table="testimonials"
+                            data-delete-id="${item.id}"
+                        >
+                            Delete
+                        </button>
+
+                    </div>
+
+                </div>
+            `;
+        });
+    }
+
+    html += "</div>";
+
+    moduleContent.innerHTML = html;
+
+    $("moduleAddBtn")?.addEventListener(
+        "click",
+        () => showTestimonialForm(null)
+    );
+
+    document
+        .querySelectorAll(
+            "[data-edit-testimonial]"
+        )
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    const item =
+                        data.find(
+                            x =>
+                                x.id ===
+                                button.dataset
+                                    .editTestimonial
+                        );
+
+                    if (item) {
+                        showTestimonialForm(
+                            item
+                        );
+                    }
+                }
+            );
+        });
+
+    attachDeleteButtons();
+}
+
+function showTestimonialForm(item = null) {
+    const area =
+        $("testimonialFormArea");
+
+    if (!area) return;
+
+    area.innerHTML = `
+        <form
+            id="testimonialForm"
+            class="sm-form"
+        >
+
+            <h3>
+                ${
+                    item
+                        ? "Edit Review"
+                        : "Add Review"
+                }
+            </h3>
+
+            <input
+                type="text"
+                id="testimonialName"
+                placeholder="Customer name"
+                value="${escapeAttr(
+                    item?.customer_name || ""
+                )}"
+                required
+            >
+
+            <textarea
+                id="testimonialText"
+                placeholder="Testimonial"
+                required
+            >${escapeHTML(
+                item?.testimonial || ""
+            )}</textarea>
+
+            <input
+                type="number"
+                min="1"
+                max="5"
+                id="testimonialRating"
+                placeholder="Rating 1-5"
+                value="${
+                    item?.rating ??
+                    ""
+                }"
+            >
+
+            <input
+                type="text"
+                id="testimonialService"
+                placeholder="Service"
+                value="${escapeAttr(
+                    item?.service || ""
+                )}"
+            >
+
+            <input
+                type="url"
+                id="testimonialImage"
+                placeholder="Image URL"
+                value="${escapeAttr(
+                    item?.image_url || ""
+                )}"
+            >
+
+            <input
+                type="file"
+                id="testimonialImageFile"
+                accept="image/jpeg,image/png,image/webp"
+            >
+
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="testimonialFeatured"
+                    ${
+                        item?.featured
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Featured
+            </label>
+
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="testimonialVisible"
+                    ${
+                        item?.visible !== false
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Visible
+            </label>
+
+            <div class="sm-form-actions">
+
+                <button
+                    type="submit"
+                    class="sm-btn sm-btn-primary"
+                >
+                    ${item ? "Update" : "Save"} Review
+                </button>
+
+                <button
+                    type="button"
+                    class="sm-btn"
+                    id="cancelTestimonial"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </form>
+    `;
+
+    $("cancelTestimonial")
+        ?.addEventListener(
+            "click",
+            () => {
+                area.innerHTML = "";
+            }
+        );
+
+    $("testimonialForm")
+        ?.addEventListener(
+            "submit",
+            async event => {
+                event.preventDefault();
+
+                let imageUrl =
+                    $("testimonialImage")
+                        .value.trim() ||
+                    null;
+
+                const file =
+                    $("testimonialImageFile")
+                        ?.files?.[0];
+
+                if (file) {
+                    try {
+                        imageUrl =
+                            await uploadImage(
+                                file,
+                                "customer-gallery"
+                            );
+                    } catch (error) {
+                        showError(error);
+                        return;
+                    }
+                }
+
+                const rating =
+                    $("testimonialRating")
+                        .value.trim();
+
+                const payload = {
+                    customer_name:
+                        $("testimonialName")
+                            .value.trim(),
+
+                    testimonial:
+                        $("testimonialText")
+                            .value.trim(),
+
+                    rating:
+                        rating === ""
+                            ? null
+                            : Number(rating),
+
+                    image_url:
+                        imageUrl,
+
+                    service:
+                        $("testimonialService")
+                            .value.trim() ||
+                        null,
+
+                    featured:
+                        $("testimonialFeatured")
+                            .checked,
+
+                    visible:
+                        $("testimonialVisible")
+                            .checked
+                };
+
+                await saveRecord(
+                    "testimonials",
+                    payload,
+                    item?.id
+                );
+            }
+        );
+}
 
 /* ============================================================
-   FAQS
-   ============================================================ */
+   FAQ
+   Actual schema:
+   question
+   answer
+   display_order
+   active
+============================================================ */
 
 async function loadFAQs() {
-
-    const {
-        data,
-        error
-    } =
+    const { data, error } =
         await supabaseClient
             .from("faqs")
             .select("*")
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            );
+            .order("display_order", {
+                ascending: true
+            })
+            .order("created_at", {
+                ascending: false
+            });
 
     if (error) {
-
-        showDatabaseError(
-            "FAQs",
-            error
-        );
-
+        showError(error);
         return;
     }
 
+    let html = moduleHeader(
+        "FAQs",
+        "Manage frequently asked questions.",
+        "Add FAQ"
+    );
 
-    moduleContent.innerHTML = `
-
-        <div class="admin-module">
-
-            <div class="module-actions">
-
-                <div>
-
-                    <h2>
-                        FAQs
-                    </h2>
-
-                    <p>
-                        Manage frequently asked questions.
-                    </p>
-
-                </div>
-
-                <button
-                    class="primary-btn"
-                    id="addFaqBtn"
-                >
-                    + Add FAQ
-                </button>
-
-            </div>
-
-
-            <div id="faqFormArea"></div>
-
-
-            ${
-                data?.length
-                ? simpleRecordTable(
-                    data,
-                    "faqs"
-                )
-                : emptyState(
-                    "No FAQs added yet."
-                )
-            }
-
-        </div>
+    html += `
+        <div id="faqFormArea"></div>
+        <div class="sm-card-list">
     `;
 
+    if (!data?.length) {
+        html += emptyState(
+            "No FAQs yet."
+        );
+    } else {
+        data.forEach(item => {
+            html += `
+                <div class="sm-list-card">
+
+                    <div>
+
+                        <h3>
+                            ${escapeHTML(
+                                item.question
+                            )}
+                        </h3>
+
+                        <p>
+                            ${escapeHTML(
+                                item.answer
+                            )}
+                        </p>
+
+                        <small>
+                            ${
+                                item.active
+                                    ? "Active"
+                                    : "Inactive"
+                            }
+                        </small>
+
+                    </div>
+
+                    <div class="sm-actions">
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small"
+                            data-edit-faq="${item.id}"
+                        >
+                            Edit
+                        </button>
+
+                        <button
+                            type="button"
+                            class="sm-btn sm-btn-small sm-btn-danger"
+                            data-delete-table="faqs"
+                            data-delete-id="${item.id}"
+                        >
+                            Delete
+                        </button>
+
+                    </div>
+
+                </div>
+            `;
+        });
+    }
+
+    html += "</div>";
+
+    moduleContent.innerHTML = html;
+
+    $("moduleAddBtn")?.addEventListener(
+        "click",
+        () => showFAQForm(null)
+    );
 
     document
-        .getElementById(
-            "addFaqBtn"
-        )
-        ?.addEventListener(
-            "click",
-            showFAQForm
-        );
+        .querySelectorAll("[data-edit-faq]")
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    const item =
+                        data.find(
+                            x =>
+                                x.id ===
+                                button.dataset
+                                    .editFaq
+                        );
 
+                    if (item) {
+                        showFAQForm(item);
+                    }
+                }
+            );
+        });
 
     attachDeleteButtons();
 }
 
+function showFAQForm(item = null) {
+    const area = $("faqFormArea");
 
-function showFAQForm() {
-
-    const area =
-        document.getElementById(
-            "faqFormArea"
-        );
-
-    if (!area) {
-        return;
-    }
-
+    if (!area) return;
 
     area.innerHTML = `
+        <form id="faqForm" class="sm-form">
 
-        <div
-            style="
-                background:#faf8f4;
-                padding:20px;
-                border:1px solid #ddd5ca;
-                border-radius:12px;
-                margin-bottom:20px;
-            "
-        >
+            <h3>
+                ${item ? "Edit FAQ" : "Add FAQ"}
+            </h3>
 
-            <form id="faqForm">
+            <input
+                type="text"
+                id="faqQuestion"
+                placeholder="Question"
+                value="${escapeAttr(
+                    item?.question || ""
+                )}"
+                required
+            >
 
-                <div>
+            <textarea
+                id="faqAnswer"
+                placeholder="Answer"
+                required
+            >${escapeHTML(
+                item?.answer || ""
+            )}</textarea>
 
-                    <label>
-                        Question
-                    </label>
+            <input
+                type="number"
+                id="faqOrder"
+                placeholder="Display order"
+                value="${item?.display_order ?? 0}"
+            >
 
-                    <input
-                        id="faqQuestion"
-                        required
-                    >
+            <label class="sm-check">
+                <input
+                    type="checkbox"
+                    id="faqActive"
+                    ${
+                        item?.active !== false
+                            ? "checked"
+                            : ""
+                    }
+                >
+                Active
+            </label>
 
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Answer
-                    </label>
-
-                    <textarea
-                        id="faqAnswer"
-                        required
-                    ></textarea>
-
-                </div>
-
+            <div class="sm-form-actions">
 
                 <button
-                    class="primary-btn"
                     type="submit"
+                    class="sm-btn sm-btn-primary"
                 >
-                    Save FAQ
+                    ${item ? "Update" : "Save"} FAQ
                 </button>
 
-            </form>
+                <button
+                    type="button"
+                    class="sm-btn"
+                    id="cancelFAQ"
+                >
+                    Cancel
+                </button>
 
-        </div>
+            </div>
+
+        </form>
     `;
 
+    $("cancelFAQ")
+        ?.addEventListener(
+            "click",
+            () => {
+                area.innerHTML = "";
+            }
+        );
 
-    document
-        .getElementById(
-            "faqForm"
-        )
+    $("faqForm")
         ?.addEventListener(
             "submit",
             async event => {
-
                 event.preventDefault();
 
-
                 const payload = {
-
                     question:
-                        document
-                            .getElementById(
-                                "faqQuestion"
-                            )
-                            .value
-                            .trim(),
+                        $("faqQuestion")
+                            .value.trim(),
 
                     answer:
-                        document
-                            .getElementById(
-                                "faqAnswer"
-                            )
-                            .value
-                            .trim()
+                        $("faqAnswer")
+                            .value.trim(),
 
+                    display_order:
+                        Number(
+                            $("faqOrder")
+                                .value || 0
+                        ),
+
+                    active:
+                        $("faqActive")
+                            .checked
                 };
 
-
-                const {
-                    error
-                } =
-                    await supabaseClient
-                        .from("faqs")
-                        .insert(
-                            payload
-                        );
-
-
-                if (error) {
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                showMessage(
-                    "FAQ saved successfully."
+                await saveRecord(
+                    "faqs",
+                    payload,
+                    item?.id
                 );
-
-                await loadFAQs();
-
             }
         );
 }
 
-
 /* ============================================================
    SETTINGS
-   VERIFIED SCHEMA:
+   Actual schema:
    setting_key
    setting_value
-   ============================================================ */
+
+   IMPORTANT:
+   Never use key/value here.
+============================================================ */
 
 async function loadSettings() {
-
-    const {
-        data,
-        error
-    } =
+    const { data, error } =
         await supabaseClient
             .from("settings")
-            .select(
-                "id,setting_key,setting_value,updated_at"
-            )
-            .order(
-                "setting_key",
-                {
-                    ascending: true
-                }
-            );
+            .select("*")
+            .order("setting_key", {
+                ascending: true
+            });
 
     if (error) {
-
-        showDatabaseError(
-            "Settings",
-            error
-        );
-
+        showError(error);
         return;
     }
 
-
     const settings = {};
 
-    (data || []).forEach(
-        item => {
-
-            settings[
-                item.setting_key
-            ] =
-                item.setting_value;
-
-        }
-    );
-
+    (data || []).forEach(item => {
+        settings[item.setting_key] =
+            item.setting_value || "";
+    });
 
     moduleContent.innerHTML = `
+        ${moduleHeader(
+            "Website Settings",
+            "Manage core business information."
+        )}
 
-        <div class="admin-module">
+        <form id="settingsForm" class="sm-form">
 
-            <div class="module-actions">
+            <label>
+                Business name
+                <input
+                    type="text"
+                    id="settingBusinessName"
+                    value="${escapeAttr(
+                        settings.business_name ||
+                        ""
+                    )}"
+                >
+            </label>
 
-                <div>
+            <label>
+                Artist name
+                <input
+                    type="text"
+                    id="settingArtistName"
+                    value="${escapeAttr(
+                        settings.artist_name ||
+                        ""
+                    )}"
+                >
+            </label>
 
-                    <h2>
-                        Settings
-                    </h2>
+            <label>
+                Phone
+                <input
+                    type="text"
+                    id="settingPhone"
+                    value="${escapeAttr(
+                        settings.phone ||
+                        ""
+                    )}"
+                >
+            </label>
 
-                    <p>
-                        Manage business contact information.
-                    </p>
+            <label>
+                WhatsApp
+                <input
+                    type="text"
+                    id="settingWhatsApp"
+                    value="${escapeAttr(
+                        settings.whatsapp ||
+                        ""
+                    )}"
+                >
+            </label>
 
-                </div>
+            <label>
+                Email
+                <input
+                    type="email"
+                    id="settingEmail"
+                    value="${escapeAttr(
+                        settings.email ||
+                        ""
+                    )}"
+                >
+            </label>
 
-            </div>
+            <label>
+                Address
+                <textarea
+                    id="settingAddress"
+                >${escapeHTML(
+                    settings.address ||
+                    ""
+                )}</textarea>
+            </label>
 
+            <label>
+                Instagram
+                <input
+                    type="url"
+                    id="settingInstagram"
+                    value="${escapeAttr(
+                        settings.instagram ||
+                        ""
+                    )}"
+                >
+            </label>
 
-            <form id="settingsForm">
+            <label>
+                YouTube
+                <input
+                    type="url"
+                    id="settingYoutube"
+                    value="${escapeAttr(
+                        settings.youtube ||
+                        ""
+                    )}"
+                >
+            </label>
 
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Business Name
-                        </label>
-
-                        <input
-                            id="settingBusinessName"
-                            value="${escapeAttribute(
-                                settings.business_name ||
-                                ""
-                            )}"
-                        >
-
-                    </div>
-
-
-                    <div>
-
-                        <label>
-                            Artist Name
-                        </label>
-
-                        <input
-                            id="settingArtist"
-                            value="${escapeAttribute(
-                                settings.artist_name ||
-                                ""
-                            )}"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Phone
-                        </label>
-
-                        <input
-                            id="settingPhone"
-                            value="${escapeAttribute(
-                                settings.phone ||
-                                ""
-                            )}"
-                        >
-
-                    </div>
-
-
-                    <div>
-
-                        <label>
-                            WhatsApp
-                        </label>
-
-                        <input
-                            id="settingWhatsapp"
-                            value="${escapeAttribute(
-                                settings.whatsapp ||
-                                ""
-                            )}"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Email
-                        </label>
-
-                        <input
-                            id="settingEmail"
-                            type="email"
-                            value="${escapeAttribute(
-                                settings.email ||
-                                ""
-                            )}"
-                        >
-
-                    </div>
-
-
-                    <div>
-
-                        <label>
-                            Address
-                        </label>
-
-                        <input
-                            id="settingAddress"
-                            value="${escapeAttribute(
-                                settings.address ||
-                                ""
-                            )}"
-                        >
-
-                    </div>
-
-                </div>
-
+            <div class="sm-form-actions">
 
                 <button
-                    class="primary-btn"
                     type="submit"
+                    class="sm-btn sm-btn-primary"
                 >
                     Save Settings
                 </button>
 
-            </form>
+            </div>
 
-        </div>
+        </form>
     `;
 
-
-    document
-        .getElementById(
-            "settingsForm"
-        )
+    $("settingsForm")
         ?.addEventListener(
             "submit",
             saveSettings
         );
 }
 
-
-async function saveSettings(
-    event
-) {
-
+async function saveSettings(event) {
     event.preventDefault();
 
-
-    const values = {
-
+    const settings = {
         business_name:
-            document
-                .getElementById(
-                    "settingBusinessName"
-                )
-                .value
-                .trim(),
+            $("settingBusinessName")
+                .value.trim(),
 
         artist_name:
-            document
-                .getElementById(
-                    "settingArtist"
-                )
-                .value
-                .trim(),
+            $("settingArtistName")
+                .value.trim(),
 
         phone:
-            document
-                .getElementById(
-                    "settingPhone"
-                )
-                .value
-                .trim(),
+            $("settingPhone")
+                .value.trim(),
 
         whatsapp:
-            document
-                .getElementById(
-                    "settingWhatsapp"
-                )
-                .value
-                .trim(),
+            $("settingWhatsApp")
+                .value.trim(),
 
         email:
-            document
-                .getElementById(
-                    "settingEmail"
-                )
-                .value
-                .trim(),
+            $("settingEmail")
+                .value.trim(),
 
         address:
-            document
-                .getElementById(
-                    "settingAddress"
-                )
-                .value
-                .trim()
+            $("settingAddress")
+                .value.trim(),
 
+        instagram:
+            $("settingInstagram")
+                .value.trim(),
+
+        youtube:
+            $("settingYoutube")
+                .value.trim()
     };
-
 
     try {
 
         for (
-            const [
-                key,
-                value
-            ]
-            of Object.entries(values)
+            const [key, value]
+            of Object.entries(settings)
         ) {
 
             const {
-                data: existing
+                data: existing,
+                error: findError
             } =
                 await supabaseClient
                     .from("settings")
@@ -4322,13 +5449,13 @@ async function saveSettings(
                     )
                     .maybeSingle();
 
-
-            let result;
-
+            if (findError) {
+                throw findError;
+            }
 
             if (existing?.id) {
 
-                result =
+                const { error } =
                     await supabaseClient
                         .from("settings")
                         .update({
@@ -4343,63 +5470,150 @@ async function saveSettings(
                             existing.id
                         );
 
+                if (error) {
+                    throw error;
+                }
+
             } else {
 
-                result =
+                const { error } =
                     await supabaseClient
                         .from("settings")
                         .insert({
-
                             setting_key:
                                 key,
 
                             setting_value:
                                 value
-
                         });
-            }
 
-
-            if (result.error) {
-                throw result.error;
+                if (error) {
+                    throw error;
+                }
             }
         }
-
 
         showMessage(
             "Settings saved successfully."
         );
 
+    } catch (error) {
+        showError(error);
+    }
+}
 
-        await loadSettings();
+/* ============================================================
+   GENERIC SAVE
+============================================================ */
+
+async function saveRecord(
+    table,
+    payload,
+    id = null
+) {
+    try {
+
+        let result;
+
+        if (id) {
+
+            result =
+                await supabaseClient
+                    .from(table)
+                    .update(payload)
+                    .eq("id", id);
+
+        } else {
+
+            result =
+                await supabaseClient
+                    .from(table)
+                    .insert(payload);
+        }
+
+        if (result.error) {
+            throw result.error;
+        }
+
+        showMessage(
+            id
+                ? "Updated successfully."
+                : "Saved successfully."
+        );
+
+        await openModule(
+            activeModule
+        );
 
     } catch (error) {
-
         console.error(
-            "Settings error:",
+            `Save error [${table}]:`,
             error
         );
 
         showMessage(
-            error.message,
+            `${table}: ${
+                error.message ||
+                "Save failed."
+            }`,
             "error"
         );
     }
 }
 
-
 /* ============================================================
    DELETE
-   ============================================================ */
+============================================================ */
+
+async function deleteRecord(
+    table,
+    id
+) {
+    if (!id) return;
+
+    const confirmed =
+        window.confirm(
+            "Are you sure you want to delete this item?"
+        );
+
+    if (!confirmed) return;
+
+    try {
+
+        const { error } =
+            await supabaseClient
+                .from(table)
+                .delete()
+                .eq("id", id);
+
+        if (error) {
+            throw error;
+        }
+
+        showMessage(
+            "Deleted successfully."
+        );
+
+        await openModule(
+            activeModule
+        );
+
+    } catch (error) {
+        console.error(
+            `Delete error [${table}]:`,
+            error
+        );
+
+        showMessage(
+            error.message ||
+            "Delete failed.",
+            "error"
+        );
+    }
+}
 
 function attachDeleteButtons() {
-
-    if (!moduleContent) {
-        return;
-    }
-
-
-    moduleContent
+    document
         .querySelectorAll(
             "[data-delete-table]"
         )
@@ -4409,17 +5623,12 @@ function attachDeleteButtons() {
                 "click",
                 async () => {
 
-                    const table =
-                        button.dataset
-                            .deleteTable;
-
-                    const id =
-                        button.dataset
-                            .deleteId;
-
                     await deleteRecord(
-                        table,
-                        id
+                        button.dataset
+                            .deleteTable,
+
+                        button.dataset
+                            .deleteId
                     );
 
                 }
@@ -4428,280 +5637,622 @@ function attachDeleteButtons() {
         });
 }
 
+/* ============================================================
+   SUPABASE STORAGE
+============================================================ */
 
-async function deleteRecord(
-    table,
-    id
+async function uploadImage(
+    file,
+    bucket
 ) {
-
-    if (!table || !id) {
-        return;
-    }
-
-
-    const confirmed =
-        window.confirm(
-            "Are you sure you want to delete this item?"
+    if (!file) {
+        throw new Error(
+            "No image selected."
         );
-
-
-    if (!confirmed) {
-        return;
     }
 
+    const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+    ];
 
-    const {
-        error
-    } =
+    if (
+        !allowedTypes.includes(
+            file.type
+        )
+    ) {
+        throw new Error(
+            "Only JPG, PNG and WebP images are allowed."
+        );
+    }
+
+    if (
+        file.size >
+        10 * 1024 * 1024
+    ) {
+        throw new Error(
+            "Image must be 10 MB or smaller."
+        );
+    }
+
+    const extension =
+        file.name
+            .split(".")
+            .pop()
+            .toLowerCase();
+
+    const fileName =
+        `${Date.now()}-${crypto.randomUUID()}.${extension}`;
+
+    const path =
+        `admin/${fileName}`;
+
+    const { error } =
         await supabaseClient
-            .from(table)
-            .delete()
-            .eq(
-                "id",
-                id
+            .storage
+            .from(bucket)
+            .upload(
+                path,
+                file,
+                {
+                    cacheControl:
+                        "3600",
+                    upsert: false,
+                    contentType:
+                        file.type
+                }
             );
 
-
     if (error) {
+        throw error;
+    }
 
-        console.error(
-            "Delete error:",
-            error
-        );
+    const {
+        data
+    } =
+        supabaseClient
+            .storage
+            .from(bucket)
+            .getPublicUrl(path);
 
-        showMessage(
-            error.message,
-            "error"
-        );
+    return data.publicUrl;
+}
 
+/* ============================================================
+   ADMIN STYLES
+   Injected so admin.js remains self-contained.
+============================================================ */
+
+function addAdminStyles() {
+
+    if ($("schemaMatchedAdminStyles")) {
         return;
     }
 
+    const style =
+        document.createElement("style");
 
-    showMessage(
-        "Deleted successfully."
-    );
+    style.id =
+        "schemaMatchedAdminStyles";
 
+    style.textContent = `
 
-    await openModule(
-        currentModule
-    );
-}
+        #schemaMatchedAdmin {
+            width: 100%;
+            box-sizing: border-box;
+            font-family:
+                Inter,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+        }
 
+        .sm-admin {
+            width: 100%;
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
 
-/* ============================================================
-   EMPTY STATE
-   ============================================================ */
+        .sm-admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 24px;
+            padding: 22px;
+            border-radius: 18px;
+            background: #181512;
+            color: #fff;
+        }
 
-function emptyState(
-    message
-) {
+        .sm-admin-header h1 {
+            margin: 0 0 5px;
+            font-size: 26px;
+        }
 
-    return `
+        .sm-admin-header p {
+            margin: 0;
+            opacity: .7;
+        }
 
-        <div class="empty-state">
+        .sm-admin-account {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
 
-            ${escapeHTML(message)}
+        .sm-admin-nav {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
 
-        </div>
-    `;
-}
+        .sm-module-btn {
+            flex: 0 0 auto;
+            border: 1px solid #ddd4c7;
+            background: #fff;
+            border-radius: 12px;
+            padding: 11px 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: #302a25;
+        }
 
+        .sm-module-btn:hover,
+        .sm-module-btn.active {
+            background: #302a25;
+            color: #fff;
+        }
 
-/* ============================================================
-   DATABASE ERROR
-   ============================================================ */
+        .sm-module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
 
-function showDatabaseError(
-    moduleName,
-    error
-) {
+        .sm-module-header h2 {
+            margin: 0 0 5px;
+            font-size: 25px;
+        }
 
-    console.error(
-        `${moduleName} database error:`,
-        error
-    );
+        .sm-module-header p {
+            margin: 0;
+            color: #777;
+        }
 
+        .sm-stats-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
 
-    if (!moduleContent) {
-        return;
-    }
+        .sm-stat {
+            text-align: left;
+            border: 1px solid #e4ddd5;
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            box-shadow:
+                0 8px 30px rgba(0,0,0,.05);
+        }
 
+        .sm-stat:hover {
+            transform: translateY(-2px);
+        }
 
-    moduleContent.innerHTML = `
+        .sm-stat-icon {
+            display: block;
+            font-size: 25px;
+            margin-bottom: 12px;
+        }
 
-        <div class="admin-module">
+        .sm-stat strong {
+            display: block;
+            font-size: 30px;
+            color: #29231f;
+        }
 
-            <h2>
-                ${escapeHTML(moduleName)}
-            </h2>
+        .sm-stat small {
+            color: #777;
+        }
 
-            <div
-                style="
-                    margin-top:20px;
-                    padding:16px;
-                    background:#fee2e2;
-                    color:#991b1b;
-                    border-radius:10px;
-                "
-            >
+        .sm-form {
+            background: #fff;
+            border: 1px solid #e5ded6;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow:
+                0 8px 30px rgba(0,0,0,.04);
+        }
 
-                <strong>
-                    Database error
-                </strong>
+        .sm-form h3 {
+            margin-top: 0;
+        }
 
-                <p style="margin-top:8px;">
-                    ${escapeHTML(
-                        error?.message ||
-                        "Unknown database error."
-                    )}
-                </p>
+        .sm-form input,
+        .sm-form textarea,
+        .sm-form select {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #d8d0c7;
+            border-radius: 10px;
+            padding: 12px 13px;
+            margin: 7px 0 12px;
+            font: inherit;
+            background: #fff;
+        }
 
-            </div>
+        .sm-form textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
 
-        </div>
-    `;
-}
+        .sm-form label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4b443e;
+        }
 
+        .sm-check {
+            display: flex !important;
+            align-items: center;
+            gap: 8px;
+            margin: 10px 0;
+        }
 
-/* ============================================================
-   AUTH STATE LISTENER
-   ============================================================ */
+        .sm-check input {
+            width: auto;
+            margin: 0;
+        }
 
-function setupAuthListener() {
+        .sm-form-actions,
+        .sm-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
 
-    if (!supabaseClient) {
-        return;
-    }
+        .sm-btn {
+            border: 1px solid #d6cec5;
+            background: #fff;
+            color: #302a25;
+            border-radius: 9px;
+            padding: 9px 14px;
+            cursor: pointer;
+            font: inherit;
+        }
 
+        .sm-btn:hover {
+            opacity: .85;
+        }
 
-    supabaseClient
-        .auth
-        .onAuthStateChange(
-            (
-                event,
-                session
-            ) => {
+        .sm-btn-primary {
+            background: #302a25;
+            color: #fff;
+            border-color: #302a25;
+        }
 
-                console.log(
-                    "Auth state:",
-                    event
-                );
+        .sm-btn-danger {
+            background: #991b1b;
+            color: #fff;
+            border-color: #991b1b;
+        }
 
+        .sm-btn-small {
+            padding: 7px 10px;
+            font-size: 12px;
+        }
 
-                currentUser =
-                    session?.user ||
-                    null;
+        .sm-card-list {
+            display: grid;
+            gap: 12px;
+        }
 
+        .sm-list-card {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: center;
+            padding: 18px;
+            background: #fff;
+            border: 1px solid #e5ded6;
+            border-radius: 15px;
+        }
 
-                if (session) {
+        .sm-list-card h3 {
+            margin: 0 0 7px;
+        }
 
-                    showAdmin();
+        .sm-list-card p {
+            margin: 5px 0;
+            color: #666;
+        }
 
-                } else {
+        .sm-list-card small {
+            color: #777;
+        }
 
-                    showLogin();
-                }
+        .sm-thumb {
+            width: 75px;
+            height: 75px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-right: 15px;
+            vertical-align: middle;
+        }
 
+        .sm-gallery-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fill, minmax(230px, 1fr));
+            gap: 15px;
+        }
+
+        .sm-gallery-card {
+            background: #fff;
+            border: 1px solid #e5ded6;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .sm-gallery-card > img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .sm-gallery-info {
+            padding: 14px;
+        }
+
+        .sm-gallery-info h3 {
+            margin: 0 0 6px;
+        }
+
+        .sm-gallery-info small {
+            display: block;
+            color: #777;
+            margin: 3px 0;
+        }
+
+        .sm-before-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fill, minmax(350px, 1fr));
+            gap: 15px;
+        }
+
+        .sm-before-card {
+            background: #fff;
+            border: 1px solid #e5ded6;
+            border-radius: 15px;
+            padding: 15px;
+        }
+
+        .sm-before-images {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .sm-before-images img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .sm-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            background: #fff;
+            border: 1px solid #e5ded6;
+            border-radius: 15px;
+        }
+
+        .sm-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        .sm-table th,
+        .sm-table td {
+            padding: 13px;
+            border-bottom: 1px solid #eee8e1;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .sm-table th {
+            background: #f7f3ee;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .sm-table td small {
+            display: block;
+            color: #777;
+            margin-top: 4px;
+        }
+
+        .sm-status-select {
+            border: 1px solid #ddd4cb;
+            border-radius: 8px;
+            padding: 7px;
+        }
+
+        .sm-empty {
+            text-align: center;
+            padding: 50px 20px;
+            border: 1px dashed #d9d0c7;
+            border-radius: 15px;
+            color: #777;
+            background: #fff;
+        }
+
+        .sm-empty div {
+            font-size: 30px;
+            margin-bottom: 10px;
+        }
+
+        .sm-loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #777;
+        }
+
+        .sm-error {
+            padding: 25px;
+            border-radius: 14px;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        @media (max-width: 700px) {
+
+            .sm-admin {
+                padding: 10px;
             }
-        );
-}
 
+            .sm-admin-header,
+            .sm-module-header,
+            .sm-list-card {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .sm-admin-account {
+                width: 100%;
+            }
+
+            .sm-admin-account span {
+                overflow-wrap: anywhere;
+            }
+
+            .sm-stats-grid {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .sm-before-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sm-gallery-grid {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .sm-gallery-card > img {
+                height: 170px;
+            }
+        }
+
+        @media (max-width: 430px) {
+
+            .sm-stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .sm-gallery-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sm-admin-header h1 {
+                font-size: 21px;
+            }
+        }
+
+    `;
+
+    document.head.appendChild(style);
+}
 
 /* ============================================================
    STARTUP
-   ============================================================ */
+============================================================ */
 
-async function startAdminPanel() {
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-    console.log(
-        "Manju Admin Panel starting..."
-    );
+        const loginForm =
+            $("loginForm");
 
+        if (loginForm) {
+            loginForm.addEventListener(
+                "submit",
+                handleLogin
+            );
+        }
 
-    const elementsReady =
-        initializeAdminElements();
+        const logoutBtn =
+            $("logoutBtn");
 
+        if (logoutBtn) {
+            logoutBtn.addEventListener(
+                "click",
+                handleLogout
+            );
+        }
 
-    if (!elementsReady) {
+        if (
+            typeof supabaseClient !==
+            "undefined"
+        ) {
 
-        console.error(
-            "Required admin HTML elements are missing."
-        );
+            supabaseClient.auth
+                .onAuthStateChange(
+                    (event, session) => {
 
-        return;
+                        currentUser =
+                            session?.user ||
+                            null;
+
+                        if (session) {
+                            showAdmin();
+                        } else {
+                            showLogin();
+                        }
+
+                    }
+                );
+
+            checkAuth();
+
+        } else {
+
+            console.error(
+                "supabaseClient is unavailable."
+            );
+
+        }
+
     }
-
-
-    const supabaseReady =
-        initializeSupabase();
-
-
-    if (!supabaseReady) {
-
-        showMessage(
-            "Supabase configuration could not be loaded.",
-            "error"
-        );
-
-        return;
-    }
-
-
-    if (loginForm) {
-
-        loginForm.addEventListener(
-            "submit",
-            handleLogin
-        );
-    }
-
-
-    if (logoutBtn) {
-
-        logoutBtn.addEventListener(
-            "click",
-            handleLogout
-        );
-    }
-
-
-    setupNavigation();
-
-
-    setupAuthListener();
-
-
-    await checkAuth();
-
-
-    console.log(
-        "Manju Admin Panel loaded."
-    );
-}
-
+);
 
 /* ============================================================
-   DOM READY
-   ============================================================ */
-
-if (
-    document.readyState ===
-    "loading"
-) {
-
-    document.addEventListener(
-        "DOMContentLoaded",
-        startAdminPanel
-    );
-
-} else {
-
-    startAdminPanel();
-}
-
-
-/* ============================================================
-   END OF ADMIN.JS
-   ============================================================ */
-   
+   END
+============================================================ */
