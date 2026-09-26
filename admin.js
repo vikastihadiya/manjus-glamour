@@ -1,375 +1,21 @@
-/* ============================================================
-   MANJU'S THE WORLD OF GLAMOUR
-   ADMIN PANEL
-   Supabase-compatible admin controller
-
-   IMPORTANT:
-   - This file intentionally DOES NOT redeclare supabaseClient.
-   - supabase-config.js must load before this file.
-============================================================ */
+/*
+ * MANJU'S THE WORLD OF GLAMOUR
+ * ADMIN PANEL
+ * Matched with the current admin.html and verified Supabase schema.
+ */
 
 "use strict";
 
-/* ============================================================
-   GLOBAL STATE
-============================================================ */
-
 let currentUser = null;
-let currentModule = "dashboard";
-let serviceCategories = [];
 
-
-/* ============================================================
+/* =========================================================
    DOM HELPERS
-============================================================ */
+========================================================= */
 
-function $(id) {
-    return document.getElementById(id);
-}
-
-function getModuleContent() {
-    return $("moduleContent");
-}
-
-function getLoginSection() {
-    return $("loginSection");
-}
-
-function getAdminPanel() {
-    return $("adminPanel");
-}
-
-
-/* ============================================================
-   SUPABASE CHECK
-============================================================ */
-
-function getDatabase() {
-
-    if (
-        typeof supabaseClient === "undefined" ||
-        !supabaseClient ||
-        !supabaseClient.auth
-    ) {
-        console.error(
-            "Supabase client is not available. " +
-            "Make sure supabase-config.js loads before admin.js."
-        );
-
-        return null;
-    }
-
-    return supabaseClient;
-}
-
-
-/* ============================================================
-   INITIALIZATION
-============================================================ */
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    const db = getDatabase();
-
-    if (!db) {
-        showLoginMessage(
-            "Supabase is not connected. Check supabase-config.js.",
-            "error"
-        );
-        return;
-    }
-
-    const loginForm = $("loginForm");
-
-    if (loginForm) {
-        loginForm.addEventListener(
-            "submit",
-            handleLogin
-        );
-    }
-
-    const logoutBtn = $("logoutBtn");
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener(
-            "click",
-            handleLogout
-        );
-    }
-
-    db.auth.onAuthStateChange(function (event, session) {
-
-        currentUser = session?.user || null;
-
-        if (session) {
-            showAdmin();
-        } else {
-            showLogin();
-        }
-
-    });
-
-    checkAuth();
-
-});
-
-
-/* ============================================================
-   AUTHENTICATION
-============================================================ */
-
-async function checkAuth() {
-
-    const db = getDatabase();
-
-    if (!db) {
-        showLogin();
-        return;
-    }
-
-    try {
-
-        const {
-            data,
-            error
-        } = await db.auth.getSession();
-
-        if (error) {
-            console.error(
-                "Session check error:",
-                error
-            );
-
-            showLogin();
-            return;
-        }
-
-        if (data?.session) {
-
-            currentUser = data.session.user;
-
-            showAdmin();
-
-        } else {
-
-            currentUser = null;
-
-            showLogin();
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Authentication check failed:",
-            error
-        );
-
-        showLogin();
-    }
-}
-
-
-async function handleLogin(event) {
-
-    event.preventDefault();
-
-    const db = getDatabase();
-
-    if (!db) {
-        showLoginMessage(
-            "Supabase is not connected.",
-            "error"
-        );
-        return;
-    }
-
-    const email =
-        $("adminEmail")?.value?.trim();
-
-    const password =
-        $("adminPassword")?.value || "";
-
-    if (!email || !password) {
-
-        showLoginMessage(
-            "Please enter your email and password.",
-            "error"
-        );
-
-        return;
-    }
-
-    const button =
-        document.querySelector(
-            '#loginForm button[type="submit"]'
-        );
-
-    const originalText =
-        button?.textContent || "SIGN IN";
-
-    if (button) {
-        button.disabled = true;
-        button.textContent = "SIGNING IN...";
-    }
-
-    try {
-
-        const {
-            data,
-            error
-        } = await db.auth.signInWithPassword({
-            email,
-            password
-        });
-
-        if (error) {
-            throw error;
-        }
-
-        currentUser = data.user;
-
-        showAdmin();
-
-    } catch (error) {
-
-        console.error(
-            "Login error:",
-            error
-        );
-
-        showLoginMessage(
-            error.message ||
-            "Login failed. Please check your credentials.",
-            "error"
-        );
-
-    } finally {
-
-        if (button) {
-            button.disabled = false;
-            button.textContent = originalText;
-        }
-
-    }
-}
-
-
-async function handleLogout() {
-
-    const db = getDatabase();
-
-    if (!db) {
-        showLogin();
-        return;
-    }
-
-    const confirmed =
-        window.confirm(
-            "Are you sure you want to logout?"
-        );
-
-    if (!confirmed) {
-        return;
-    }
-
-    try {
-
-        const {
-            error
-        } = await db.auth.signOut();
-
-        if (error) {
-            throw error;
-        }
-
-        currentUser = null;
-
-        showLogin();
-
-    } catch (error) {
-
-        console.error(
-            "Logout error:",
-            error
-        );
-
-        alert(
-            error.message ||
-            "Logout failed."
-        );
-    }
-}
-
-
-function showLogin() {
-
-    const login =
-        getLoginSection();
-
-    const panel =
-        getAdminPanel();
-
-    if (login) {
-        login.style.display = "flex";
-    }
-
-    if (panel) {
-        panel.style.display = "none";
-    }
-}
-
-
-function showAdmin() {
-
-    const login =
-        getLoginSection();
-
-    const panel =
-        getAdminPanel();
-
-    if (login) {
-        login.style.display = "none";
-    }
-
-    if (panel) {
-        panel.style.display = "block";
-    }
-
-    openModule("dashboard");
-}
-
-
-function showLoginMessage(message, type = "error") {
-
-    const box =
-        $("loginMessage");
-
-    if (!box) {
-        console.error(message);
-        return;
-    }
-
-    box.textContent = message;
-
-    box.className =
-        "message " + type;
-}
-
-
-/* ============================================================
-   GENERAL HELPERS
-============================================================ */
+const $ = (id) => document.getElementById(id);
 
 function escapeHTML(value) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
-        return "";
-    }
-
+    if (value === null || value === undefined) return "";
     return String(value)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -378,448 +24,389 @@ function escapeHTML(value) {
         .replace(/'/g, "&#039;");
 }
 
+function showMessage(message, type = "success") {
+    const existing = $("adminMessage");
 
-function escapeAttribute(value) {
-    return escapeHTML(value);
+    if (existing) {
+        existing.textContent = message;
+        existing.className = `admin-message ${type}`;
+        existing.style.display = "block";
+
+        setTimeout(() => {
+            existing.style.display = "none";
+        }, 4000);
+
+        return;
+    }
+
+    const el = document.createElement("div");
+    el.id = "adminMessage";
+    el.className = `admin-message ${type}`;
+    el.textContent = message;
+
+    document.body.appendChild(el);
+
+    setTimeout(() => el.remove(), 4000);
 }
 
+function showLoading(text = "Loading...") {
+    const content = $("moduleContent");
 
-function slugify(value) {
-
-    return String(value || "")
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
+    if (content) {
+        content.innerHTML = `
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>${escapeHTML(text)}</p>
+            </div>
+        `;
+    }
 }
 
+function showError(error, fallback = "Something went wrong.") {
+    console.error(error);
+
+    const message =
+        error?.message ||
+        error?.error_description ||
+        fallback;
+
+    const content = $("moduleContent");
+
+    if (content) {
+        content.innerHTML = `
+            <div class="error-state">
+                <h3>Unable to load this section</h3>
+                <p>${escapeHTML(message)}</p>
+                <button class="admin-btn" onclick="location.reload()">Reload</button>
+            </div>
+        `;
+    }
+}
 
 function formatDate(value) {
+    if (!value) return "—";
 
-    if (!value) {
-        return "—";
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return escapeHTML(value);
     }
 
-    try {
-
-        return new Date(value)
-            .toLocaleDateString(
-                "en-IN",
-                {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric"
-                }
-            );
-
-    } catch {
-
-        return value;
-    }
+    return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    });
 }
-
 
 function formatDateTime(value) {
+    if (!value) return "—";
 
-    if (!value) {
-        return "—";
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return escapeHTML(value);
     }
 
-    try {
-
-        return new Date(value)
-            .toLocaleString(
-                "en-IN",
-                {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit"
-                }
-            );
-
-    } catch {
-
-        return value;
-    }
+    return date.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
 }
 
-
-function money(value) {
-
-    if (
-        value === null ||
-        value === undefined ||
-        value === ""
-    ) {
+function formatCurrency(value) {
+    if (value === null || value === undefined || value === "") {
         return "Price on enquiry";
     }
 
-    const number =
-        Number(value);
+    const number = Number(value);
 
     if (Number.isNaN(number)) {
-        return String(value);
+        return escapeHTML(value);
     }
 
-    return "₹" +
-        number.toLocaleString("en-IN");
+    return `₹${number.toLocaleString("en-IN")}`;
 }
 
+/* =========================================================
+   AUTHENTICATION
+========================================================= */
 
-function showMessage(
-    message,
-    type = "success"
-) {
-
-    let box =
-        $("adminMessage");
-
-    if (box) {
-        box.remove();
-    }
-
-    box =
-        document.createElement("div");
-
-    box.id = "adminMessage";
-
-    box.textContent = message;
-
-    box.style.position = "fixed";
-    box.style.right = "20px";
-    box.style.bottom = "20px";
-    box.style.zIndex = "99999";
-    box.style.maxWidth = "380px";
-    box.style.padding = "14px 18px";
-    box.style.borderRadius = "10px";
-    box.style.boxShadow =
-        "0 12px 40px rgba(0,0,0,.18)";
-    box.style.fontSize = "14px";
-
-    if (type === "error") {
-
-        box.style.background = "#fee2e2";
-        box.style.color = "#991b1b";
-
-    } else {
-
-        box.style.background = "#dcfce7";
-        box.style.color = "#166534";
-    }
-
-    document.body.appendChild(box);
-
-    setTimeout(function () {
-
-        if (box.parentNode) {
-            box.remove();
+async function checkAuth() {
+    try {
+        if (!window.supabaseClient) {
+            console.error("supabaseClient not found.");
+            showLogin();
+            return;
         }
 
-    }, 4000);
+        const {
+            data: { session },
+            error
+        } = await supabaseClient.auth.getSession();
+
+        if (error) {
+            console.error(error);
+            showLogin();
+            return;
+        }
+
+        currentUser = session?.user || null;
+
+        if (currentUser) {
+            showAdmin();
+        } else {
+            showLogin();
+        }
+    } catch (error) {
+        console.error(error);
+        showLogin();
+    }
 }
 
+function showLogin() {
+    const login = $("loginSection");
+    const admin = $("adminPanel");
 
-function setLoading(message = "Loading...") {
+    if (login) {
+        login.style.display = "";
+    }
 
-    const content =
-        getModuleContent();
+    if (admin) {
+        admin.style.display = "none";
+    }
+}
 
-    if (!content) {
+function showAdmin() {
+    const login = $("loginSection");
+    const admin = $("adminPanel");
+
+    if (login) {
+        login.style.display = "none";
+    }
+
+    if (admin) {
+        admin.style.display = "";
+    }
+
+    openModule("dashboard");
+}
+
+async function handleLogin(event) {
+    event.preventDefault();
+
+    const email = $("adminEmail")?.value.trim();
+    const password = $("adminPassword")?.value;
+
+    const message = $("loginMessage");
+
+    if (!email || !password) {
+        if (message) {
+            message.textContent = "Enter your email and password.";
+        }
         return;
     }
 
-    content.innerHTML = `
-        <div class="module-loading">
-            ${escapeHTML(message)}
-        </div>
-    `;
-}
-
-
-function setError(message) {
-
-    const content =
-        getModuleContent();
-
-    if (!content) {
-        return;
+    if (message) {
+        message.textContent = "Signing in...";
     }
 
-    content.innerHTML = `
-        <div class="admin-module">
+    try {
+        const { data, error } =
+            await supabaseClient.auth.signInWithPassword({
+                email,
+                password
+            });
 
-            <div class="empty-state">
+        if (error) {
+            throw error;
+        }
 
-                <h3>
-                    Something went wrong
-                </h3>
+        currentUser = data.user;
 
-                <p style="margin-top:10px;">
-                    ${escapeHTML(message)}
-                </p>
+        if (message) {
+            message.textContent = "";
+        }
 
-            </div>
+        showAdmin();
 
-        </div>
-    `;
+    } catch (error) {
+        console.error(error);
+
+        if (message) {
+            message.textContent =
+                error.message || "Login failed.";
+        }
+    }
 }
 
+async function handleLogout() {
+    try {
+        await supabaseClient.auth.signOut();
+    } catch (error) {
+        console.error(error);
+    }
 
-function confirmDelete(label = "this item") {
-
-    return window.confirm(
-        `Are you sure you want to delete ${label}?`
-    );
+    currentUser = null;
+    showLogin();
 }
 
+/* =========================================================
+   MODULE HEADER
+========================================================= */
 
-/* ============================================================
-   MODULE INFORMATION
-============================================================ */
-
-const MODULE_INFO = {
+const moduleInfo = {
 
     dashboard: {
         title: "Dashboard",
-        description:
-            "Manage your beauty business website."
+        description: "Overview of your salon website."
     },
 
     appointments: {
         title: "Appointments",
-        description:
-            "View and manage customer appointment requests."
+        description: "Manage appointment requests."
     },
 
     services: {
         title: "Services",
-        description:
-            "Manage services, categories, prices and durations."
+        description: "Manage salon and beauty services."
     },
 
     offers: {
         title: "Offers",
-        description:
-            "Manage current offers, prices and validity."
+        description: "Manage active offers and prices."
     },
 
     gallery: {
-        title: "Our Work Gallery",
-        description:
-            "Upload and manage your beauty work."
+        title: "Gallery",
+        description: "Manage your main work gallery."
     },
 
     bride_gallery: {
-        title: "Bride / Girls Gallery",
-        description:
-            "Upload bridal and girls portfolio images."
+        title: "Bride & Girls",
+        description: "Manage bridal and girls photos."
     },
 
     customer_gallery: {
-        title: "Customer Gallery",
-        description:
-            "Manage customer photos with consent."
+        title: "Customers",
+        description: "Manage customer photos and testimonials."
     },
 
     before_after: {
-        title: "Before / After",
-        description:
-            "Manage transformation images."
+        title: "Before & After",
+        description: "Manage transformation photos."
     },
 
     bridal_packages: {
         title: "Bridal Packages",
-        description:
-            "Manage bridal packages and enquiries."
+        description: "Manage bridal packages."
     },
 
     team: {
         title: "Team",
-        description:
-            "Manage team members and artists."
+        description: "Manage team members."
     },
 
     testimonials: {
         title: "Testimonials",
-        description:
-            "Manage customer testimonials."
+        description: "Manage customer reviews."
     },
 
     faqs: {
         title: "FAQs",
-        description:
-            "Manage frequently asked questions."
+        description: "Manage frequently asked questions."
     },
 
     settings: {
         title: "Settings",
-        description:
-            "Manage website business information."
+        description: "Manage business information."
     }
-
 };
 
-
 function updateModuleHeader(moduleName) {
+    const info = moduleInfo[moduleName] || {
+        title: moduleName,
+        description: ""
+    };
 
-    const info =
-        MODULE_INFO[moduleName] ||
-        MODULE_INFO.dashboard;
-
-    const title =
-        $("moduleTitle");
-
-    const description =
-        $("moduleDescription");
-
-    if (title) {
-        title.textContent =
-            info.title;
+    if ($("moduleTitle")) {
+        $("moduleTitle").textContent = info.title;
     }
 
-    if (description) {
-        description.textContent =
+    if ($("moduleDescription")) {
+        $("moduleDescription").textContent =
             info.description;
     }
 }
 
-
-/* ============================================================
+/* =========================================================
    MODULE ROUTER
-============================================================ */
+========================================================= */
 
 async function openModule(moduleName) {
 
-    currentModule =
-        moduleName || "dashboard";
-
-    updateModuleHeader(
-        currentModule
-    );
-
-    setLoading(
-        "Loading " +
-        (
-            MODULE_INFO[currentModule]?.title ||
-            "module"
-        ) +
-        "..."
-    );
-
-    try {
-
-        switch (currentModule) {
-
-            case "dashboard":
-                await loadDashboard();
-                break;
-
-            case "appointments":
-                await loadAppointments();
-                break;
-
-            case "services":
-                await loadServices();
-                break;
-
-            case "offers":
-                await loadOffers();
-                break;
-
-            case "gallery":
-                await loadGallery();
-                break;
-
-            case "bride_gallery":
-                await loadBrideGallery();
-                break;
-
-            case "customer_gallery":
-                await loadCustomerGallery();
-                break;
-
-            case "before_after":
-                await loadBeforeAfter();
-                break;
-
-            case "bridal_packages":
-                await loadBridalPackages();
-                break;
-
-            case "team":
-                await loadTeam();
-                break;
-
-            case "testimonials":
-                await loadTestimonials();
-                break;
-
-            case "faqs":
-                await loadFAQs();
-                break;
-
-            case "settings":
-                await loadSettings();
-                break;
-
-            default:
-                await loadDashboard();
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Module error:",
-            error
-        );
-
-        setError(
-            error.message ||
-            "Unable to load this module."
-        );
-    }
-}
-
-
-/* ============================================================
-   DASHBOARD
-============================================================ */
-
-async function countTable(table) {
-
-    const db = getDatabase();
-
-    if (!db) {
-        return 0;
+    if (!moduleName) {
+        moduleName = "dashboard";
     }
 
-    const {
-        count,
-        error
-    } = await db
-        .from(table)
-        .select("id", {
-            count: "exact",
-            head: true
+    if (!currentUser) {
+        return;
+    }
+
+    updateModuleHeader(moduleName);
+
+    document
+        .querySelectorAll("[data-module]")
+        .forEach(button => {
+            button.classList.toggle(
+                "active",
+                button.dataset.module === moduleName
+            );
         });
 
-    if (error) {
+    const loaders = {
+        dashboard: loadDashboard,
+        appointments: loadAppointments,
+        services: loadServices,
+        offers: loadOffers,
+        gallery: loadGallery,
+        bride_gallery: loadBrideGallery,
+        customer_gallery: loadCustomerGallery,
+        before_after: loadBeforeAfter,
+        bridal_packages: loadBridalPackages,
+        team: loadTeam,
+        testimonials: loadTestimonials,
+        faqs: loadFAQs,
+        settings: loadSettings
+    };
 
-        console.error(
-            `Count error for ${table}:`,
-            error
+    const loader = loaders[moduleName];
+
+    if (!loader) {
+        showError(
+            null,
+            `Unknown admin module: ${moduleName}`
         );
-
-        return 0;
+        return;
     }
 
-    return count || 0;
+    try {
+        await loader();
+    } catch (error) {
+        showError(error);
+    }
 }
 
+/* =========================================================
+   DASHBOARD
+========================================================= */
 
 async function loadDashboard() {
+
+    showLoading("Loading dashboard...");
 
     const tables = [
         "appointments",
@@ -835,6187 +422,2451 @@ async function loadDashboard() {
         "faqs"
     ];
 
-    const values =
-        await Promise.all(
-            tables.map(
-                table => countTable(table)
-            )
-        );
-
     const counts = {};
 
-    tables.forEach(
-        (table, index) => {
-            counts[table] =
-                values[index];
-        }
-    );
+    for (const table of tables) {
 
-    const content =
-        getModuleContent();
+        const { count, error } =
+            await supabaseClient
+                .from(table)
+                .select("*", {
+                    count: "exact",
+                    head: true
+                });
+
+        if (error) {
+            console.warn(
+                `Unable to count ${table}:`,
+                error.message
+            );
+
+            counts[table] = 0;
+        } else {
+            counts[table] = count || 0;
+        }
+    }
+
+    const content = $("moduleContent");
 
     if (!content) {
+        console.error("moduleContent not found.");
         return;
     }
 
     content.innerHTML = `
 
-        <div class="admin-module">
+        <div class="dashboard-grid">
 
-            <div class="module-actions">
+            <button class="dashboard-card"
+                data-dashboard-module="appointments">
+                <strong>${counts.appointments}</strong>
+                <span>Appointments</span>
+            </button>
 
-                <div>
-                    <h2>
-                        Welcome to your admin panel
-                    </h2>
+            <button class="dashboard-card"
+                data-dashboard-module="services">
+                <strong>${counts.services}</strong>
+                <span>Services</span>
+            </button>
 
-                    <p style="margin-top:7px;color:var(--muted);">
-                        Your website content is managed from here.
-                    </p>
-                </div>
+            <button class="dashboard-card"
+                data-dashboard-module="offers">
+                <strong>${counts.offers}</strong>
+                <span>Offers</span>
+            </button>
 
-            </div>
+            <button class="dashboard-card"
+                data-dashboard-module="gallery">
+                <strong>${counts.gallery}</strong>
+                <span>Gallery Photos</span>
+            </button>
 
-            <div class="admin-grid">
+            <button class="dashboard-card"
+                data-dashboard-module="bride_gallery">
+                <strong>${counts.bride_gallery}</strong>
+                <span>Bride & Girls</span>
+            </button>
 
-                ${dashboardCard(
-                    "appointments",
-                    counts.appointments,
-                    "Appointments"
-                )}
+            <button class="dashboard-card"
+                data-dashboard-module="customer_gallery">
+                <strong>${counts.customer_gallery}</strong>
+                <span>Customers</span>
+            </button>
 
-                ${dashboardCard(
-                    "services",
-                    counts.services,
-                    "Services"
-                )}
+            <button class="dashboard-card"
+                data-dashboard-module="before_after">
+                <strong>${counts.before_after}</strong>
+                <span>Before / After</span>
+            </button>
 
-                ${dashboardCard(
-                    "offers",
-                    counts.offers,
-                    "Offers"
-                )}
+            <button class="dashboard-card"
+                data-dashboard-module="bridal_packages">
+                <strong>${counts.bridal_packages}</strong>
+                <span>Bridal Packages</span>
+            </button>
 
-                ${dashboardCard(
-                    "gallery",
-                    counts.gallery,
-                    "Our Work Gallery"
-                )}
+            <button class="dashboard-card"
+                data-dashboard-module="team">
+                <strong>${counts.team}</strong>
+                <span>Team</span>
+            </button>
 
-                ${dashboardCard(
-                    "bride_gallery",
-                    counts.bride_gallery,
-                    "Bride / Girls Gallery"
-                )}
+            <button class="dashboard-card"
+                data-dashboard-module="testimonials">
+                <strong>${counts.testimonials}</strong>
+                <span>Testimonials</span>
+            </button>
 
-                ${dashboardCard(
-                    "customer_gallery",
-                    counts.customer_gallery,
-                    "Customer Gallery"
-                )}
+            <button class="dashboard-card"
+                data-dashboard-module="faqs">
+                <strong>${counts.faqs}</strong>
+                <span>FAQs</span>
+            </button>
 
-                ${dashboardCard(
-                    "before_after",
-                    counts.before_after,
-                    "Before / After"
-                )}
+        </div>
 
-                ${dashboardCard(
-                    "bridal_packages",
-                    counts.bridal_packages,
-                    "Bridal Packages"
-                )}
-
-                ${dashboardCard(
-                    "team",
-                    counts.team,
-                    "Team"
-                )}
-
-                ${dashboardCard(
-                    "testimonials",
-                    counts.testimonials,
-                    "Testimonials"
-                )}
-
-                ${dashboardCard(
-                    "faqs",
-                    counts.faqs,
-                    "FAQs"
-                )}
-
-            </div>
-
+        <div class="admin-form-card" style="margin-top:24px;">
+            <h3>Admin account</h3>
+            <p>
+                ${escapeHTML(currentUser?.email || "")}
+            </p>
+            <p style="opacity:.7;">
+                Supabase authentication is active.
+            </p>
         </div>
     `;
 
     content
-        .querySelectorAll(
-            "[data-open-module]"
-        )
+        .querySelectorAll("[data-dashboard-module]")
         .forEach(card => {
-
-            card.addEventListener(
-                "click",
-                function () {
-
-                    openModule(
-                        card.dataset.openModule
-                    );
-
-                }
-            );
-
+            card.addEventListener("click", () => {
+                openModule(
+                    card.dataset.dashboardModule
+                );
+            });
         });
 }
 
+/* =========================================================
+   GENERIC TABLE UTILITIES
+========================================================= */
 
-function dashboardCard(
-    module,
-    count,
-    label
-) {
+function tableShell(headers, rows, emptyText = "No records found.") {
+
+    if (!rows || rows.length === 0) {
+        return `
+            <div class="empty-state">
+                <h3>${escapeHTML(emptyText)}</h3>
+            </div>
+        `;
+    }
 
     return `
+        <div class="admin-table-wrap">
+            <table class="admin-table">
 
-        <div
-            class="admin-card"
-            data-open-module="${escapeAttribute(module)}"
-            style="cursor:pointer;"
-        >
+                <thead>
+                    <tr>
+                        ${headers.map(
+                            h => `<th>${escapeHTML(h)}</th>`
+                        ).join("")}
+                    </tr>
+                </thead>
 
-            <h3>
-                ${escapeHTML(count)}
-            </h3>
+                <tbody>
+                    ${rows.join("")}
+                </tbody>
 
-            <p>
-                ${escapeHTML(label)}
-            </p>
-
+            </table>
         </div>
     `;
 }
 
+async function deleteRecord(table, id, label = "this item") {
 
-/* ============================================================
+    if (!currentUser) {
+        showMessage(
+            "You are not authenticated.",
+            "error"
+        );
+        return;
+    }
+
+    const confirmed = confirm(
+        `Delete ${label}? This cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+
+        const { error } =
+            await supabaseClient
+                .from(table)
+                .delete()
+                .eq("id", id);
+
+        if (error) {
+            throw error;
+        }
+
+        showMessage("Deleted successfully.");
+
+        const active =
+            document.querySelector(
+                "[data-module].active"
+            );
+
+        if (active) {
+            await openModule(active.dataset.module);
+        }
+
+    } catch (error) {
+        showMessage(
+            error.message || "Delete failed.",
+            "error"
+        );
+    }
+}
+
+/* =========================================================
    APPOINTMENTS
-============================================================ */
+========================================================= */
 
 async function loadAppointments() {
 
-    const db = getDatabase();
-
-    if (!db) {
-        return;
-    }
-
-    const {
-        data,
-        error
-    } = await db
-        .from("appointments")
-        .select("*")
-        .order(
-            "created_at",
-            { ascending: false }
-        );
-
-    if (error) {
-        throw error;
-    }
-
-    let serviceMap = {};
-
-    const serviceIds =
-        [
-            ...new Set(
-                (data || [])
-                    .map(item => item.service_id)
-                    .filter(Boolean)
-            )
-        ];
-
-    if (serviceIds.length) {
-
-        const {
-            data: services
-        } = await db
-            .from("services")
-            .select("id,name")
-            .in("id", serviceIds);
-
-        (services || []).forEach(
-            service => {
-                serviceMap[service.id] =
-                    service.name;
-            }
-        );
-    }
-
-    const content =
-        getModuleContent();
-
-    content.innerHTML = `
-
-        <div class="admin-module">
-
-            <div class="module-actions">
-
-                <div>
-                    <h2>
-                        Appointment Requests
-                    </h2>
-
-                    <p style="margin-top:7px;color:var(--muted);">
-                        ${data?.length || 0}
-                        request(s)
-                    </p>
-                </div>
-
-                <button
-                    class="secondary-btn"
-                    id="refreshAppointments"
-                    type="button"
-                >
-                    Refresh
-                </button>
-
-            </div>
-
-            ${
-                data?.length
-                ? `
-                    <div style="overflow-x:auto;">
-
-                        <table>
-
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Phone</th>
-                                    <th>Service</th>
-                                    <th>Date</th>
-                                    <th>Time</th>
-                                    <th>Status</th>
-                                    <th>Created</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-
-                                ${data.map(item => `
-
-                                    <tr>
-
-                                        <td>
-                                            <strong>
-                                                ${escapeHTML(
-                                                    item.customer_name
-                                                )}
-                                            </strong>
-
-                                            ${
-                                                item.email
-                                                ? `
-                                                    <div
-                                                        style="
-                                                            color:var(--muted);
-                                                            margin-top:4px;
-                                                        "
-                                                    >
-                                                        ${escapeHTML(
-                                                            item.email
-                                                        )}
-                                                    </div>
-                                                `
-                                                : ""
-                                            }
-                                        </td>
-
-                                        <td>
-                                            ${escapeHTML(
-                                                item.phone
-                                            )}
-                                        </td>
-
-                                        <td>
-                                            ${escapeHTML(
-                                                serviceMap[
-                                                    item.service_id
-                                                ] ||
-                                                "General enquiry"
-                                            )}
-                                        </td>
-
-                                        <td>
-                                            ${formatDate(
-                                                item.appointment_date
-                                            )}
-                                        </td>
-
-                                        <td>
-                                            ${escapeHTML(
-                                                item.appointment_time ||
-                                                "—"
-                                            )}
-                                        </td>
-
-                                        <td>
-
-                                            <select
-                                                class="appointment-status"
-                                                data-id="${escapeAttribute(
-                                                    item.id
-                                                )}"
-                                            >
-
-                                                ${
-                                                    [
-                                                        "New",
-                                                        "Confirmed",
-                                                        "Completed",
-                                                        "Cancelled",
-                                                        "No-show"
-                                                    ]
-                                                    .map(status => `
-
-                                                        <option
-                                                            value="${status}"
-                                                            ${
-                                                                item.status === status
-                                                                ? "selected"
-                                                                : ""
-                                                            }
-                                                        >
-                                                            ${status}
-                                                        </option>
-
-                                                    `)
-                                                    .join("")
-                                                }
-
-                                            </select>
-
-                                        </td>
-
-                                        <td>
-                                            ${formatDateTime(
-                                                item.created_at
-                                            )}
-                                        </td>
-
-                                        <td>
-
-                                            <button
-                                                type="button"
-                                                class="danger-btn delete-record"
-                                                data-table="appointments"
-                                                data-id="${escapeAttribute(
-                                                    item.id
-                                                )}"
-                                                data-label="this appointment"
-                                            >
-                                                Delete
-                                            </button>
-
-                                        </td>
-
-                                    </tr>
-
-                                `).join("")}
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-                `
-                : `
-                    <div class="empty-state">
-                        No appointment requests yet.
-                    </div>
-                `
-            }
-
-        </div>
-    `;
-
-    $("refreshAppointments")
-        ?.addEventListener(
-            "click",
-            () => loadAppointments()
-        );
-
-    content
-        .querySelectorAll(
-            ".appointment-status"
-        )
-        .forEach(select => {
-
-            select.addEventListener(
-                "change",
-                async function () {
-
-                    const id =
-                        select.dataset.id;
-
-                    const status =
-                        select.value;
-
-                    const {
-                        error
-                    } = await db
-                        .from("appointments")
-                        .update({
-                            status,
-                            updated_at:
-                                new Date().toISOString()
-                        })
-                        .eq(
-                            "id",
-                            id
-                        );
-
-                    if (error) {
-
-                        console.error(error);
-
-                        showMessage(
-                            error.message,
-                            "error"
-                        );
-
-                        return;
-                    }
-
-                    showMessage(
-                        "Appointment status updated."
-                    );
-
-                }
-            );
-
-        });
-
-    attachDeleteHandlers();
-}
-
-
-/* ============================================================
-   CATEGORIES
-============================================================ */
-
-async function fetchCategories() {
-
-    const db = getDatabase();
-
-    const {
-        data,
-        error
-    } = await db
-        .from("categories")
-        .select("*")
-        .order(
-            "display_order",
-            { ascending: true }
-        );
-
-    if (error) {
-        throw error;
-    }
-
-    serviceCategories =
-        data || [];
-
-    return serviceCategories;
-}
-
-
-async function addCategory() {
-
-    const db = getDatabase();
-
-    const name =
-        window.prompt(
-            "Enter the new service category name:"
-        );
-
-    if (!name?.trim()) {
-        return;
-    }
-
-    const cleanName =
-        name.trim();
-
-    const slug =
-        slugify(cleanName);
-
-    const {
-        error
-    } = await db
-        .from("categories")
-        .insert({
-            name: cleanName,
-            slug,
-            active: true,
-            display_order: 0
-        });
-
-    if (error) {
-
-        showMessage(
-            error.message,
-            "error"
-        );
-
-        return;
-    }
-
-    showMessage(
-        "Category created successfully."
-    );
-
-    await loadServices();
-}
-
-
-/* ============================================================
-   SERVICES
-============================================================ */
-
-async function loadServices() {
-
-    const db = getDatabase();
-
-    if (!db) {
-        return;
-    }
-
-    const [
-        serviceResult,
-        categories
-    ] = await Promise.all([
-        db
-            .from("services")
+    showLoading("Loading appointments...");
+
+    const { data, error } =
+        await supabaseClient
+            .from("appointments")
             .select("*")
-            .order(
-                "display_order",
-                { ascending: true }
-            )
-            .order(
-                "created_at",
-                { ascending: true }
-            ),
+            .order("created_at", {
+                ascending: false
+            });
 
-        fetchCategories()
-    ]);
+    if (error) throw error;
 
-    if (serviceResult.error) {
-        throw serviceResult.error;
-    }
-
-    const services =
-        serviceResult.data || [];
-
-    const categoryMap = {};
-
-    categories.forEach(
-        category => {
-            categoryMap[category.id] =
-                category.name;
-        }
-    );
-
-    const content =
-        getModuleContent();
+    const content = $("moduleContent");
 
     content.innerHTML = `
 
-        <div class="admin-module">
-
-            <div class="module-actions">
-
-                <div>
-                    <h2>
-                        Services
-                    </h2>
-
-                    <p style="margin-top:7px;color:var(--muted);">
-                        Manage services shown on the public website.
-                    </p>
-                </div>
-
-                <div
-                    style="
-                        display:flex;
-                        gap:8px;
-                        flex-wrap:wrap;
-                    "
-                >
-
-                    <button
-                        class="secondary-btn"
-                        id="addCategoryBtn"
-                        type="button"
-                    >
-                        + Category
-                    </button>
-
-                    <button
-                        class="primary-btn"
-                        id="addServiceBtn"
-                        type="button"
-                    >
-                        + Add Service
-                    </button>
-
-                </div>
-
-            </div>
-
-            <div id="serviceFormArea"></div>
-
-            ${
-                services.length
-                ? `
-
-                    <div style="overflow-x:auto;">
-
-                        <table>
-
-                            <thead>
-                                <tr>
-                                    <th>Service</th>
-                                    <th>Category</th>
-                                    <th>Price</th>
-                                    <th>Duration</th>
-                                    <th>Active</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-
-                                ${services.map(item => `
-
-                                    <tr>
-
-                                        <td>
-
-                                            <strong>
-                                                ${escapeHTML(
-                                                    item.name
-                                                )}
-                                            </strong>
-
-                                            ${
-                                                item.description
-                                                ? `
-                                                    <div
-                                                        style="
-                                                            color:var(--muted);
-                                                            margin-top:5px;
-                                                            max-width:350px;
-                                                        "
-                                                    >
-                                                        ${escapeHTML(
-                                                            item.description
-                                                        )}
-                                                    </div>
-                                                `
-                                                : ""
-                                            }
-
-                                        </td>
-
-                                        <td>
-                                            ${escapeHTML(
-                                                categoryMap[
-                                                    item.category_id
-                                                ] ||
-                                                "Uncategorized"
-                                            )}
-                                        </td>
-
-                                        <td>
-
-                                            ${
-                                                item.price !== null &&
-                                                item.price !== undefined
-                                                ? money(item.price)
-                                                : escapeHTML(
-                                                    item.price_label ||
-                                                    "Price on enquiry"
-                                                )
-                                            }
-
-                                        </td>
-
-                                        <td>
-
-                                            ${
-                                                item.duration_minutes
-                                                ? escapeHTML(
-                                                    item.duration_minutes +
-                                                    " min"
-                                                )
-                                                : "—"
-                                            }
-
-                                        </td>
-
-                                        <td>
-
-                                            ${
-                                                item.active
-                                                ? "Yes"
-                                                : "No"
-                                            }
-
-                                        </td>
-
-                                        <td>
-
-                                            <div
-                                                style="
-                                                    display:flex;
-                                                    gap:6px;
-                                                    flex-wrap:wrap;
-                                                "
-                                            >
-
-                                                <button
-                                                    class="secondary-btn edit-service"
-                                                    type="button"
-                                                    data-id="${escapeAttribute(
-                                                        item.id
-                                                    )}"
-                                                >
-                                                    Edit
-                                                </button>
-
-                                                <button
-                                                    class="danger-btn delete-record"
-                                                    type="button"
-                                                    data-table="services"
-                                                    data-id="${escapeAttribute(
-                                                        item.id
-                                                    )}"
-                                                    data-label="this service"
-                                                >
-                                                    Delete
-                                                </button>
-
-                                            </div>
-
-                                        </td>
-
-                                    </tr>
-
-                                `).join("")}
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                `
-                : `
-                    <div class="empty-state">
-                        No services added yet.
-                    </div>
-                `
-            }
-
+        <div class="admin-form-card">
+            <h3>Appointment requests</h3>
+            <p>
+                ${data?.length || 0} appointment request(s).
+            </p>
         </div>
-    `;
 
-    $("addCategoryBtn")
-        ?.addEventListener(
-            "click",
-            addCategory
-        );
-
-    $("addServiceBtn")
-        ?.addEventListener(
-            "click",
-            () => showServiceForm()
-        );
-
-    content
-        .querySelectorAll(
-            ".edit-service"
-        )
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const item =
-                        services.find(
-                            service =>
-                                service.id ===
-                                button.dataset.id
-                        );
-
-                    if (item) {
-                        showServiceForm(item);
-                    }
-
-                }
-            );
-
-        });
-
-    attachDeleteHandlers();
-}
-
-
-async function showServiceForm(service = null) {
-
-    const area =
-        $("serviceFormArea");
-
-    if (!area) {
-        return;
-    }
-
-    if (!serviceCategories.length) {
-        try {
-            await fetchCategories();
-        } catch (error) {
-            showMessage(
-                error.message,
-                "error"
-            );
-            return;
-        }
-    }
-
-    const categoryOptions =
-        serviceCategories
-            .map(category => `
-
-                <option
-                    value="${escapeAttribute(
-                        category.id
-                    )}"
-                    ${
-                        service?.category_id === category.id
-                        ? "selected"
-                        : ""
-                    }
-                >
-                    ${escapeHTML(
-                        category.name
-                    )}
-                </option>
-
-            `)
-            .join("");
-
-    area.innerHTML = `
-
-        <div
-            class="admin-card"
-            style="margin-bottom:20px;"
-        >
-
-            <h3>
-                ${service ? "Edit Service" : "Add Service"}
-            </h3>
-
-            <form
-                id="serviceForm"
-                class="admin-form"
-                style="margin-top:18px;"
-            >
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Service Name
-                        </label>
-
-                        <input
-                            id="serviceName"
-                            type="text"
-                            required
-                            value="${escapeAttribute(
-                                service?.name || ""
-                            )}"
-                            placeholder="Example: Bridal Makeup"
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            Category
-                        </label>
-
-                        <select
-                            id="serviceCategory"
-                            required
-                        >
-
-                            <option value="">
-                                Select category
-                            </option>
-
-                            ${categoryOptions}
-
-                        </select>
-
-                    </div>
-
-                </div>
-
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Price
-                        </label>
-
-                        <input
-                            id="servicePrice"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value="${
-                                service?.price ??
-                                ""
-                            }"
-                            placeholder="Leave blank for enquiry"
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            Price Label
-                        </label>
-
-                        <input
-                            id="servicePriceLabel"
-                            type="text"
-                            value="${escapeAttribute(
-                                service?.price_label ||
-                                "Price on enquiry"
-                            )}"
-                            placeholder="Price on enquiry"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Duration (minutes)
-                        </label>
-
-                        <input
-                            id="serviceDuration"
-                            type="number"
-                            min="0"
-                            step="1"
-                            value="${
-                                service?.duration_minutes ??
-                                ""
-                            }"
-                            placeholder="Example: 90"
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            Display Order
-                        </label>
-
-                        <input
-                            id="serviceOrder"
-                            type="number"
-                            min="0"
-                            step="1"
-                            value="${
-                                service?.display_order ??
-                                0
-                            }"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Description
-                    </label>
-
-                    <textarea
-                        id="serviceDescription"
-                        placeholder="Describe the service..."
-                    >${escapeHTML(
-                        service?.description || ""
-                    )}</textarea>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Service Image
-                    </label>
-
-                    <input
-                        id="serviceImage"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                    >
-
-                    ${
-                        service?.image_url
-                        ? `
-                            <img
-                                src="${escapeAttribute(
-                                    service.image_url
-                                )}"
-                                class="admin-image"
-                                style="margin-top:10px;"
-                                alt=""
-                            >
-                        `
-                        : ""
-                    }
-
-                </div>
-
-
-                <label
-                    style="
-                        display:flex;
-                        gap:8px;
-                        align-items:center;
-                    "
-                >
-
-                    <input
-                        type="checkbox"
-                        id="serviceFeatured"
-                        ${
-                            service?.featured
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
-                    Featured service
-
-                </label>
-
-
-                <label
-                    style="
-                        display:flex;
-                        gap:8px;
-                        align-items:center;
-                    "
-                >
-
-                    <input
-                        type="checkbox"
-                        id="serviceActive"
-                        ${
-                            service?.active !== false
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
-                    Active / visible
-
-                </label>
-
-
-                <div class="form-actions">
-
-                    <button
-                        type="submit"
-                        class="primary-btn"
-                    >
-                        ${
-                            service
-                            ? "Update Service"
-                            : "Save Service"
-                        }
-                    </button>
-
-                    <button
-                        type="button"
-                        id="cancelService"
-                        class="secondary-btn"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-    `;
-
-    $("cancelService")
-        ?.addEventListener(
-            "click",
-            () => {
-                area.innerHTML = "";
-            }
-        );
-
-    $("serviceForm")
-        ?.addEventListener(
-            "submit",
-            async function (event) {
-
-                event.preventDefault();
-
-                const db =
-                    getDatabase();
-
-                const name =
-                    $("serviceName")
-                        .value
-                        .trim();
-
-                const categoryId =
-                    $("serviceCategory")
-                        .value;
-
-                if (!name) {
-
-                    showMessage(
-                        "Service name is required.",
-                        "error"
-                    );
-
-                    return;
-                }
-
-                if (!categoryId) {
-
-                    showMessage(
-                        "Please select a category.",
-                        "error"
-                    );
-
-                    return;
-                }
-
-                const priceValue =
-                    $("servicePrice")
-                        .value
-                        .trim();
-
-                const durationValue =
-                    $("serviceDuration")
-                        .value
-                        .trim();
-
-                const imageFile =
-                    $("serviceImage")
-                        ?.files?.[0];
-
-                let imageUrl =
-                    service?.image_url ||
-                    null;
-
-                try {
-
-                    if (imageFile) {
-
-                        imageUrl =
-                            await uploadImage(
-                                "services",
-                                imageFile
-                            );
-                    }
-
-                    const payload = {
-
-                        category_id:
-                            categoryId,
-
-                        name,
-
-                        slug:
-                            service?.slug ||
-                            slugify(name),
-
-                        description:
-                            $("serviceDescription")
-                                .value
-                                .trim() ||
-                            null,
-
-                        price:
-                            priceValue === ""
-                            ? null
-                            : Number(priceValue),
-
-                        price_label:
-                            $("servicePriceLabel")
-                                .value
-                                .trim() ||
-                            "Price on enquiry",
-
-                        duration_minutes:
-                            durationValue === ""
-                            ? null
-                            : Number(durationValue),
-
-                        image_url:
-                            imageUrl,
-
-                        featured:
-                            $("serviceFeatured")
-                                .checked,
-
-                        active:
-                            $("serviceActive")
-                                .checked,
-
-                        display_order:
-                            Number(
-                                $("serviceOrder")
-                                    .value || 0
-                            )
-
-                    };
-
-                    let result;
-
-                    if (service?.id) {
-
-                        result =
-                            await db
-                                .from("services")
-                                .update(payload)
-                                .eq(
-                                    "id",
-                                    service.id
-                                );
-
-                    } else {
-
-                        result =
-                            await db
-                                .from("services")
-                                .insert(payload);
-                    }
-
-                    if (result.error) {
-                        throw result.error;
-                    }
-
-                    showMessage(
-                        service
-                        ? "Service updated successfully."
-                        : "Service created successfully."
-                    );
-
-                    await loadServices();
-
-                } catch (error) {
-
-                    console.error(
-                        "Service save error:",
-                        error
-                    );
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-                }
-
-            }
-        );
-}
-
-
-/* ============================================================
-   OFFERS
-============================================================ */
-
-async function loadOffers() {
-
-    const db = getDatabase();
-
-    const {
-        data,
-        error
-    } = await db
-        .from("offers")
-        .select("*")
-        .order(
-            "created_at",
-            { ascending: false }
-        );
-
-    if (error) {
-        throw error;
-    }
-
-    const content =
-        getModuleContent();
-
-    content.innerHTML = `
-
-        <div class="admin-module">
-
-            <div class="module-actions">
-
-                <div>
-                    <h2>
-                        Offers
-                    </h2>
-
-                    <p style="margin-top:7px;color:var(--muted);">
-                        Manage offers, prices and validity.
-                    </p>
-                </div>
-
-                <button
-                    id="addOfferBtn"
-                    class="primary-btn"
-                    type="button"
-                >
-                    + Add Offer
-                </button>
-
-            </div>
-
-            <div id="offerFormArea"></div>
-
-            ${
-                data?.length
-                ? `
-
-                    <div style="overflow-x:auto;">
-
-                        <table>
-
-                            <thead>
-                                <tr>
-                                    <th>Offer</th>
-                                    <th>Original</th>
-                                    <th>Offer Price</th>
-                                    <th>Valid Until</th>
-                                    <th>Active</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-
-                                ${data.map(item => `
-
-                                    <tr>
-
-                                        <td>
-
-                                            <strong>
-                                                ${escapeHTML(
-                                                    item.name
-                                                )}
-                                            </strong>
-
-                                            ${
-                                                item.description
-                                                ? `
-                                                    <div
-                                                        style="
-                                                            color:var(--muted);
-                                                            margin-top:4px;
-                                                        "
-                                                    >
-                                                        ${escapeHTML(
-                                                            item.description
-                                                        )}
-                                                    </div>
-                                                `
-                                                : ""
-                                            }
-
-                                        </td>
-
-                                        <td>
-                                            ${
-                                                item.original_price !== null
-                                                ? money(
-                                                    item.original_price
-                                                )
-                                                : "—"
-                                            }
-                                        </td>
-
-                                        <td>
-                                            ${
-                                                item.offer_price !== null
-                                                ? money(
-                                                    item.offer_price
-                                                )
-                                                : "—"
-                                            }
-                                        </td>
-
-                                        <td>
-                                            ${formatDate(
-                                                item.valid_until
-                                            )}
-                                        </td>
-
-                                        <td>
-                                            ${
-                                                item.active
-                                                ? "Yes"
-                                                : "No"
-                                            }
-                                        </td>
-
-                                        <td>
-
-                                            <div
-                                                style="
-                                                    display:flex;
-                                                    gap:6px;
-                                                    flex-wrap:wrap;
-                                                "
-                                            >
-
-                                                <button
-                                                    class="secondary-btn edit-offer"
-                                                    type="button"
-                                                    data-id="${escapeAttribute(
-                                                        item.id
-                                                    )}"
-                                                >
-                                                    Edit
-                                                </button>
-
-                                                <button
-                                                    class="danger-btn delete-record"
-                                                    type="button"
-                                                    data-table="offers"
-                                                    data-id="${escapeAttribute(
-                                                        item.id
-                                                    )}"
-                                                    data-label="this offer"
-                                                >
-                                                    Delete
-                                                </button>
-
-                                            </div>
-
-                                        </td>
-
-                                    </tr>
-
-                                `).join("")}
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                `
-                : `
-                    <div class="empty-state">
-                        No offers added yet.
-                    </div>
-                `
-            }
-
-        </div>
-    `;
-
-    $("addOfferBtn")
-        ?.addEventListener(
-            "click",
-            () => showOfferForm()
-        );
-
-    content
-        .querySelectorAll(
-            ".edit-offer"
-        )
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const item =
-                        data.find(
-                            offer =>
-                                offer.id ===
-                                button.dataset.id
-                        );
-
-                    if (item) {
-                        showOfferForm(item);
-                    }
-
-                }
-            );
-
-        });
-
-    attachDeleteHandlers();
-}
-
-
-function showOfferForm(offer = null) {
-
-    const area =
-        $("offerFormArea");
-
-    if (!area) {
-        return;
-    }
-
-    area.innerHTML = `
-
-        <div
-            class="admin-card"
-            style="margin-bottom:20px;"
-        >
-
-            <h3>
-                ${offer ? "Edit Offer" : "Add Offer"}
-            </h3>
-
-            <form
-                id="offerForm"
-                class="admin-form"
-                style="margin-top:18px;"
-            >
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Offer Name
-                        </label>
-
-                        <input
-                            id="offerName"
-                            required
-                            value="${escapeAttribute(
-                                offer?.name || ""
-                            )}"
-                            placeholder="Offer name"
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            Original Price
-                        </label>
-
-                        <input
-                            id="offerOriginalPrice"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value="${
-                                offer?.original_price ??
-                                ""
-                            }"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Offer Price
-                        </label>
-
-                        <input
-                            id="offerPrice"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value="${
-                                offer?.offer_price ??
-                                ""
-                            }"
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            Discount %
-                        </label>
-
-                        <input
-                            id="offerDiscount"
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value="${
-                                offer?.discount_percent ??
-                                ""
-                            }"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Valid From
-                        </label>
-
-                        <input
-                            id="offerValidFrom"
-                            type="date"
-                            value="${
-                                offer?.valid_from ||
-                                ""
-                            }"
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            Valid Until
-                        </label>
-
-                        <input
-                            id="offerValidUntil"
-                            type="date"
-                            value="${
-                                offer?.valid_until ||
-                                ""
-                            }"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Description
-                    </label>
-
-                    <textarea
-                        id="offerDescription"
-                    >${escapeHTML(
-                        offer?.description || ""
-                    )}</textarea>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Included Services
-                    </label>
-
-                    <textarea
-                        id="offerServices"
-                    >${escapeHTML(
-                        offer?.included_services || ""
-                    )}</textarea>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Terms
-                    </label>
-
-                    <textarea
-                        id="offerTerms"
-                    >${escapeHTML(
-                        offer?.terms || ""
-                    )}</textarea>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Offer Image
-                    </label>
-
-                    <input
-                        id="offerImage"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                    >
-
-                    ${
-                        offer?.image_url
-                        ? `
-                            <img
-                                src="${escapeAttribute(
-                                    offer.image_url
-                                )}"
-                                class="admin-image"
-                                style="margin-top:10px;"
-                                alt=""
-                            >
-                        `
-                        : ""
-                    }
-
-                </div>
-
-
-                <label>
-
-                    <input
-                        type="checkbox"
-                        id="offerFeatured"
-                        ${
-                            offer?.featured
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
-                    Featured offer
-
-                </label>
-
-
-                <label>
-
-                    <input
-                        type="checkbox"
-                        id="offerActive"
-                        ${
-                            offer?.active !== false
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
-                    Active offer
-
-                </label>
-
-
-                <div class="form-actions">
-
-                    <button
-                        type="submit"
-                        class="primary-btn"
-                    >
-                        ${
-                            offer
-                            ? "Update Offer"
-                            : "Save Offer"
-                        }
-                    </button>
-
-                    <button
-                        type="button"
-                        id="cancelOffer"
-                        class="secondary-btn"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-    `;
-
-    $("cancelOffer")
-        ?.addEventListener(
-            "click",
-            () => {
-                area.innerHTML = "";
-            }
-        );
-
-    $("offerForm")
-        ?.addEventListener(
-            "submit",
-            async function (event) {
-
-                event.preventDefault();
-
-                const db =
-                    getDatabase();
-
-                try {
-
-                    let imageUrl =
-                        offer?.image_url ||
-                        null;
-
-                    const file =
-                        $("offerImage")
-                            ?.files?.[0];
-
-                    if (file) {
-
-                        imageUrl =
-                            await uploadImage(
-                                "offers",
-                                file
-                            );
-                    }
-
-                    const payload = {
-
-                        name:
-                            $("offerName")
-                                .value
-                                .trim(),
-
-                        description:
-                            $("offerDescription")
-                                .value
-                                .trim() ||
-                            null,
-
-                        image_url:
-                            imageUrl,
-
-                        original_price:
-                            $("offerOriginalPrice")
-                                .value === ""
-                            ? null
-                            : Number(
-                                $("offerOriginalPrice")
-                                    .value
-                            ),
-
-                        offer_price:
-                            $("offerPrice")
-                                .value === ""
-                            ? null
-                            : Number(
-                                $("offerPrice")
-                                    .value
-                            ),
-
-                        discount_percent:
-                            $("offerDiscount")
-                                .value === ""
-                            ? null
-                            : Number(
-                                $("offerDiscount")
-                                    .value
-                            ),
-
-                        valid_from:
-                            $("offerValidFrom")
-                                .value ||
-                            null,
-
-                        valid_until:
-                            $("offerValidUntil")
-                                .value ||
-                            null,
-
-                        included_services:
-                            $("offerServices")
-                                .value
-                                .trim() ||
-                            null,
-
-                        terms:
-                            $("offerTerms")
-                                .value
-                                .trim() ||
-                            null,
-
-                        active:
-                            $("offerActive")
-                                .checked,
-
-                        featured:
-                            $("offerFeatured")
-                                .checked
-
-                    };
-
-                    let result;
-
-                    if (offer?.id) {
-
-                        result =
-                            await db
-                                .from("offers")
-                                .update(payload)
-                                .eq(
-                                    "id",
-                                    offer.id
-                                );
-
-                    } else {
-
-                        result =
-                            await db
-                                .from("offers")
-                                .insert(payload);
-                    }
-
-                    if (result.error) {
-                        throw result.error;
-                    }
-
-                    showMessage(
-                        offer
-                        ? "Offer updated successfully."
-                        : "Offer created successfully."
-                    );
-
-                    await loadOffers();
-
-                } catch (error) {
-
-                    console.error(
-                        "Offer save error:",
-                        error
-                    );
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-                }
-
-            }
-        );
-}
-
-
-/* ============================================================
-   GENERIC IMAGE UPLOAD
-============================================================ */
-
-async function uploadImage(
-    bucket,
-    file
-) {
-
-    const db =
-        getDatabase();
-
-    if (!file) {
-        return null;
-    }
-
-    if (
-        ![
-            "image/jpeg",
-            "image/png",
-            "image/webp"
-        ].includes(file.type)
-    ) {
-
-        throw new Error(
-            "Only JPG, PNG and WebP images are allowed."
-        );
-    }
-
-    if (
-        file.size >
-        10 * 1024 * 1024
-    ) {
-
-        throw new Error(
-            "Image must be 10 MB or smaller."
-        );
-    }
-
-    const extension =
-        file.name
-            .split(".")
-            .pop()
-            .toLowerCase();
-
-    const path =
-        `${Date.now()}-${crypto.randomUUID()}.${extension}`;
-
-    const {
-        error
-    } = await db
-        .storage
-        .from(bucket)
-        .upload(
-            path,
-            file,
-            {
-                cacheControl: "3600",
-                upsert: false,
-                contentType: file.type
-            }
-        );
-
-    if (error) {
-        throw error;
-    }
-
-    const {
-        data
-    } = db
-        .storage
-        .from(bucket)
-        .getPublicUrl(path);
-
-    return data.publicUrl;
-}
-
-
-/* ============================================================
-   GALLERY
-============================================================ */
-
-async function loadGallery() {
-
-    await loadStandardGallery(
-        "gallery",
-        "gallery",
-        "Our Work Gallery",
-        "Upload portfolio and beauty work images.",
-        false
-    );
-}
-
-
-async function loadBrideGallery() {
-
-    await loadStandardGallery(
-        "bride_gallery",
-        "bride-gallery",
-        "Bride / Girls Gallery",
-        "Upload bridal and girls portfolio images.",
-        true
-    );
-}
-
-
-async function loadStandardGallery(
-    table,
-    bucket,
-    title,
-    description,
-    hasDate
-) {
-
-    const db =
-        getDatabase();
-
-    const {
-        data,
-        error
-    } = await db
-        .from(table)
-        .select("*")
-        .order(
-            "display_order",
-            { ascending: true }
-        )
-        .order(
-            "created_at",
-            { ascending: false }
-        );
-
-    if (error) {
-        throw error;
-    }
-
-    const content =
-        getModuleContent();
-
-    content.innerHTML = `
-
-        <div class="admin-module">
-
-            <div class="module-actions">
-
-                <div>
-
-                    <h2>
-                        ${escapeHTML(title)}
-                    </h2>
-
-                    <p style="margin-top:7px;color:var(--muted);">
-                        ${escapeHTML(description)}
-                    </p>
-
-                </div>
-
-                <button
-                    class="primary-btn"
-                    id="addGalleryBtn"
-                    type="button"
-                >
-                    + Upload Image
-                </button>
-
-            </div>
-
-            <div id="galleryFormArea"></div>
-
-            ${
-                data?.length
-                ? `
-
-                    <div
-                        style="
-                            display:grid;
-                            grid-template-columns:
-                                repeat(
-                                    auto-fill,
-                                    minmax(210px,1fr)
-                                );
-                            gap:16px;
-                        "
-                    >
-
-                        ${data.map(item => `
-
-                            <article
-                                class="admin-card"
-                                style="padding:12px;"
-                            >
-
-                                <img
-                                    src="${escapeAttribute(
-                                        item.image_url
-                                    )}"
-                                    alt="${escapeAttribute(
-                                        item.title ||
-                                        ""
-                                    )}"
-                                    style="
-                                        width:100%;
-                                        height:220px;
-                                        object-fit:cover;
-                                        border-radius:9px;
-                                        border:1px solid var(--border);
-                                    "
-                                >
-
-                                <h3
-                                    style="
-                                        margin-top:12px;
-                                        font-size:18px;
-                                    "
-                                >
-                                    ${escapeHTML(
-                                        item.title ||
-                                        "Untitled"
-                                    )}
-                                </h3>
-
-                                ${
-                                    item.category
-                                    ? `
-                                        <p
-                                            style="
-                                                color:var(--muted);
-                                                margin-top:5px;
-                                            "
-                                        >
-                                            ${escapeHTML(
-                                                item.category
-                                            )}
-                                        </p>
-                                    `
-                                    : ""
-                                }
-
-                                ${
-                                    hasDate &&
-                                    item.photo_date
-                                    ? `
-                                        <p
-                                            style="
-                                                color:var(--muted);
-                                                margin-top:5px;
-                                            "
-                                        >
-                                            ${formatDate(
-                                                item.photo_date
-                                            )}
-                                        </p>
-                                    `
-                                    : ""
-                                }
-
-                                <div
-                                    style="
-                                        display:flex;
-                                        gap:7px;
-                                        margin-top:12px;
-                                    "
-                                >
-
-                                    <button
-                                        class="secondary-btn edit-gallery"
-                                        type="button"
-                                        data-id="${escapeAttribute(
-                                            item.id
-                                        )}"
-                                    >
-                                        Edit
-                                    </button>
-
-                                    <button
-                                        class="danger-btn delete-record"
-                                        type="button"
-                                        data-table="${escapeAttribute(
-                                            table
-                                        )}"
-                                        data-id="${escapeAttribute(
-                                            item.id
-                                        )}"
-                                        data-label="this image"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </div>
-
-                            </article>
-
-                        `).join("")}
-
-                    </div>
-
-                `
-                : `
-                    <div class="empty-state">
-                        No images uploaded yet.
-                    </div>
-                `
-            }
-
-        </div>
-    `;
-
-    $("addGalleryBtn")
-        ?.addEventListener(
-            "click",
-            () =>
-                showGalleryForm(
-                    table,
-                    bucket,
-                    hasDate
-                )
-        );
-
-    content
-        .querySelectorAll(
-            ".edit-gallery"
-        )
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const item =
-                        data.find(
-                            row =>
-                                row.id ===
-                                button.dataset.id
-                        );
-
-                    if (item) {
-
-                        showGalleryForm(
-                            table,
-                            bucket,
-                            hasDate,
-                            item
-                        );
-                    }
-
-                }
-            );
-
-        });
-
-    attachDeleteHandlers();
-}
-
-
-function showGalleryForm(
-    table,
-    bucket,
-    hasDate,
-    item = null
-) {
-
-    const area =
-        $("galleryFormArea");
-
-    if (!area) {
-        return;
-    }
-
-    area.innerHTML = `
-
-        <div
-            class="admin-card"
-            style="margin-bottom:20px;"
-        >
-
-            <h3>
-                ${item ? "Edit Image" : "Upload Image"}
-            </h3>
-
-            <form
-                id="galleryForm"
-                class="admin-form"
-                style="margin-top:18px;"
-            >
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Title
-                        </label>
-
-                        <input
-                            id="galleryTitle"
-                            value="${escapeAttribute(
-                                item?.title || ""
-                            )}"
-                            placeholder="Image title"
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            Category
-                        </label>
-
-                        <input
-                            id="galleryCategory"
-                            value="${escapeAttribute(
-                                item?.category || ""
-                            )}"
-                            placeholder="Bridal, Makeup, Hair..."
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Description
-                    </label>
-
-                    <textarea
-                        id="galleryDescription"
-                    >${escapeHTML(
-                        item?.description || ""
-                    )}</textarea>
-
-                </div>
-
-
-                ${
-                    hasDate
-                    ? `
-                        <div>
-
-                            <label>
-                                Photo Date
-                            </label>
-
-                            <input
-                                id="galleryDate"
-                                type="date"
-                                value="${
-                                    item?.photo_date ||
-                                    ""
-                                }"
-                            >
-
-                        </div>
-                    `
-                    : ""
-                }
-
-
-                <div>
-
-                    <label>
-                        ${
-                            item
-                            ? "Replace Image (optional)"
-                            : "Image"
-                        }
-                    </label>
-
-                    <input
-                        id="galleryImage"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        ${
-                            item
-                            ? ""
-                            : "required"
-                        }
-                    >
-
-                    ${
-                        item?.image_url
-                        ? `
-                            <img
-                                src="${escapeAttribute(
-                                    item.image_url
-                                )}"
-                                class="admin-image"
-                                style="margin-top:10px;"
-                                alt=""
-                            >
-                        `
-                        : ""
-                    }
-
-                </div>
-
-
-                <label>
-
-                    <input
-                        type="checkbox"
-                        id="galleryFeatured"
-                        ${
-                            item?.featured
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
-                    Featured
-
-                </label>
-
-
-                <label>
-
-                    <input
-                        type="checkbox"
-                        id="galleryVisible"
-                        ${
-                            item?.visible !== false
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
-                    Visible on website
-
-                </label>
-
-
-                <div class="form-actions">
-
-                    <button
-                        class="primary-btn"
-                        type="submit"
-                    >
-                        ${
-                            item
-                            ? "Update"
-                            : "Upload"
-                        }
-                    </button>
-
-                    <button
-                        class="secondary-btn"
-                        type="button"
-                        id="cancelGallery"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-    `;
-
-    $("cancelGallery")
-        ?.addEventListener(
-            "click",
-            () => {
-                area.innerHTML = "";
-            }
-        );
-
-    $("galleryForm")
-        ?.addEventListener(
-            "submit",
-            async function (event) {
-
-                event.preventDefault();
-
-                const db =
-                    getDatabase();
-
-                try {
-
-                    let imageUrl =
-                        item?.image_url ||
-                        null;
-
-                    const file =
-                        $("galleryImage")
-                            ?.files?.[0];
-
-                    if (file) {
-
-                        imageUrl =
-                            await uploadImage(
-                                bucket,
-                                file
-                            );
-                    }
-
-                    if (!imageUrl) {
-
-                        throw new Error(
-                            "Please select an image."
-                        );
-                    }
-
-                    const payload = {
-
-                        title:
-                            $("galleryTitle")
-                                .value
-                                .trim() ||
-                            null,
-
-                        description:
-                            $("galleryDescription")
-                                .value
-                                .trim() ||
-                            null,
-
-                        image_url:
-                            imageUrl,
-
-                        category:
-                            $("galleryCategory")
-                                .value
-                                .trim() ||
-                            null,
-
-                        featured:
-                            $("galleryFeatured")
-                                .checked,
-
-                        visible:
-                            $("galleryVisible")
-                                .checked,
-
-                        display_order:
-                            item?.display_order ||
-                            0
-
-                    };
-
-                    if (hasDate) {
-
-                        payload.photo_date =
-                            $("galleryDate")
-                                .value ||
-                            null;
-                    }
-
-                    let result;
-
-                    if (item?.id) {
-
-                        result =
-                            await db
-                                .from(table)
-                                .update(payload)
-                                .eq(
-                                    "id",
-                                    item.id
-                                );
-
-                    } else {
-
-                        result =
-                            await db
-                                .from(table)
-                                .insert(payload);
-                    }
-
-                    if (result.error) {
-                        throw result.error;
-                    }
-
-                    showMessage(
-                        item
-                        ? "Image updated successfully."
-                        : "Image uploaded successfully."
-                    );
-
-                    if (table === "gallery") {
-                        await loadGallery();
-                    } else {
-                        await loadBrideGallery();
-                    }
-
-                } catch (error) {
-
-                    console.error(
-                        "Gallery save error:",
-                        error
-                    );
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-                }
-
-            }
-        );
-}
-
-
-/* ============================================================
-   CUSTOMER GALLERY
-============================================================ */
-
-async function loadCustomerGallery() {
-
-    const db =
-        getDatabase();
-
-    const {
-        data,
-        error
-    } = await db
-        .from("customer_gallery")
-        .select("*")
-        .order(
-            "display_order",
-            { ascending: true }
-        )
-        .order(
-            "created_at",
-            { ascending: false }
-        );
-
-    if (error) {
-        throw error;
-    }
-
-    const content =
-        getModuleContent();
-
-    content.innerHTML = `
-
-        <div class="admin-module">
-
-            <div class="module-actions">
-
-                <div>
-
-                    <h2>
-                        Customer Gallery
-                    </h2>
-
-                    <p style="margin-top:7px;color:var(--muted);">
-                        Only publish customer photos when consent has been given.
-                    </p>
-
-                </div>
-
-                <button
-                    class="primary-btn"
-                    id="addCustomerBtn"
-                    type="button"
-                >
-                    + Add Customer Photo
-                </button>
-
-            </div>
-
-            <div id="customerFormArea"></div>
-
-            ${
-                data?.length
-                ? `
-
-                    <div
-                        style="
-                            display:grid;
-                            grid-template-columns:
-                                repeat(
-                                    auto-fill,
-                                    minmax(210px,1fr)
-                                );
-                            gap:16px;
-                        "
-                    >
-
-                        ${data.map(item => `
-
-                            <article
-                                class="admin-card"
-                                style="padding:12px;"
-                            >
-
-                                <img
-                                    src="${escapeAttribute(
-                                        item.photo_url
-                                    )}"
-                                    alt=""
-                                    style="
-                                        width:100%;
-                                        height:220px;
-                                        object-fit:cover;
-                                        border-radius:9px;
-                                    "
-                                >
-
-                                <h3
-                                    style="
-                                        margin-top:12px;
-                                        font-size:18px;
-                                    "
-                                >
-                                    ${escapeHTML(
-                                        item.customer_name ||
-                                        "Customer"
-                                    )}
-                                </h3>
-
-                                ${
-                                    item.service
-                                    ? `
-                                        <p
-                                            style="
-                                                color:var(--muted);
-                                                margin-top:5px;
-                                            "
-                                        >
-                                            ${escapeHTML(
-                                                item.service
-                                            )}
-                                        </p>
-                                    `
-                                    : ""
-                                }
-
-                                <p
-                                    style="
-                                        margin-top:8px;
-                                        font-size:13px;
-                                    "
-                                >
-                                    Consent:
-                                    <strong>
-                                        ${
-                                            item.consent_given
-                                            ? "Yes"
-                                            : "No"
-                                        }
-                                    </strong>
-                                </p>
-
-                                <p
-                                    style="
-                                        margin-top:4px;
-                                        font-size:13px;
-                                    "
-                                >
-                                    Visible:
-                                    <strong>
-                                        ${
-                                            item.visible
-                                            ? "Yes"
-                                            : "No"
-                                        }
-                                    </strong>
-                                </p>
-
-                                <div
-                                    style="
-                                        display:flex;
-                                        gap:7px;
-                                        margin-top:12px;
-                                    "
-                                >
-
-                                    <button
-                                        class="secondary-btn edit-customer"
-                                        type="button"
-                                        data-id="${escapeAttribute(
-                                            item.id
-                                        )}"
-                                    >
-                                        Edit
-                                    </button>
-
-                                    <button
-                                        class="danger-btn delete-record"
-                                        type="button"
-                                        data-table="customer_gallery"
-                                        data-id="${escapeAttribute(
-                                            item.id
-                                        )}"
-                                        data-label="this customer photo"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </div>
-
-                            </article>
-
-                        `).join("")}
-
-                    </div>
-
-                `
-                : `
-                    <div class="empty-state">
-                        No customer photos added yet.
-                    </div>
-                `
-            }
-
-        </div>
-    `;
-
-    $("addCustomerBtn")
-        ?.addEventListener(
-            "click",
-            () => showCustomerForm()
-        );
-
-    content
-        .querySelectorAll(
-            ".edit-customer"
-        )
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const item =
-                        data.find(
-                            row =>
-                                row.id ===
-                                button.dataset.id
-                        );
-
-                    if (item) {
-                        showCustomerForm(item);
-                    }
-
-                }
-            );
-
-        });
-
-    attachDeleteHandlers();
-}
-
-
-function showCustomerForm(item = null) {
-
-    const area =
-        $("customerFormArea");
-
-    area.innerHTML = `
-
-        <div
-            class="admin-card"
-            style="margin-bottom:20px;"
-        >
-
-            <h3>
-                ${
-                    item
-                    ? "Edit Customer Photo"
-                    : "Add Customer Photo"
-                }
-            </h3>
-
-            <form
-                id="customerForm"
-                class="admin-form"
-                style="margin-top:18px;"
-            >
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Customer Name
-                        </label>
-
-                        <input
-                            id="customerName"
-                            value="${escapeAttribute(
-                                item?.customer_name || ""
-                            )}"
-                            placeholder="Optional"
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            Service
-                        </label>
-
-                        <input
-                            id="customerService"
-                            value="${escapeAttribute(
-                                item?.service || ""
-                            )}"
-                            placeholder="Optional"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Testimonial
-                    </label>
-
-                    <textarea
-                        id="customerTestimonial"
-                    >${escapeHTML(
-                        item?.testimonial || ""
-                    )}</textarea>
-
-                </div>
-
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Rating
-                        </label>
-
-                        <input
-                            id="customerRating"
-                            type="number"
-                            min="1"
-                            max="5"
-                            value="${
-                                item?.rating ??
-                                ""
-                            }"
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            Photo Date
-                        </label>
-
-                        <input
-                            id="customerDate"
-                            type="date"
-                            value="${
-                                item?.photo_date ||
-                                ""
-                            }"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        ${
-                            item
-                            ? "Replace Photo (optional)"
-                            : "Customer Photo"
-                        }
-                    </label>
-
-                    <input
-                        id="customerImage"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        ${
-                            item
-                            ? ""
-                            : "required"
-                        }
-                    >
-
-                    ${
-                        item?.photo_url
-                        ? `
-                            <img
-                                src="${escapeAttribute(
-                                    item.photo_url
-                                )}"
-                                class="admin-image"
-                                style="margin-top:10px;"
-                                alt=""
-                            >
-                        `
-                        : ""
-                    }
-
-                </div>
-
-
-                <label>
-
-                    <input
-                        type="checkbox"
-                        id="customerConsent"
-                        ${
-                            item?.consent_given
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
-                    Customer consent has been given
-
-                </label>
-
-
-                <label>
-
-                    <input
-                        type="checkbox"
-                        id="customerVisible"
-                        ${
-                            item?.visible !== false
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
-                    Visible on website
-
-                </label>
-
-
-                <label>
-
-                    <input
-                        type="checkbox"
-                        id="customerFeatured"
-                        ${
-                            item?.featured
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
-                    Featured
-
-                </label>
-
-
-                <div class="form-actions">
-
-                    <button
-                        type="submit"
-                        class="primary-btn"
-                    >
-                        ${
-                            item
-                            ? "Update"
-                            : "Save"
-                        }
-                    </button>
-
-                    <button
-                        type="button"
-                        class="secondary-btn"
-                        id="cancelCustomer"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-    `;
-
-    $("cancelCustomer")
-        ?.addEventListener(
-            "click",
-            () => {
-                area.innerHTML = "";
-            }
-        );
-
-    $("customerForm")
-        ?.addEventListener(
-            "submit",
-            async function (event) {
-
-                event.preventDefault();
-
-                const db =
-                    getDatabase();
-
-                try {
-
-                    let photoUrl =
-                        item?.photo_url ||
-                        null;
-
-                    const file =
-                        $("customerImage")
-                            ?.files?.[0];
-
-                    if (file) {
-
-                        photoUrl =
-                            await uploadImage(
-                                "customer-gallery",
-                                file
-                            );
-                    }
-
-                    if (!photoUrl) {
-
-                        throw new Error(
-                            "Please select a customer photo."
-                        );
-                    }
-
-                    const ratingValue =
-                        $("customerRating")
-                            .value;
-
-                    const payload = {
-
-                        customer_name:
-                            $("customerName")
-                                .value
-                                .trim() ||
-                            null,
-
-                        photo_url:
-                            photoUrl,
-
-                        service:
-                            $("customerService")
-                                .value
-                                .trim() ||
-                            null,
-
-                        testimonial:
-                            $("customerTestimonial")
-                                .value
-                                .trim() ||
-                            null,
-
-                        rating:
-                            ratingValue === ""
-                            ? null
-                            : Number(
-                                ratingValue
-                            ),
-
-                        photo_date:
-                            $("customerDate")
-                                .value ||
-                            null,
-
-                        featured:
-                            $("customerFeatured")
-                                .checked,
-
-                        visible:
-                            $("customerVisible")
-                                .checked,
-
-                        consent_given:
-                            $("customerConsent")
-                                .checked,
-
-                        display_order:
-                            item?.display_order ||
-                            0
-
-                    };
-
-                    let result;
-
-                    if (item?.id) {
-
-                        result =
-                            await db
-                                .from("customer_gallery")
-                                .update(payload)
-                                .eq(
-                                    "id",
-                                    item.id
-                                );
-
-                    } else {
-
-                        result =
-                            await db
-                                .from("customer_gallery")
-                                .insert(payload);
-                    }
-
-                    if (result.error) {
-                        throw result.error;
-                    }
-
-                    showMessage(
-                        item
-                        ? "Customer photo updated."
-                        : "Customer photo saved."
-                    );
-
-                    await loadCustomerGallery();
-
-                } catch (error) {
-
-                    console.error(error);
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-                }
-
-            }
-        );
-}
-
-
-/* ============================================================
-   BEFORE / AFTER
-============================================================ */
-
-async function loadBeforeAfter() {
-
-    const db =
-        getDatabase();
-
-    const {
-        data,
-        error
-    } = await db
-        .from("before_after")
-        .select("*")
-        .order(
-            "display_order",
-            { ascending: true }
-        )
-        .order(
-            "created_at",
-            { ascending: false }
-        );
-
-    if (error) {
-        throw error;
-    }
-
-    const content =
-        getModuleContent();
-
-    content.innerHTML = `
-
-        <div class="admin-module">
-
-            <div class="module-actions">
-
-                <div>
-
-                    <h2>
-                        Before / After
-                    </h2>
-
-                    <p style="margin-top:7px;color:var(--muted);">
-                        Manage transformation images.
-                    </p>
-
-                </div>
-
-                <button
-                    class="primary-btn"
-                    id="addBeforeAfter"
-                    type="button"
-                >
-                    + Add Transformation
-                </button>
-
-            </div>
-
-            <div id="beforeAfterFormArea"></div>
-
-            ${
-                data?.length
-                ? `
-
-                    <div
-                        style="
-                            display:grid;
-                            grid-template-columns:
-                                repeat(
-                                    auto-fill,
-                                    minmax(280px,1fr)
-                                );
-                            gap:18px;
-                        "
-                    >
-
-                        ${data.map(item => `
-
-                            <article
-                                class="admin-card"
-                            >
-
-                                <h3>
-                                    ${escapeHTML(
-                                        item.title ||
-                                        "Transformation"
-                                    )}
-                                </h3>
-
-                                <div
-                                    style="
-                                        display:grid;
-                                        grid-template-columns:1fr 1fr;
-                                        gap:8px;
-                                        margin-top:12px;
-                                    "
-                                >
-
-                                    <img
-                                        src="${escapeAttribute(
-                                            item.before_image_url
-                                        )}"
-                                        style="
-                                            width:100%;
-                                            height:180px;
-                                            object-fit:cover;
-                                            border-radius:8px;
-                                        "
-                                        alt="Before"
-                                    >
-
-                                    <img
-                                        src="${escapeAttribute(
-                                            item.after_image_url
-                                        )}"
-                                        style="
-                                            width:100%;
-                                            height:180px;
-                                            object-fit:cover;
-                                            border-radius:8px;
-                                        "
-                                        alt="After"
-                                    >
-
-                                </div>
-
-                                ${
-                                    item.description
-                                    ? `
-                                        <p
-                                            style="
-                                                margin-top:10px;
-                                                color:var(--muted);
-                                            "
-                                        >
-                                            ${escapeHTML(
-                                                item.description
-                                            )}
-                                        </p>
-                                    `
-                                    : ""
-                                }
-
-                                <div
-                                    style="
-                                        display:flex;
-                                        gap:7px;
-                                        margin-top:12px;
-                                    "
-                                >
-
-                                    <button
-                                        class="secondary-btn edit-before-after"
-                                        type="button"
-                                        data-id="${escapeAttribute(
-                                            item.id
-                                        )}"
-                                    >
-                                        Edit
-                                    </button>
-
-                                    <button
-                                        class="danger-btn delete-record"
-                                        type="button"
-                                        data-table="before_after"
-                                        data-id="${escapeAttribute(
-                                            item.id
-                                        )}"
-                                        data-label="this transformation"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </div>
-
-                            </article>
-
-                        `).join("")}
-
-                    </div>
-
-                `
-                : `
-                    <div class="empty-state">
-                        No before/after transformations added yet.
-                    </div>
-                `
-            }
-
-        </div>
-    `;
-
-    $("addBeforeAfter")
-        ?.addEventListener(
-            "click",
-            () => showBeforeAfterForm()
-        );
-
-    content
-        .querySelectorAll(
-            ".edit-before-after"
-        )
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const item =
-                        data.find(
-                            row =>
-                                row.id ===
-                                button.dataset.id
-                        );
-
-                    if (item) {
-                        showBeforeAfterForm(item);
-                    }
-
-                }
-            );
-
-        });
-
-    attachDeleteHandlers();
-}
-
-
-function showBeforeAfterForm(item = null) {
-
-    const area =
-        $("beforeAfterFormArea");
-
-    area.innerHTML = `
-
-        <div
-            class="admin-card"
-            style="margin-bottom:20px;"
-        >
-
-            <h3>
-                ${
-                    item
-                    ? "Edit Transformation"
-                    : "Add Transformation"
-                }
-            </h3>
-
-            <form
-                id="beforeAfterForm"
-                class="admin-form"
-                style="margin-top:18px;"
-            >
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Title
-                        </label>
-
-                        <input
-                            id="beforeTitle"
-                            value="${escapeAttribute(
-                                item?.title || ""
-                            )}"
-                            placeholder="Transformation title"
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            Category
-                        </label>
-
-                        <input
-                            id="beforeCategory"
-                            value="${escapeAttribute(
-                                item?.category || ""
-                            )}"
-                            placeholder="Makeup, Hair..."
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Description
-                    </label>
-
-                    <textarea
-                        id="beforeDescription"
-                    >${escapeHTML(
-                        item?.description || ""
-                    )}</textarea>
-
-                </div>
-
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Before Image
-                        </label>
-
-                        <input
-                            id="beforeImage"
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            ${
-                                item
-                                ? ""
-                                : "required"
-                            }
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            After Image
-                        </label>
-
-                        <input
-                            id="afterImage"
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            ${
-                                item
-                                ? ""
-                                : "required"
-                            }
-                        >
-
-                    </div>
-
-                </div>
-
-
-                ${
-                    item
-                    ? `
-                        <div
-                            style="
-                                display:grid;
-                                grid-template-columns:1fr 1fr;
-                                gap:10px;
-                            "
-                        >
-
-                            <img
-                                src="${escapeAttribute(
-                                    item.before_image_url
-                                )}"
-                                class="admin-image"
-                                style="
-                                    width:100%;
-                                    height:180px;
-                                "
-                                alt=""
-                            >
-
-                            <img
-                                src="${escapeAttribute(
-                                    item.after_image_url
-                                )}"
-                                class="admin-image"
-                                style="
-                                    width:100%;
-                                    height:180px;
-                                "
-                                alt=""
-                            >
-
-                        </div>
-                    `
-                    : ""
-                }
-
-
-                <label>
-
-                    <input
-                        type="checkbox"
-                        id="beforeFeatured"
-                        ${
-                            item?.featured
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
-                    Featured
-
-                </label>
-
-
-                <label>
-
-                    <input
-                        type="checkbox"
-                        id="beforeVisible"
-                        ${
-                            item?.visible !== false
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
-                    Visible
-
-                </label>
-
-
-                <div class="form-actions">
-
-                    <button
-                        class="primary-btn"
-                        type="submit"
-                    >
-                        ${
-                            item
-                            ? "Update"
-                            : "Save"
-                        }
-                    </button>
-
-                    <button
-                        class="secondary-btn"
-                        type="button"
-                        id="cancelBefore"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-    `;
-
-    $("cancelBefore")
-        ?.addEventListener(
-            "click",
-            () => {
-                area.innerHTML = "";
-            }
-        );
-
-    $("beforeAfterForm")
-        ?.addEventListener(
-            "submit",
-            async function (event) {
-
-                event.preventDefault();
-
-                const db =
-                    getDatabase();
-
-                try {
-
-                    let beforeUrl =
-                        item?.before_image_url ||
-                        null;
-
-                    let afterUrl =
-                        item?.after_image_url ||
-                        null;
-
-                    const beforeFile =
-                        $("beforeImage")
-                            ?.files?.[0];
-
-                    const afterFile =
-                        $("afterImage")
-                            ?.files?.[0];
-
-                    if (beforeFile) {
-
-                        beforeUrl =
-                            await uploadImage(
-                                "before-after",
-                                beforeFile
-                            );
-                    }
-
-                    if (afterFile) {
-
-                        afterUrl =
-                            await uploadImage(
-                                "before-after",
-                                afterFile
-                            );
-                    }
-
-                    if (!beforeUrl || !afterUrl) {
-
-                        throw new Error(
-                            "Both before and after images are required."
-                        );
-                    }
-
-                    const payload = {
-
-                        title:
-                            $("beforeTitle")
-                                .value
-                                .trim() ||
-                            null,
-
-                        description:
-                            $("beforeDescription")
-                                .value
-                                .trim() ||
-                            null,
-
-                        before_image_url:
-                            beforeUrl,
-
-                        after_image_url:
-                            afterUrl,
-
-                        category:
-                            $("beforeCategory")
-                                .value
-                                .trim() ||
-                            null,
-
-                        featured:
-                            $("beforeFeatured")
-                                .checked,
-
-                        visible:
-                            $("beforeVisible")
-                                .checked,
-
-                        display_order:
-                            item?.display_order ||
-                            0
-
-                    };
-
-                    let result;
-
-                    if (item?.id) {
-
-                        result =
-                            await db
-                                .from("before_after")
-                                .update(payload)
-                                .eq(
-                                    "id",
-                                    item.id
-                                );
-
-                    } else {
-
-                        result =
-                            await db
-                                .from("before_after")
-                                .insert(payload);
-                    }
-
-                    if (result.error) {
-                        throw result.error;
-                    }
-
-                    showMessage(
-                        item
-                        ? "Transformation updated."
-                        : "Transformation added."
-                    );
-
-                    await loadBeforeAfter();
-
-                } catch (error) {
-
-                    console.error(error);
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-                }
-
-            }
-        );
-}
-
-
-/* ============================================================
-   BRIDAL PACKAGES
-============================================================ */
-
-async function loadBridalPackages() {
-
-    const db =
-        getDatabase();
-
-    const {
-        data,
-        error
-    } = await db
-        .from("bridal_packages")
-        .select("*")
-        .order(
-            "display_order",
-            { ascending: true }
-        );
-
-    if (error) {
-        throw error;
-    }
-
-    const content =
-        getModuleContent();
-
-    content.innerHTML = `
-
-        <div class="admin-module">
-
-            <div class="module-actions">
-
-                <div>
-
-                    <h2>
-                        Bridal Packages
-                    </h2>
-
-                    <p style="margin-top:7px;color:var(--muted);">
-                        Manage bridal packages and enquiries.
-                    </p>
-
-                </div>
-
-                <button
-                    class="primary-btn"
-                    id="addBridalPackage"
-                    type="button"
-                >
-                    + Add Package
-                </button>
-
-            </div>
-
-            <div id="bridalPackageFormArea"></div>
-
-            ${
-                data?.length
-                ? `
-
-                    <div
-                        style="
-                            display:grid;
-                            grid-template-columns:
-                                repeat(
-                                    auto-fill,
-                                    minmax(250px,1fr)
-                                );
-                            gap:16px;
-                        "
-                    >
-
-                        ${data.map(item => `
-
-                            <article
-                                class="admin-card"
-                            >
-
-                                ${
-                                    item.image_url
-                                    ? `
-                                        <img
-                                            src="${escapeAttribute(
-                                                item.image_url
-                                            )}"
-                                            style="
-                                                width:100%;
-                                                height:180px;
-                                                object-fit:cover;
-                                                border-radius:8px;
-                                            "
-                                            alt=""
-                                        >
-                                    `
-                                    : ""
-                                }
-
-                                <h3
-                                    style="margin-top:12px;"
-                                >
-                                    ${escapeHTML(
-                                        item.name
-                                    )}
-                                </h3>
-
-                                ${
-                                    item.price !== null
-                                    ? `
-                                        <p
-                                            style="
-                                                margin-top:7px;
-                                                color:var(--gold-dark);
-                                                font-weight:700;
-                                            "
-                                        >
-                                            ${money(
-                                                item.price
-                                            )}
-                                        </p>
-                                    `
-                                    : `
-                                        <p
-                                            style="
-                                                margin-top:7px;
-                                                color:var(--gold-dark);
-                                            "
-                                        >
-                                            ${escapeHTML(
-                                                item.price_label ||
-                                                "Price on enquiry"
-                                            )}
-                                        </p>
-                                    `
-                                }
-
-                                ${
-                                    item.description
-                                    ? `
-                                        <p
-                                            style="
-                                                margin-top:8px;
-                                                color:var(--muted);
-                                            "
-                                        >
-                                            ${escapeHTML(
-                                                item.description
-                                            )}
-                                        </p>
-                                    `
-                                    : ""
-                                }
-
-                                <div
-                                    style="
-                                        display:flex;
-                                        gap:7px;
-                                        margin-top:12px;
-                                    "
-                                >
-
-                                    <button
-                                        class="secondary-btn edit-bridal"
-                                        type="button"
-                                        data-id="${escapeAttribute(
-                                            item.id
-                                        )}"
-                                    >
-                                        Edit
-                                    </button>
-
-                                    <button
-                                        class="danger-btn delete-record"
-                                        type="button"
-                                        data-table="bridal_packages"
-                                        data-id="${escapeAttribute(
-                                            item.id
-                                        )}"
-                                        data-label="this bridal package"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </div>
-
-                            </article>
-
-                        `).join("")}
-
-                    </div>
-
-                `
-                : `
-                    <div class="empty-state">
-                        No bridal packages added yet.
-                    </div>
-                `
-            }
-
-        </div>
-    `;
-
-    $("addBridalPackage")
-        ?.addEventListener(
-            "click",
-            () => showBridalPackageForm()
-        );
-
-    content
-        .querySelectorAll(
-            ".edit-bridal"
-        )
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const item =
-                        data.find(
-                            row =>
-                                row.id ===
-                                button.dataset.id
-                        );
-
-                    if (item) {
-                        showBridalPackageForm(item);
-                    }
-
-                }
-            );
-
-        });
-
-    attachDeleteHandlers();
-}
-
-
-function showBridalPackageForm(item = null) {
-
-    const area =
-        $("bridalPackageFormArea");
-
-    area.innerHTML = `
-
-        <div
-            class="admin-card"
-            style="margin-bottom:20px;"
-        >
-
-            <h3>
-                ${
-                    item
-                    ? "Edit Bridal Package"
-                    : "Add Bridal Package"
-                }
-            </h3>
-
-            <form
-                id="bridalPackageForm"
-                class="admin-form"
-                style="margin-top:18px;"
-            >
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Package Name
-                        </label>
-
-                        <input
-                            id="bridalName"
-                            required
-                            value="${escapeAttribute(
-                                item?.name || ""
-                            )}"
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            Price
-                        </label>
-
-                        <input
-                            id="bridalPrice"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value="${
-                                item?.price ??
-                                ""
-                            }"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Price Label
-                    </label>
-
-                    <input
-                        id="bridalPriceLabel"
-                        value="${escapeAttribute(
-                            item?.price_label ||
-                            "Price on enquiry"
-                        )}"
-                    >
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Description
-                    </label>
-
-                    <textarea
-                        id="bridalDescription"
-                    >${escapeHTML(
-                        item?.description || ""
-                    )}</textarea>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Included Services
-                    </label>
-
-                    <textarea
-                        id="bridalIncluded"
-                    >${escapeHTML(
-                        item?.included_services || ""
-                    )}</textarea>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Duration
-                    </label>
-
-                    <input
-                        id="bridalDuration"
-                        value="${escapeAttribute(
-                            item?.duration || ""
-                        )}"
-                    >
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Image
-                    </label>
-
-                    <input
-                        id="bridalImage"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                    >
-
-                    ${
-                        item?.image_url
-                        ? `
-                            <img
-                                src="${escapeAttribute(
-                                    item.image_url
-                                )}"
-                                class="admin-image"
-                                style="margin-top:10px;"
-                                alt=""
-                            >
-                        `
-                        : ""
-                    }
-
-                </div>
-
-
-                <label>
-
-                    <input
-                        type="checkbox"
-                        id="bridalFeatured"
-                        ${
-                            item?.featured
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
-                    Featured
-
-                </label>
-
-
-                <label>
-
-                    <input
-                        type="checkbox"
-                        id="bridalActive"
-                        ${
-                            item?.active !== false
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
-                    Active
-
-                </label>
-
-
-                <div class="form-actions">
-
-                    <button
-                        class="primary-btn"
-                        type="submit"
-                    >
-                        ${
-                            item
-                            ? "Update"
-                            : "Save"
-                        }
-                    </button>
-
-                    <button
-                        class="secondary-btn"
-                        type="button"
-                        id="cancelBridal"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-    `;
-
-    $("cancelBridal")
-        ?.addEventListener(
-            "click",
-            () => {
-                area.innerHTML = "";
-            }
-        );
-
-    $("bridalPackageForm")
-        ?.addEventListener(
-            "submit",
-            async function (event) {
-
-                event.preventDefault();
-
-                const db =
-                    getDatabase();
-
-                try {
-
-                    let imageUrl =
-                        item?.image_url ||
-                        null;
-
-                    const file =
-                        $("bridalImage")
-                            ?.files?.[0];
-
-                    if (file) {
-
-                        imageUrl =
-                            await uploadImage(
-                                "gallery",
-                                file
-                            );
-                    }
-
-                    const priceValue =
-                        $("bridalPrice")
-                            .value;
-
-                    const payload = {
-
-                        name:
-                            $("bridalName")
-                                .value
-                                .trim(),
-
-                        description:
-                            $("bridalDescription")
-                                .value
-                                .trim() ||
-                            null,
-
-                        image_url:
-                            imageUrl,
-
-                        price:
-                            priceValue === ""
-                            ? null
-                            : Number(priceValue),
-
-                        price_label:
-                            $("bridalPriceLabel")
-                                .value
-                                .trim() ||
-                            "Price on enquiry",
-
-                        included_services:
-                            $("bridalIncluded")
-                                .value
-                                .trim() ||
-                            null,
-
-                        duration:
-                            $("bridalDuration")
-                                .value
-                                .trim() ||
-                            null,
-
-                        featured:
-                            $("bridalFeatured")
-                                .checked,
-
-                        active:
-                            $("bridalActive")
-                                .checked,
-
-                        display_order:
-                            item?.display_order ||
-                            0
-
-                    };
-
-                    let result;
-
-                    if (item?.id) {
-
-                        result =
-                            await db
-                                .from("bridal_packages")
-                                .update(payload)
-                                .eq(
-                                    "id",
-                                    item.id
-                                );
-
-                    } else {
-
-                        result =
-                            await db
-                                .from("bridal_packages")
-                                .insert(payload);
-                    }
-
-                    if (result.error) {
-                        throw result.error;
-                    }
-
-                    showMessage(
-                        item
-                        ? "Bridal package updated."
-                        : "Bridal package created."
-                    );
-
-                    await loadBridalPackages();
-
-                } catch (error) {
-
-                    console.error(error);
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-                }
-
-            }
-        );
-}
-
-
-/* ============================================================
-   TEAM
-============================================================ */
-
-async function loadTeam() {
-
-    await loadSimpleContentTable(
-        "team",
-        "Team",
-        [
-            "name",
-            "role",
-            "bio",
-            "image_url",
-            "instagram_url",
-            "display_order",
-            "active"
-        ]
-    );
-}
-
-
-async function loadSimpleContentTable(
-    table,
-    title,
-    columns
-) {
-
-    const db =
-        getDatabase();
-
-    const {
-        data,
-        error
-    } = await db
-        .from(table)
-        .select("*")
-        .order(
-            "display_order",
-            { ascending: true }
-        );
-
-    if (error) {
-        throw error;
-    }
-
-    const content =
-        getModuleContent();
-
-    let rows = "";
-
-    if (table === "team") {
-
-        rows =
+        ${tableShell(
+            [
+                "Customer",
+                "Phone",
+                "Date",
+                "Time",
+                "Status",
+                "WhatsApp",
+                "Created",
+                "Action"
+            ],
             (data || []).map(item => `
 
                 <tr>
 
                     <td>
+                        <strong>
+                            ${escapeHTML(item.customer_name)}
+                        </strong>
                         ${
-                            item.image_url
-                            ? `
-                                <img
-                                    src="${escapeAttribute(
-                                        item.image_url
-                                    )}"
-                                    class="admin-image"
-                                    alt=""
-                                >
-                            `
+                            item.email
+                            ? `<small>${escapeHTML(item.email)}</small>`
+                            : ""
+                        }
+                    </td>
+
+                    <td>
+                        ${escapeHTML(item.phone)}
+                    </td>
+
+                    <td>
+                        ${formatDate(item.appointment_date)}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(item.appointment_time || "—")}
+                    </td>
+
+                    <td>
+                        <select
+                            class="appointment-status"
+                            data-id="${item.id}">
+                            ${[
+                                "New",
+                                "Confirmed",
+                                "Completed",
+                                "Cancelled",
+                                "No-show"
+                            ].map(status => `
+                                <option
+                                    value="${status}"
+                                    ${item.status === status ? "selected" : ""}>
+                                    ${status}
+                                </option>
+                            `).join("")}
+                        </select>
+                    </td>
+
+                    <td>
+                        ${item.whatsapp_requested ? "Yes" : "No"}
+                    </td>
+
+                    <td>
+                        ${formatDateTime(item.created_at)}
+                    </td>
+
+                    <td>
+                        <button
+                            class="delete-btn"
+                            data-delete-appointment="${item.id}">
+                            Delete
+                        </button>
+                    </td>
+
+                </tr>
+
+            `),
+            "No appointment requests yet."
+        )}
+    `;
+
+    content
+        .querySelectorAll(".appointment-status")
+        .forEach(select => {
+
+            select.addEventListener("change", async () => {
+
+                const id = select.dataset.id;
+                const status = select.value;
+
+                const { error } =
+                    await supabaseClient
+                        .from("appointments")
+                        .update({
+                            status,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq("id", id);
+
+                if (error) {
+                    showMessage(
+                        error.message,
+                        "error"
+                    );
+                } else {
+                    showMessage(
+                        "Appointment status updated."
+                    );
+                }
+            });
+        });
+
+    content
+        .querySelectorAll("[data-delete-appointment]")
+        .forEach(button => {
+
+            button.addEventListener("click", () => {
+                deleteRecord(
+                    "appointments",
+                    button.dataset.deleteAppointment,
+                    "this appointment"
+                );
+            });
+        });
+}
+
+/* =========================================================
+   CATEGORIES
+========================================================= */
+
+async function getCategories() {
+
+    const { data, error } =
+        await supabaseClient
+            .from("categories")
+            .select("*")
+            .eq("active", true)
+            .order("display_order", {
+                ascending: true
+            });
+
+    if (error) throw error;
+
+    return data || [];
+}
+
+/* =========================================================
+   SERVICES
+========================================================= */
+
+async function loadServices() {
+
+    showLoading("Loading services...");
+
+    const categories = await getCategories();
+
+    const { data, error } =
+        await supabaseClient
+            .from("services")
+            .select(`
+                *,
+                categories (
+                    name
+                )
+            `)
+            .order("display_order", {
+                ascending: true
+            });
+
+    if (error) throw error;
+
+    const content = $("moduleContent");
+
+    content.innerHTML = `
+
+        <div class="admin-form-card">
+
+            <h3>Add service</h3>
+
+            <form id="serviceForm">
+
+                <div class="form-grid">
+
+                    <input
+                        name="name"
+                        required
+                        placeholder="Service name">
+
+                    <input
+                        name="slug"
+                        required
+                        placeholder="Slug">
+
+                    <select name="category_id">
+
+                        <option value="">
+                            Select category
+                        </option>
+
+                        ${categories.map(category => `
+                            <option value="${category.id}">
+                                ${escapeHTML(category.name)}
+                            </option>
+                        `).join("")}
+
+                    </select>
+
+                    <input
+                        name="price"
+                        type="number"
+                        step="0.01"
+                        placeholder="Price">
+
+                    <input
+                        name="price_label"
+                        placeholder="Price label"
+                        value="Price on enquiry">
+
+                    <input
+                        name="duration_minutes"
+                        type="number"
+                        placeholder="Duration in minutes">
+
+                    <input
+                        name="image_url"
+                        placeholder="Image URL">
+
+                </div>
+
+                <textarea
+                    name="description"
+                    placeholder="Description"></textarea>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="featured">
+                    Featured
+                </label>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="active"
+                        checked>
+                    Active
+                </label>
+
+                <button class="admin-btn" type="submit">
+                    Save service
+                </button>
+
+            </form>
+
+        </div>
+
+        ${tableShell(
+            [
+                "Service",
+                "Category",
+                "Price",
+                "Duration",
+                "Status",
+                "Action"
+            ],
+            (data || []).map(item => `
+
+                <tr>
+
+                    <td>
+                        <strong>
+                            ${escapeHTML(item.name)}
+                        </strong>
+                        <small>
+                            ${escapeHTML(item.slug)}
+                        </small>
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            item.categories?.name || "—"
+                        )}
+                    </td>
+
+                    <td>
+                        ${
+                            item.price !== null
+                            ? formatCurrency(item.price)
+                            : escapeHTML(
+                                item.price_label ||
+                                "Price on enquiry"
+                              )
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            item.duration_minutes
+                            ? `${item.duration_minutes} min`
                             : "—"
                         }
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            item.name
-                        )}
+                        ${item.active ? "Active" : "Inactive"}
                     </td>
 
                     <td>
-                        ${escapeHTML(
-                            item.role ||
-                            "—"
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(
-                            item.bio ||
-                            "—"
-                        )}
-                    </td>
-
-                    <td>
-                        ${
-                            item.active
-                            ? "Yes"
-                            : "No"
-                        }
-                    </td>
-
-                    <td>
-
                         <button
-                            class="secondary-btn edit-team"
-                            type="button"
-                            data-id="${escapeAttribute(
-                                item.id
-                            )}"
-                        >
-                            Edit
-                        </button>
-
-                        <button
-                            class="danger-btn delete-record"
-                            type="button"
-                            data-table="team"
-                            data-id="${escapeAttribute(
-                                item.id
-                            )}"
-                            data-label="this team member"
-                        >
+                            class="delete-btn"
+                            data-delete-service="${item.id}">
                             Delete
                         </button>
-
                     </td>
 
                 </tr>
 
-            `).join("");
+            `),
+            "No services added yet."
+        )}
+    `;
 
+    $("serviceForm").addEventListener(
+        "submit",
+        saveService
+    );
+
+    content
+        .querySelectorAll("[data-delete-service]")
+        .forEach(button => {
+
+            button.addEventListener("click", () => {
+
+                deleteRecord(
+                    "services",
+                    button.dataset.deleteService,
+                    "this service"
+                );
+
+            });
+
+        });
+}
+
+async function saveService(event) {
+
+    event.preventDefault();
+
+    const form = event.target;
+    const fd = new FormData(form);
+
+    const name = fd.get("name")?.trim();
+
+    if (!name) {
+        showMessage(
+            "Service name is required.",
+            "error"
+        );
+        return;
     }
+
+    let slug = fd.get("slug")?.trim();
+
+    if (!slug) {
+        slug = name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "");
+    }
+
+    const payload = {
+        name,
+        slug,
+        category_id:
+            fd.get("category_id") || null,
+        description:
+            fd.get("description")?.trim() || null,
+        price:
+            fd.get("price")
+                ? Number(fd.get("price"))
+                : null,
+        price_label:
+            fd.get("price_label")?.trim() ||
+            "Price on enquiry",
+        duration_minutes:
+            fd.get("duration_minutes")
+                ? Number(fd.get("duration_minutes"))
+                : null,
+        image_url:
+            fd.get("image_url")?.trim() || null,
+        featured:
+            fd.get("featured") === "on",
+        active:
+            fd.get("active") === "on"
+    };
+
+    const { error } =
+        await supabaseClient
+            .from("services")
+            .insert(payload);
+
+    if (error) {
+        showMessage(
+            error.message,
+            "error"
+        );
+        return;
+    }
+
+    showMessage("Service saved.");
+
+    await loadServices();
+}
+
+/* =========================================================
+   OFFERS
+========================================================= */
+
+async function loadOffers() {
+
+    showLoading("Loading offers...");
+
+    const { data, error } =
+        await supabaseClient
+            .from("offers")
+            .select("*")
+            .order("created_at", {
+                ascending: false
+            });
+
+    if (error) throw error;
+
+    const content = $("moduleContent");
 
     content.innerHTML = `
 
-        <div class="admin-module">
+        <div class="admin-form-card">
 
-            <div class="module-actions">
+            <h3>Add offer</h3>
 
-                <div>
+            <form id="offerForm">
 
-                    <h2>
-                        ${escapeHTML(title)}
-                    </h2>
+                <div class="form-grid">
 
-                    <p style="margin-top:7px;color:var(--muted);">
-                        Manage ${escapeHTML(
-                            title.toLowerCase()
-                        )}.
-                    </p>
+                    <input
+                        name="name"
+                        required
+                        placeholder="Offer name">
+
+                    <input
+                        name="original_price"
+                        type="number"
+                        step="0.01"
+                        placeholder="Original price">
+
+                    <input
+                        name="offer_price"
+                        type="number"
+                        step="0.01"
+                        placeholder="Offer price">
+
+                    <input
+                        name="discount_percent"
+                        type="number"
+                        step="0.01"
+                        placeholder="Discount %">
+
+                    <input
+                        name="start_date"
+                        type="date">
+
+                    <input
+                        name="end_date"
+                        type="date">
+
+                    <input
+                        name="image_url"
+                        placeholder="Image URL">
 
                 </div>
 
-                <button
-                    class="primary-btn"
-                    id="addTeamBtn"
-                    type="button"
-                >
-                    + Add Member
+                <textarea
+                    name="description"
+                    placeholder="Description"></textarea>
+
+                <textarea
+                    name="included_services"
+                    placeholder="Included services"></textarea>
+
+                <textarea
+                    name="terms"
+                    placeholder="Terms"></textarea>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="active"
+                        checked>
+                    Active
+                </label>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="featured">
+                    Featured
+                </label>
+
+                <button class="admin-btn" type="submit">
+                    Save offer
                 </button>
-
-            </div>
-
-            <div id="teamFormArea"></div>
-
-            ${
-                rows
-                ? `
-
-                    <div style="overflow-x:auto;">
-
-                        <table>
-
-                            <thead>
-
-                                <tr>
-                                    <th>Photo</th>
-                                    <th>Name</th>
-                                    <th>Role</th>
-                                    <th>Bio</th>
-                                    <th>Active</th>
-                                    <th>Action</th>
-                                </tr>
-
-                            </thead>
-
-                            <tbody>
-                                ${rows}
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                `
-                : `
-                    <div class="empty-state">
-                        No team members added yet.
-                    </div>
-                `
-            }
-
-        </div>
-    `;
-
-    $("addTeamBtn")
-        ?.addEventListener(
-            "click",
-            () => showTeamForm()
-        );
-
-    content
-        .querySelectorAll(
-            ".edit-team"
-        )
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const item =
-                        data.find(
-                            row =>
-                                row.id ===
-                                button.dataset.id
-                        );
-
-                    if (item) {
-                        showTeamForm(item);
-                    }
-
-                }
-            );
-
-        });
-
-    attachDeleteHandlers();
-}
-
-
-function showTeamForm(item = null) {
-
-    const area =
-        $("teamFormArea");
-
-    area.innerHTML = `
-
-        <div
-            class="admin-card"
-            style="margin-bottom:20px;"
-        >
-
-            <h3>
-                ${
-                    item
-                    ? "Edit Team Member"
-                    : "Add Team Member"
-                }
-            </h3>
-
-            <form
-                id="teamForm"
-                class="admin-form"
-                style="margin-top:18px;"
-            >
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Name
-                        </label>
-
-                        <input
-                            id="teamName"
-                            required
-                            value="${escapeAttribute(
-                                item?.name || ""
-                            )}"
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-                            Role
-                        </label>
-
-                        <input
-                            id="teamRole"
-                            value="${escapeAttribute(
-                                item?.role || ""
-                            )}"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Bio
-                    </label>
-
-                    <textarea
-                        id="teamBio"
-                    >${escapeHTML(
-                        item?.bio || ""
-                    )}</textarea>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Instagram URL
-                    </label>
-
-                    <input
-                        id="teamInstagram"
-                        type="url"
-                        value="${escapeAttribute(
-                            item?.instagram_url || ""
-                        )}"
-                    >
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Photo
-                    </label>
-
-                    <input
-                        id="teamImage"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                    >
-
-                    ${
-                        item?.image_url
-                        ? `
-                            <img
-                                src="${escapeAttribute(
-                                    item.image_url
-                                )}"
-                                class="admin-image"
-                                style="margin-top:10px;"
-                                alt=""
-                            >
-                        `
-                        : ""
-                    }
-
-                </div>
-
-
-                <div class="form-row">
-
-                    <div>
-
-                        <label>
-                            Display Order
-                        </label>
-
-                        <input
-                            id="teamOrder"
-                            type="number"
-                            min="0"
-                            value="${
-                                item?.display_order ??
-                                0
-                            }"
-                        >
-
-                    </div>
-
-                    <div>
-
-                        <label>
-
-                            <input
-                                type="checkbox"
-                                id="teamActive"
-                                ${
-                                    item?.active !== false
-                                    ? "checked"
-                                    : ""
-                                }
-                            >
-
-                            Active
-
-                        </label>
-
-                    </div>
-
-                </div>
-
-
-                <div class="form-actions">
-
-                    <button
-                        class="primary-btn"
-                        type="submit"
-                    >
-                        ${
-                            item
-                            ? "Update"
-                            : "Save"
-                        }
-                    </button>
-
-                    <button
-                        class="secondary-btn"
-                        type="button"
-                        id="cancelTeam"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
 
             </form>
 
         </div>
+
+        ${tableShell(
+            [
+                "Offer",
+                "Prices",
+                "Validity",
+                "Status",
+                "Action"
+            ],
+            (data || []).map(item => `
+
+                <tr>
+
+                    <td>
+                        <strong>
+                            ${escapeHTML(item.name)}
+                        </strong>
+                    </td>
+
+                    <td>
+                        ${
+                            item.original_price !== null
+                            ? formatCurrency(
+                                item.original_price
+                              )
+                            : "—"
+                        }
+                        →
+                        ${
+                            item.offer_price !== null
+                            ? formatCurrency(
+                                item.offer_price
+                              )
+                            : "—"
+                        }
+                    </td>
+
+                    <td>
+                        ${formatDate(
+                            item.start_date ||
+                            item.valid_from
+                        )}
+                        -
+                        ${formatDate(
+                            item.end_date ||
+                            item.valid_until
+                        )}
+                    </td>
+
+                    <td>
+                        ${item.active ? "Active" : "Inactive"}
+                    </td>
+
+                    <td>
+                        <button
+                            class="delete-btn"
+                            data-delete-offer="${item.id}">
+                            Delete
+                        </button>
+                    </td>
+
+                </tr>
+
+            `),
+            "No offers added yet."
+        )}
     `;
 
-    $("cancelTeam")
-        ?.addEventListener(
-            "click",
-            () => {
-                area.innerHTML = "";
-            }
-        );
+    $("offerForm").addEventListener(
+        "submit",
+        saveOffer
+    );
 
-    $("teamForm")
-        ?.addEventListener(
-            "submit",
-            async function (event) {
+    content
+        .querySelectorAll("[data-delete-offer]")
+        .forEach(button => {
 
-                event.preventDefault();
+            button.addEventListener("click", () => {
 
-                const db =
-                    getDatabase();
+                deleteRecord(
+                    "offers",
+                    button.dataset.deleteOffer,
+                    "this offer"
+                );
 
-                try {
+            });
 
-                    let imageUrl =
-                        item?.image_url ||
-                        null;
-
-                    const file =
-                        $("teamImage")
-                            ?.files?.[0];
-
-                    if (file) {
-
-                        imageUrl =
-                            await uploadImage(
-                                "team",
-                                file
-                            );
-                    }
-
-                    const payload = {
-
-                        name:
-                            $("teamName")
-                                .value
-                                .trim(),
-
-                        role:
-                            $("teamRole")
-                                .value
-                                .trim() ||
-                            null,
-
-                        bio:
-                            $("teamBio")
-                                .value
-                                .trim() ||
-                            null,
-
-                        image_url:
-                            imageUrl,
-
-                        instagram_url:
-                            $("teamInstagram")
-                                .value
-                                .trim() ||
-                            null,
-
-                        display_order:
-                            Number(
-                                $("teamOrder")
-                                    .value || 0
-                            ),
-
-                        active:
-                            $("teamActive")
-                                .checked
-
-                    };
-
-                    let result;
-
-                    if (item?.id) {
-
-                        result =
-                            await db
-                                .from("team")
-                                .update(payload)
-                                .eq(
-                                    "id",
-                                    item.id
-                                );
-
-                    } else {
-
-                        result =
-                            await db
-                                .from("team")
-                                .insert(payload);
-                    }
-
-                    if (result.error) {
-                        throw result.error;
-                    }
-
-                    showMessage(
-                        item
-                        ? "Team member updated."
-                        : "Team member added."
-                    );
-
-                    await loadTeam();
-
-                } catch (error) {
-
-                    console.error(error);
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-                }
-
-            }
-        );
+        });
 }
 
+async function saveOffer(event) {
 
-/* ============================================================
-   TESTIMONIALS
-============================================================ */
+    event.preventDefault();
 
-async function loadTestimonials() {
+    const fd =
+        new FormData(event.target);
 
-    const db =
-        getDatabase();
+    const startDate =
+        fd.get("start_date") || null;
 
-    const {
-        data,
-        error
-    } = await db
-        .from("testimonials")
-        .select("*")
-        .order(
-            "created_at",
-            { ascending: false }
-        );
+    const endDate =
+        fd.get("end_date") || null;
+
+    const payload = {
+        name:
+            fd.get("name")?.trim(),
+        description:
+            fd.get("description")?.trim() || null,
+        image_url:
+            fd.get("image_url")?.trim() || null,
+        original_price:
+            fd.get("original_price")
+                ? Number(fd.get("original_price"))
+                : null,
+        offer_price:
+            fd.get("offer_price")
+                ? Number(fd.get("offer_price"))
+                : null,
+        discount_percent:
+            fd.get("discount_percent")
+                ? Number(fd.get("discount_percent"))
+                : null,
+        valid_from: startDate,
+        valid_until: endDate,
+        start_date:
+            startDate
+            ? `${startDate}T00:00:00`
+            : null,
+        end_date:
+            endDate
+            ? `${endDate}T23:59:59`
+            : null,
+        included_services:
+            fd.get("included_services")?.trim() ||
+            null,
+        terms:
+            fd.get("terms")?.trim() ||
+            null,
+        active:
+            fd.get("active") === "on",
+        featured:
+            fd.get("featured") === "on"
+    };
+
+    const { error } =
+        await supabaseClient
+            .from("offers")
+            .insert(payload);
 
     if (error) {
-        throw error;
+        showMessage(
+            error.message,
+            "error"
+        );
+        return;
     }
 
-    const content =
-        getModuleContent();
+    showMessage("Offer saved.");
+
+    await loadOffers();
+}
+
+/* =========================================================
+   GALLERY
+========================================================= */
+
+async function loadGallery() {
+
+    showLoading("Loading gallery...");
+
+    const { data, error } =
+        await supabaseClient
+            .from("gallery")
+            .select("*")
+            .order("display_order", {
+                ascending: true
+            });
+
+    if (error) throw error;
+
+    const content = $("moduleContent");
 
     content.innerHTML = `
 
-        <div class="admin-module">
+        <div class="admin-form-card">
 
-            <div class="module-actions">
+            <h3>Add gallery image</h3>
 
-                <div>
+            <form id="galleryForm">
 
-                    <h2>
-                        Testimonials
-                    </h2>
+                <div class="form-grid">
 
-                    <p style="margin-top:7px;color:var(--muted);">
-                        Manage customer reviews.
-                    </p>
+                    <input
+                        name="title"
+                        placeholder="Title">
+
+                    <input
+                        name="category"
+                        placeholder="Category">
+
+                    <input
+                        name="image_url"
+                        required
+                        placeholder="Image URL">
+
+                    <input
+                        name="display_order"
+                        type="number"
+                        value="0"
+                        placeholder="Display order">
 
                 </div>
 
-                <button
-                    class="primary-btn"
-                    id="addTestimonial"
-                    type="button"
-                >
-                    + Add Testimonial
+                <textarea
+                    name="description"
+                    placeholder="Description"></textarea>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="featured">
+                    Featured
+                </label>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="visible"
+                        checked>
+                    Visible
+                </label>
+
+                <button class="admin-btn" type="submit">
+                    Save image
                 </button>
 
+            </form>
+
+        </div>
+
+        ${galleryCards(data)}
+    `;
+
+    $("galleryForm").addEventListener(
+        "submit",
+        saveGallery
+    );
+
+    bindDeleteButtons(
+        "gallery",
+        "gallery"
+    );
+}
+
+function galleryCards(data) {
+
+    if (!data || data.length === 0) {
+        return `
+            <div class="empty-state">
+                No gallery images yet.
             </div>
+        `;
+    }
 
-            <div id="testimonialFormArea"></div>
+    return `
+        <div class="gallery-admin-grid">
 
-            ${
-                data?.length
-                ? `
+            ${data.map(item => `
 
-                    <div
-                        style="
-                            display:grid;
-                            gap:14px;
-                        "
-                    >
+                <article class="admin-image-card">
 
-                        ${data.map(item => `
+                    ${
+                        item.image_url
+                        ? `<img
+                            src="${escapeHTML(item.image_url)}"
+                            alt="${escapeHTML(item.title || "")}">
+                          `
+                        : ""
+                    }
 
-                            <article
-                                class="admin-card"
-                            >
+                    <div>
+                        <strong>
+                            ${escapeHTML(
+                                item.title || "Untitled"
+                            )}
+                        </strong>
 
-                                <div
-                                    style="
-                                        display:flex;
-                                        justify-content:space-between;
-                                        gap:15px;
-                                        align-items:flex-start;
-                                    "
-                                >
+                        <p>
+                            ${escapeHTML(
+                                item.category || ""
+                            )}
+                        </p>
 
-                                    <div>
-
-                                        <h3>
-                                            ${escapeHTML(
-                                                item.customer_name
-                                            )}
-                                        </h3>
-
-                                        ${
-                                            item.service
-                                            ? `
-                                                <p
-                                                    style="
-                                                        color:var(--muted);
-                                                        margin-top:4px;
-                                                    "
-                                                >
-                                                    ${escapeHTML(
-                                                        item.service
-                                                    )}
-                                                </p>
-                                            `
-                                            : ""
-                                        }
-
-                                    </div>
-
-                                    <strong>
-                                        ${
-                                            item.rating
-                                            ? "★".repeat(
-                                                Math.min(
-                                                    5,
-                                                    Number(
-                                                        item.rating
-                                                    )
-                                                )
-                                            )
-                                            : "—"
-                                        }
-                                    </strong>
-
-                                </div>
-
-                                <p
-                                    style="
-                                        margin-top:12px;
-                                        line-height:1.6;
-                                    "
-                                >
-                                    ${escapeHTML(
-                                        item.testimonial
-                                    )}
-                                </p>
-
-                                <p
-                                    style="
-                                        margin-top:8px;
-                                        color:var(--muted);
-                                    "
-                                >
-                                    Visible:
-                                    ${
-                                        item.visible
-                                        ? "Yes"
-                                        : "No"
-                                    }
-                                </p>
-
-                                <div
-                                    style="
-                                        margin-top:12px;
-                                        display:flex;
-                                        gap:7px;
-                                    "
-                                >
-
-                                    <button
-                                        class="secondary-btn edit-testimonial"
-                                        type="button"
-                                        data-id="${escapeAttribute(
-                                            item.id
-                                        )}"
-                                    >
-                                        Edit
-                                    </button>
-
-                                    <button
-                                        class="danger-btn delete-record"
-                                        type="button"
-                                        data-table="testimonials"
-                                        data-id="${escapeAttribute(
-                                            item.id
-                                        )}"
-                                        data-label="this testimonial"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </div>
-
-                            </article>
-
-                        `).join("")}
-
+                        <button
+                            class="delete-btn"
+                            data-delete-table="gallery"
+                            data-delete-id="${item.id}">
+                            Delete
+                        </button>
                     </div>
 
-                `
-                : `
-                    <div class="empty-state">
-                        No testimonials added yet.
-                    </div>
-                `
-            }
+                </article>
+
+            `).join("")}
 
         </div>
     `;
-
-    $("addTestimonial")
-        ?.addEventListener(
-            "click",
-            () => showTestimonialForm()
-        );
-
-    content
-        .querySelectorAll(
-            ".edit-testimonial"
-        )
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const item =
-                        data.find(
-                            row =>
-                                row.id ===
-                                button.dataset.id
-                        );
-
-                    if (item) {
-                        showTestimonialForm(item);
-                    }
-
-                }
-            );
-
-        });
-
-    attachDeleteHandlers();
 }
 
+async function saveGallery(event) {
 
-function showTestimonialForm(item = null) {
+    event.preventDefault();
 
-    const area =
-        $("testimonialFormArea");
+    const fd =
+        new FormData(event.target);
 
-    area.innerHTML = `
+    const payload = {
+        title:
+            fd.get("title")?.trim() || null,
+        description:
+            fd.get("description")?.trim() || null,
+        image_url:
+            fd.get("image_url")?.trim(),
+        category:
+            fd.get("category")?.trim() || null,
+        featured:
+            fd.get("featured") === "on",
+        visible:
+            fd.get("visible") === "on",
+        display_order:
+            Number(fd.get("display_order") || 0)
+    };
 
-        <div
-            class="admin-card"
-            style="margin-bottom:20px;"
-        >
+    const { error } =
+        await supabaseClient
+            .from("gallery")
+            .insert(payload);
 
-            <h3>
-                ${
-                    item
-                    ? "Edit Testimonial"
-                    : "Add Testimonial"
-                }
-            </h3>
+    if (error) {
+        showMessage(
+            error.message,
+            "error"
+        );
+        return;
+    }
 
-            <form
-                id="testimonialForm"
-                class="admin-form"
-                style="margin-top:18px;"
-            >
+    showMessage("Gallery image saved.");
 
-                <div class="form-row">
+    await loadGallery();
+}
 
-                    <div>
+/* =========================================================
+   BRIDE GALLERY
+========================================================= */
 
-                        <label>
-                            Customer Name
-                        </label>
+async function loadBrideGallery() {
 
-                        <input
-                            id="testimonialName"
-                            required
-                            value="${escapeAttribute(
-                                item?.customer_name || ""
-                            )}"
-                        >
+    showLoading("Loading bride gallery...");
 
-                    </div>
+    const { data, error } =
+        await supabaseClient
+            .from("bride_gallery")
+            .select("*")
+            .order("display_order", {
+                ascending: true
+            });
 
-                    <div>
+    if (error) throw error;
 
-                        <label>
-                            Service
-                        </label>
+    const content = $("moduleContent");
 
-                        <input
-                            id="testimonialService"
-                            value="${escapeAttribute(
-                                item?.service || ""
-                            )}"
-                        >
+    content.innerHTML = `
 
-                    </div>
+        <div class="admin-form-card">
 
-                </div>
+            <h3>Add bride / girls photo</h3>
 
+            <form id="brideForm">
 
-                <div>
-
-                    <label>
-                        Testimonial
-                    </label>
-
-                    <textarea
-                        id="testimonialText"
-                        required
-                    >${escapeHTML(
-                        item?.testimonial || ""
-                    )}</textarea>
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Rating
-                    </label>
+                <div class="form-grid">
 
                     <input
-                        id="testimonialRating"
+                        name="title"
+                        placeholder="Title">
+
+                    <input
+                        name="category"
+                        placeholder="Category">
+
+                    <input
+                        name="image_url"
+                        required
+                        placeholder="Image URL">
+
+                    <input
+                        name="photo_date"
+                        type="date">
+
+                    <input
+                        name="display_order"
+                        type="number"
+                        value="0">
+
+                </div>
+
+                <textarea
+                    name="description"
+                    placeholder="Description"></textarea>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="featured">
+                    Featured
+                </label>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="visible"
+                        checked>
+                    Visible
+                </label>
+
+                <button class="admin-btn" type="submit">
+                    Save photo
+                </button>
+
+            </form>
+
+        </div>
+
+        ${imageGrid(
+            data,
+            "bride_gallery"
+        )}
+    `;
+
+    $("brideForm").addEventListener(
+        "submit",
+        saveBrideGallery
+    );
+
+    bindDeleteButtons(
+        "bride_gallery",
+        "bride_gallery"
+    );
+}
+
+async function saveBrideGallery(event) {
+
+    event.preventDefault();
+
+    const fd =
+        new FormData(event.target);
+
+    const payload = {
+        title:
+            fd.get("title")?.trim() || null,
+        description:
+            fd.get("description")?.trim() || null,
+        image_url:
+            fd.get("image_url")?.trim(),
+        category:
+            fd.get("category")?.trim() || null,
+        photo_date:
+            fd.get("photo_date") || null,
+        featured:
+            fd.get("featured") === "on",
+        visible:
+            fd.get("visible") === "on",
+        display_order:
+            Number(fd.get("display_order") || 0)
+    };
+
+    const { error } =
+        await supabaseClient
+            .from("bride_gallery")
+            .insert(payload);
+
+    if (error) {
+        showMessage(
+            error.message,
+            "error"
+        );
+        return;
+    }
+
+    showMessage("Bride photo saved.");
+
+    await loadBrideGallery();
+}
+
+/* =========================================================
+   CUSTOMER GALLERY
+========================================================= */
+
+async function loadCustomerGallery() {
+
+    showLoading("Loading customer gallery...");
+
+    const { data, error } =
+        await supabaseClient
+            .from("customer_gallery")
+            .select("*")
+            .order("display_order", {
+                ascending: true
+            });
+
+    if (error) throw error;
+
+    const content = $("moduleContent");
+
+    content.innerHTML = `
+
+        <div class="admin-form-card">
+
+            <h3>Add customer photo</h3>
+
+            <form id="customerGalleryForm">
+
+                <div class="form-grid">
+
+                    <input
+                        name="customer_name"
+                        placeholder="Customer name">
+
+                    <input
+                        name="service"
+                        placeholder="Service">
+
+                    <input
+                        name="photo_url"
+                        required
+                        placeholder="Photo URL">
+
+                    <input
+                        name="rating"
                         type="number"
                         min="1"
                         max="5"
-                        value="${
-                            item?.rating ??
-                            ""
-                        }"
-                    >
-
-                </div>
-
-
-                <div>
-
-                    <label>
-                        Customer Image
-                    </label>
+                        placeholder="Rating">
 
                     <input
-                        id="testimonialImage"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                    >
+                        name="photo_date"
+                        type="date">
 
-                    ${
-                        item?.image_url
-                        ? `
-                            <img
-                                src="${escapeAttribute(
-                                    item.image_url
-                                )}"
-                                class="admin-image"
-                                style="margin-top:10px;"
-                                alt=""
-                            >
-                        `
-                        : ""
-                    }
+                    <input
+                        name="display_order"
+                        type="number"
+                        value="0">
 
                 </div>
 
+                <textarea
+                    name="testimonial"
+                    placeholder="Customer testimonial"></textarea>
 
                 <label>
-
                     <input
                         type="checkbox"
-                        id="testimonialFeatured"
-                        ${
-                            item?.featured
-                            ? "checked"
-                            : ""
-                        }
-                    >
+                        name="consent_given">
+                    Customer consent given
+                </label>
 
+                <label>
+                    <input
+                        type="checkbox"
+                        name="featured">
                     Featured
-
                 </label>
-
 
                 <label>
-
                     <input
                         type="checkbox"
-                        id="testimonialVisible"
-                        ${
-                            item?.visible !== false
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
+                        name="visible"
+                        checked>
                     Visible
-
                 </label>
 
-
-                <div class="form-actions">
-
-                    <button
-                        class="primary-btn"
-                        type="submit"
-                    >
-                        ${
-                            item
-                            ? "Update"
-                            : "Save"
-                        }
-                    </button>
-
-                    <button
-                        class="secondary-btn"
-                        type="button"
-                        id="cancelTestimonial"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
+                <button class="admin-btn" type="submit">
+                    Save customer photo
+                </button>
 
             </form>
 
         </div>
+
+        ${imageGrid(
+            data,
+            "customer_gallery"
+        )}
     `;
 
-    $("cancelTestimonial")
-        ?.addEventListener(
-            "click",
-            () => {
-                area.innerHTML = "";
-            }
-        );
-
-    $("testimonialForm")
-        ?.addEventListener(
+    $("customerGalleryForm")
+        .addEventListener(
             "submit",
-            async function (event) {
-
-                event.preventDefault();
-
-                const db =
-                    getDatabase();
-
-                try {
-
-                    let imageUrl =
-                        item?.image_url ||
-                        null;
-
-                    const file =
-                        $("testimonialImage")
-                            ?.files?.[0];
-
-                    if (file) {
-
-                        imageUrl =
-                            await uploadImage(
-                                "customer-gallery",
-                                file
-                            );
-                    }
-
-                    const ratingValue =
-                        $("testimonialRating")
-                            .value;
-
-                    const payload = {
-
-                        customer_name:
-                            $("testimonialName")
-                                .value
-                                .trim(),
-
-                        testimonial:
-                            $("testimonialText")
-                                .value
-                                .trim(),
-
-                        rating:
-                            ratingValue === ""
-                            ? null
-                            : Number(
-                                ratingValue
-                            ),
-
-                        image_url:
-                            imageUrl,
-
-                        service:
-                            $("testimonialService")
-                                .value
-                                .trim() ||
-                            null,
-
-                        featured:
-                            $("testimonialFeatured")
-                                .checked,
-
-                        visible:
-                            $("testimonialVisible")
-                                .checked
-
-                    };
-
-                    let result;
-
-                    if (item?.id) {
-
-                        result =
-                            await db
-                                .from("testimonials")
-                                .update(payload)
-                                .eq(
-                                    "id",
-                                    item.id
-                                );
-
-                    } else {
-
-                        result =
-                            await db
-                                .from("testimonials")
-                                .insert(payload);
-                    }
-
-                    if (result.error) {
-                        throw result.error;
-                    }
-
-                    showMessage(
-                        item
-                        ? "Testimonial updated."
-                        : "Testimonial added."
-                    );
-
-                    await loadTestimonials();
-
-                } catch (error) {
-
-                    console.error(error);
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-                }
-
-            }
+            saveCustomerGallery
         );
+
+    bindDeleteButtons(
+        "customer_gallery",
+        "customer_gallery"
+    );
 }
 
+async function saveCustomerGallery(event) {
 
-/* ============================================================
-   FAQ
-============================================================ */
+    event.preventDefault();
 
-async function loadFAQs() {
+    const fd =
+        new FormData(event.target);
 
-    const db =
-        getDatabase();
+    const payload = {
+        customer_name:
+            fd.get("customer_name")?.trim() ||
+            null,
+        photo_url:
+            fd.get("photo_url")?.trim(),
+        service:
+            fd.get("service")?.trim() ||
+            null,
+        testimonial:
+            fd.get("testimonial")?.trim() ||
+            null,
+        rating:
+            fd.get("rating")
+                ? Number(fd.get("rating"))
+                : null,
+        photo_date:
+            fd.get("photo_date") ||
+            null,
+        featured:
+            fd.get("featured") === "on",
+        visible:
+            fd.get("visible") === "on",
+        consent_given:
+            fd.get("consent_given") === "on",
+        display_order:
+            Number(fd.get("display_order") || 0)
+    };
 
-    const {
-        data,
-        error
-    } = await db
-        .from("faqs")
-        .select("*")
-        .order(
-            "display_order",
-            { ascending: true }
-        );
+    const { error } =
+        await supabaseClient
+            .from("customer_gallery")
+            .insert(payload);
 
     if (error) {
-        throw error;
+        showMessage(
+            error.message,
+            "error"
+        );
+        return;
     }
 
-    const content =
-        getModuleContent();
+    showMessage(
+        "Customer photo saved."
+    );
+
+    await loadCustomerGallery();
+}
+
+/* =========================================================
+   BEFORE / AFTER
+========================================================= */
+
+async function loadBeforeAfter() {
+
+    showLoading(
+        "Loading before and after..."
+    );
+
+    const { data, error } =
+        await supabaseClient
+            .from("before_after")
+            .select("*")
+            .order("display_order", {
+                ascending: true
+            });
+
+    if (error) throw error;
+
+    const content = $("moduleContent");
 
     content.innerHTML = `
 
-        <div class="admin-module">
+        <div class="admin-form-card">
 
-            <div class="module-actions">
+            <h3>Add transformation</h3>
 
-                <div>
+            <form id="beforeAfterForm">
 
-                    <h2>
-                        FAQs
-                    </h2>
+                <div class="form-grid">
 
-                    <p style="margin-top:7px;color:var(--muted);">
-                        Manage frequently asked questions.
-                    </p>
+                    <input
+                        name="title"
+                        placeholder="Title">
+
+                    <input
+                        name="category"
+                        placeholder="Category">
+
+                    <input
+                        name="before_image_url"
+                        required
+                        placeholder="Before image URL">
+
+                    <input
+                        name="after_image_url"
+                        required
+                        placeholder="After image URL">
+
+                    <input
+                        name="display_order"
+                        type="number"
+                        value="0">
 
                 </div>
 
-                <button
-                    class="primary-btn"
-                    id="addFaq"
-                    type="button"
-                >
-                    + Add FAQ
+                <textarea
+                    name="description"
+                    placeholder="Description"></textarea>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="featured">
+                    Featured
+                </label>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="visible"
+                        checked>
+                    Visible
+                </label>
+
+                <button class="admin-btn" type="submit">
+                    Save transformation
                 </button>
 
+            </form>
+
+        </div>
+
+        ${beforeAfterGrid(data)}
+    `;
+
+    $("beforeAfterForm")
+        .addEventListener(
+            "submit",
+            saveBeforeAfter
+        );
+
+    bindDeleteButtons(
+        "before_after",
+        "before_after"
+    );
+}
+
+function beforeAfterGrid(data) {
+
+    if (!data?.length) {
+        return `
+            <div class="empty-state">
+                No before/after records yet.
             </div>
+        `;
+    }
 
-            <div id="faqFormArea"></div>
+    return `
+        <div class="gallery-admin-grid">
 
-            ${
-                data?.length
-                ? `
+            ${data.map(item => `
 
-                    <div
-                        style="
-                            display:grid;
-                            gap:12px;
-                        "
-                    >
+                <article class="admin-image-card">
 
-                        ${data.map(item => `
+                    <div style="
+                        display:grid;
+                        grid-template-columns:1fr 1fr;
+                        gap:8px;
+                    ">
 
-                            <article
-                                class="admin-card"
-                            >
+                        <img
+                            src="${escapeHTML(
+                                item.before_image_url
+                            )}"
+                            alt="Before">
 
-                                <h3>
-                                    ${escapeHTML(
-                                        item.question
-                                    )}
-                                </h3>
-
-                                <p
-                                    style="
-                                        margin-top:8px;
-                                        line-height:1.6;
-                                        color:var(--muted);
-                                    "
-                                >
-                                    ${escapeHTML(
-                                        item.answer
-                                    )}
-                                </p>
-
-                                <p
-                                    style="
-                                        margin-top:8px;
-                                        font-size:13px;
-                                    "
-                                >
-                                    Active:
-                                    ${
-                                        item.active
-                                        ? "Yes"
-                                        : "No"
-                                    }
-                                </p>
-
-                                <div
-                                    style="
-                                        margin-top:12px;
-                                        display:flex;
-                                        gap:7px;
-                                    "
-                                >
-
-                                    <button
-                                        class="secondary-btn edit-faq"
-                                        type="button"
-                                        data-id="${escapeAttribute(
-                                            item.id
-                                        )}"
-                                    >
-                                        Edit
-                                    </button>
-
-                                    <button
-                                        class="danger-btn delete-record"
-                                        type="button"
-                                        data-table="faqs"
-                                        data-id="${escapeAttribute(
-                                            item.id
-                                        )}"
-                                        data-label="this FAQ"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </div>
-
-                            </article>
-
-                        `).join("")}
+                        <img
+                            src="${escapeHTML(
+                                item.after_image_url
+                            )}"
+                            alt="After">
 
                     </div>
 
-                `
-                : `
-                    <div class="empty-state">
-                        No FAQs added yet.
+                    <div>
+
+                        <strong>
+                            ${escapeHTML(
+                                item.title || "Transformation"
+                            )}
+                        </strong>
+
+                        <button
+                            class="delete-btn"
+                            data-delete-table="before_after"
+                            data-delete-id="${item.id}">
+                            Delete
+                        </button>
+
                     </div>
-                `
-            }
+
+                </article>
+
+            `).join("")}
 
         </div>
     `;
+}
 
-    $("addFaq")
-        ?.addEventListener(
-            "click",
-            () => showFAQForm()
+async function saveBeforeAfter(event) {
+
+    event.preventDefault();
+
+    const fd =
+        new FormData(event.target);
+
+    const payload = {
+        title:
+            fd.get("title")?.trim() || null,
+        description:
+            fd.get("description")?.trim() || null,
+        before_image_url:
+            fd.get("before_image_url")?.trim(),
+        after_image_url:
+            fd.get("after_image_url")?.trim(),
+        category:
+            fd.get("category")?.trim() || null,
+        featured:
+            fd.get("featured") === "on",
+        visible:
+            fd.get("visible") === "on",
+        display_order:
+            Number(fd.get("display_order") || 0)
+    };
+
+    const { error } =
+        await supabaseClient
+            .from("before_after")
+            .insert(payload);
+
+    if (error) {
+        showMessage(
+            error.message,
+            "error"
+        );
+        return;
+    }
+
+    showMessage(
+        "Before/after saved."
+    );
+
+    await loadBeforeAfter();
+}
+
+/* =========================================================
+   BRIDAL PACKAGES
+========================================================= */
+
+async function loadBridalPackages() {
+
+    showLoading(
+        "Loading bridal packages..."
+    );
+
+    const { data, error } =
+        await supabaseClient
+            .from("bridal_packages")
+            .select("*")
+            .order("display_order", {
+                ascending: true
+            });
+
+    if (error) throw error;
+
+    const content = $("moduleContent");
+
+    content.innerHTML = `
+
+        <div class="admin-form-card">
+
+            <h3>Add bridal package</h3>
+
+            <form id="bridalPackageForm">
+
+                <div class="form-grid">
+
+                    <input
+                        name="name"
+                        required
+                        placeholder="Package name">
+
+                    <input
+                        name="price"
+                        type="number"
+                        step="0.01"
+                        placeholder="Price">
+
+                    <input
+                        name="price_label"
+                        value="Price on enquiry"
+                        placeholder="Price label">
+
+                    <input
+                        name="duration"
+                        placeholder="Duration">
+
+                    <input
+                        name="image_url"
+                        placeholder="Image URL">
+
+                    <input
+                        name="display_order"
+                        type="number"
+                        value="0">
+
+                </div>
+
+                <textarea
+                    name="description"
+                    placeholder="Description"></textarea>
+
+                <textarea
+                    name="included_services"
+                    placeholder="Included services"></textarea>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="featured">
+                    Featured
+                </label>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="active"
+                        checked>
+                    Active
+                </label>
+
+                <button class="admin-btn" type="submit">
+                    Save package
+                </button>
+
+            </form>
+
+        </div>
+
+        ${tableShell(
+            [
+                "Package",
+                "Price",
+                "Duration",
+                "Status",
+                "Action"
+            ],
+            (data || []).map(item => `
+
+                <tr>
+
+                    <td>
+                        <strong>
+                            ${escapeHTML(item.name)}
+                        </strong>
+                    </td>
+
+                    <td>
+                        ${
+                            item.price !== null
+                            ? formatCurrency(item.price)
+                            : escapeHTML(
+                                item.price_label ||
+                                "Price on enquiry"
+                              )
+                        }
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            item.duration || "—"
+                        )}
+                    </td>
+
+                    <td>
+                        ${item.active ? "Active" : "Inactive"}
+                    </td>
+
+                    <td>
+                        <button
+                            class="delete-btn"
+                            data-delete-package="${item.id}">
+                            Delete
+                        </button>
+                    </td>
+
+                </tr>
+
+            `),
+            "No bridal packages yet."
+        )}
+    `;
+
+    $("bridalPackageForm")
+        .addEventListener(
+            "submit",
+            saveBridalPackage
+        );
+
+    content
+        .querySelectorAll("[data-delete-package]")
+        .forEach(button => {
+
+            button.addEventListener("click", () => {
+
+                deleteRecord(
+                    "bridal_packages",
+                    button.dataset.deletePackage,
+                    "this bridal package"
+                );
+
+            });
+
+        });
+}
+
+async function saveBridalPackage(event) {
+
+    event.preventDefault();
+
+    const fd =
+        new FormData(event.target);
+
+    const payload = {
+        name:
+            fd.get("name")?.trim(),
+        description:
+            fd.get("description")?.trim() ||
+            null,
+        image_url:
+            fd.get("image_url")?.trim() ||
+            null,
+        price:
+            fd.get("price")
+                ? Number(fd.get("price"))
+                : null,
+        price_label:
+            fd.get("price_label")?.trim() ||
+            "Price on enquiry",
+        included_services:
+            fd.get("included_services")?.trim() ||
+            null,
+        duration:
+            fd.get("duration")?.trim() ||
+            null,
+        featured:
+            fd.get("featured") === "on",
+        active:
+            fd.get("active") === "on",
+        display_order:
+            Number(fd.get("display_order") || 0)
+    };
+
+    const { error } =
+        await supabaseClient
+            .from("bridal_packages")
+            .insert(payload);
+
+    if (error) {
+        showMessage(
+            error.message,
+            "error"
+        );
+        return;
+    }
+
+    showMessage(
+        "Bridal package saved."
+    );
+
+    await loadBridalPackages();
+}
+
+/* =========================================================
+   TEAM
+========================================================= */
+
+async function loadTeam() {
+
+    showLoading("Loading team...");
+
+    const { data, error } =
+        await supabaseClient
+            .from("team")
+            .select("*")
+            .order("display_order", {
+                ascending: true
+            });
+
+    if (error) throw error;
+
+    const content = $("moduleContent");
+
+    content.innerHTML = `
+
+        <div class="admin-form-card">
+
+            <h3>Add team member</h3>
+
+            <form id="teamForm">
+
+                <div class="form-grid">
+
+                    <input
+                        name="name"
+                        required
+                        placeholder="Name">
+
+                    <input
+                        name="role"
+                        placeholder="Role">
+
+                    <input
+                        name="image_url"
+                        placeholder="Image URL">
+
+                    <input
+                        name="instagram_url"
+                        placeholder="Instagram URL">
+
+                    <input
+                        name="display_order"
+                        type="number"
+                        value="0">
+
+                </div>
+
+                <textarea
+                    name="bio"
+                    placeholder="Bio"></textarea>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="active"
+                        checked>
+                    Active
+                </label>
+
+                <button class="admin-btn" type="submit">
+                    Save team member
+                </button>
+
+            </form>
+
+        </div>
+
+        ${imageGrid(
+            data,
+            "team"
+        )}
+    `;
+
+    $("teamForm")
+        .addEventListener(
+            "submit",
+            saveTeam
+        );
+
+    bindDeleteButtons(
+        "team",
+        "team"
+    );
+}
+
+async function saveTeam(event) {
+
+    event.preventDefault();
+
+    const fd =
+        new FormData(event.target);
+
+    const payload = {
+        name:
+            fd.get("name")?.trim(),
+        role:
+            fd.get("role")?.trim() ||
+            null,
+        bio:
+            fd.get("bio")?.trim() ||
+            null,
+        image_url:
+            fd.get("image_url")?.trim() ||
+            null,
+        instagram_url:
+            fd.get("instagram_url")?.trim() ||
+            null,
+        display_order:
+            Number(fd.get("display_order") || 0),
+        active:
+            fd.get("active") === "on"
+    };
+
+    const { error } =
+        await supabaseClient
+            .from("team")
+            .insert(payload);
+
+    if (error) {
+        showMessage(
+            error.message,
+            "error"
+        );
+        return;
+    }
+
+    showMessage(
+        "Team member saved."
+    );
+
+    await loadTeam();
+}
+
+/* =========================================================
+   TESTIMONIALS
+========================================================= */
+
+async function loadTestimonials() {
+
+    showLoading(
+        "Loading testimonials..."
+    );
+
+    const { data, error } =
+        await supabaseClient
+            .from("testimonials")
+            .select("*")
+            .order("created_at", {
+                ascending: false
+            });
+
+    if (error) throw error;
+
+    const content = $("moduleContent");
+
+    content.innerHTML = `
+
+        <div class="admin-form-card">
+
+            <h3>Add testimonial</h3>
+
+            <form id="testimonialForm">
+
+                <div class="form-grid">
+
+                    <input
+                        name="customer_name"
+                        required
+                        placeholder="Customer name">
+
+                    <input
+                        name="service"
+                        placeholder="Service">
+
+                    <input
+                        name="rating"
+                        type="number"
+                        min="1"
+                        max="5"
+                        placeholder="Rating">
+
+                    <input
+                        name="image_url"
+                        placeholder="Image URL">
+
+                </div>
+
+                <textarea
+                    name="testimonial"
+                    required
+                    placeholder="Testimonial"></textarea>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="featured">
+                    Featured
+                </label>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        name="visible"
+                        checked>
+                    Visible
+                </label>
+
+                <button class="admin-btn" type="submit">
+                    Save testimonial
+                </button>
+
+            </form>
+
+        </div>
+
+        ${tableShell(
+            [
+                "Customer",
+                "Review",
+                "Rating",
+                "Service",
+                "Status",
+                "Action"
+            ],
+            (data || []).map(item => `
+
+                <tr>
+
+                    <td>
+                        ${escapeHTML(
+                            item.customer_name
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            item.testimonial
+                        )}
+                    </td>
+
+                    <td>
+                        ${item.rating || "—"}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            item.service || "—"
+                        )}
+                    </td>
+
+                    <td>
+                        ${item.visible ? "Visible" : "Hidden"}
+                    </td>
+
+                    <td>
+                        <button
+                            class="delete-btn"
+                            data-delete-testimonial="${item.id}">
+                            Delete
+                        </button>
+                    </td>
+
+                </tr>
+
+            `),
+            "No testimonials yet."
+        )}
+    `;
+
+    $("testimonialForm")
+        .addEventListener(
+            "submit",
+            saveTestimonial
         );
 
     content
         .querySelectorAll(
-            ".edit-faq"
+            "[data-delete-testimonial]"
         )
         .forEach(button => {
 
             button.addEventListener(
                 "click",
-                function () {
+                () => {
 
-                    const item =
-                        data.find(
-                            row =>
-                                row.id ===
-                                button.dataset.id
-                        );
-
-                    if (item) {
-                        showFAQForm(item);
-                    }
+                    deleteRecord(
+                        "testimonials",
+                        button.dataset.deleteTestimonial,
+                        "this testimonial"
+                    );
 
                 }
             );
 
         });
-
-    attachDeleteHandlers();
 }
 
+async function saveTestimonial(event) {
 
-function showFAQForm(item = null) {
+    event.preventDefault();
 
-    const area =
-        $("faqFormArea");
+    const fd =
+        new FormData(event.target);
 
-    area.innerHTML = `
+    const payload = {
+        customer_name:
+            fd.get("customer_name")?.trim(),
+        testimonial:
+            fd.get("testimonial")?.trim(),
+        rating:
+            fd.get("rating")
+                ? Number(fd.get("rating"))
+                : null,
+        image_url:
+            fd.get("image_url")?.trim() ||
+            null,
+        service:
+            fd.get("service")?.trim() ||
+            null,
+        featured:
+            fd.get("featured") === "on",
+        visible:
+            fd.get("visible") === "on"
+    };
 
-        <div
-            class="admin-card"
-            style="margin-bottom:20px;"
-        >
+    const { error } =
+        await supabaseClient
+            .from("testimonials")
+            .insert(payload);
 
-            <h3>
-                ${
-                    item
-                    ? "Edit FAQ"
-                    : "Add FAQ"
-                }
-            </h3>
+    if (error) {
+        showMessage(
+            error.message,
+            "error"
+        );
+        return;
+    }
 
-            <form
-                id="faqForm"
-                class="admin-form"
-                style="margin-top:18px;"
-            >
+    showMessage(
+        "Testimonial saved."
+    );
 
-                <div>
+    await loadTestimonials();
+}
 
-                    <label>
-                        Question
-                    </label>
+/* =========================================================
+   FAQ
+========================================================= */
 
-                    <input
-                        id="faqQuestion"
-                        required
-                        value="${escapeAttribute(
-                            item?.question || ""
-                        )}"
-                    >
+async function loadFAQs() {
 
-                </div>
+    showLoading("Loading FAQs...");
 
+    const { data, error } =
+        await supabaseClient
+            .from("faqs")
+            .select("*")
+            .order("display_order", {
+                ascending: true
+            });
 
-                <div>
+    if (error) throw error;
 
-                    <label>
-                        Answer
-                    </label>
+    const content = $("moduleContent");
 
-                    <textarea
-                        id="faqAnswer"
-                        required
-                    >${escapeHTML(
-                        item?.answer || ""
-                    )}</textarea>
+    content.innerHTML = `
 
-                </div>
+        <div class="admin-form-card">
 
+            <h3>Add FAQ</h3>
 
-                <div>
+            <form id="faqForm">
 
-                    <label>
-                        Display Order
-                    </label>
+                <input
+                    name="question"
+                    required
+                    placeholder="Question">
 
-                    <input
-                        id="faqOrder"
-                        type="number"
-                        min="0"
-                        value="${
-                            item?.display_order ??
-                            0
-                        }"
-                    >
+                <textarea
+                    name="answer"
+                    required
+                    placeholder="Answer"></textarea>
 
-                </div>
-
+                <input
+                    name="display_order"
+                    type="number"
+                    value="0">
 
                 <label>
-
                     <input
                         type="checkbox"
-                        id="faqActive"
-                        ${
-                            item?.active !== false
-                            ? "checked"
-                            : ""
-                        }
-                    >
-
+                        name="active"
+                        checked>
                     Active
-
                 </label>
 
-
-                <div class="form-actions">
-
-                    <button
-                        class="primary-btn"
-                        type="submit"
-                    >
-                        ${
-                            item
-                            ? "Update"
-                            : "Save"
-                        }
-                    </button>
-
-                    <button
-                        class="secondary-btn"
-                        type="button"
-                        id="cancelFaq"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
+                <button class="admin-btn" type="submit">
+                    Save FAQ
+                </button>
 
             </form>
 
         </div>
+
+        ${tableShell(
+            [
+                "Question",
+                "Answer",
+                "Status",
+                "Action"
+            ],
+            (data || []).map(item => `
+
+                <tr>
+
+                    <td>
+                        <strong>
+                            ${escapeHTML(
+                                item.question
+                            )}
+                        </strong>
+                    </td>
+
+                    <td>
+                        ${escapeHTML(
+                            item.answer
+                        )}
+                    </td>
+
+                    <td>
+                        ${item.active ? "Active" : "Inactive"}
+                    </td>
+
+                    <td>
+                        <button
+                            class="delete-btn"
+                            data-delete-faq="${item.id}">
+                            Delete
+                        </button>
+                    </td>
+
+                </tr>
+
+            `),
+            "No FAQs yet."
+        )}
     `;
 
-    $("cancelFaq")
-        ?.addEventListener(
-            "click",
-            () => {
-                area.innerHTML = "";
-            }
-        );
-
     $("faqForm")
-        ?.addEventListener(
+        .addEventListener(
             "submit",
-            async function (event) {
-
-                event.preventDefault();
-
-                const db =
-                    getDatabase();
-
-                try {
-
-                    const payload = {
-
-                        question:
-                            $("faqQuestion")
-                                .value
-                                .trim(),
-
-                        answer:
-                            $("faqAnswer")
-                                .value
-                                .trim(),
-
-                        display_order:
-                            Number(
-                                $("faqOrder")
-                                    .value || 0
-                            ),
-
-                        active:
-                            $("faqActive")
-                                .checked
-
-                    };
-
-                    let result;
-
-                    if (item?.id) {
-
-                        result =
-                            await db
-                                .from("faqs")
-                                .update(payload)
-                                .eq(
-                                    "id",
-                                    item.id
-                                );
-
-                    } else {
-
-                        result =
-                            await db
-                                .from("faqs")
-                                .insert(payload);
-                    }
-
-                    if (result.error) {
-                        throw result.error;
-                    }
-
-                    showMessage(
-                        item
-                        ? "FAQ updated."
-                        : "FAQ added."
-                    );
-
-                    await loadFAQs();
-
-                } catch (error) {
-
-                    console.error(error);
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-                }
-
-            }
+            saveFAQ
         );
+
+    content
+        .querySelectorAll("[data-delete-faq]")
+        .forEach(button => {
+
+            button.addEventListener("click", () => {
+
+                deleteRecord(
+                    "faqs",
+                    button.dataset.deleteFaq,
+                    "this FAQ"
+                );
+
+            });
+
+        });
 }
 
+async function saveFAQ(event) {
 
-/* ============================================================
+    event.preventDefault();
+
+    const fd =
+        new FormData(event.target);
+
+    const payload = {
+        question:
+            fd.get("question")?.trim(),
+        answer:
+            fd.get("answer")?.trim(),
+        display_order:
+            Number(fd.get("display_order") || 0),
+        active:
+            fd.get("active") === "on"
+    };
+
+    const { error } =
+        await supabaseClient
+            .from("faqs")
+            .insert(payload);
+
+    if (error) {
+        showMessage(
+            error.message,
+            "error"
+        );
+        return;
+    }
+
+    showMessage("FAQ saved.");
+
+    await loadFAQs();
+}
+
+/* =========================================================
    SETTINGS
-============================================================ */
+========================================================= */
 
 async function loadSettings() {
 
-    const db =
-        getDatabase();
+    showLoading("Loading settings...");
 
-    const {
-        data,
-        error
-    } = await db
-        .from("settings")
-        .select("*")
-        .order(
-            "setting_key",
-            { ascending: true }
-        );
+    const { data, error } =
+        await supabaseClient
+            .from("settings")
+            .select("*")
+            .order("setting_key");
 
-    if (error) {
-        throw error;
-    }
+    if (error) throw error;
 
     const settings = {};
 
-    (data || []).forEach(
-        item => {
-            settings[item.setting_key] =
-                item;
-        }
-    );
+    (data || []).forEach(item => {
+        settings[item.setting_key] =
+            item.setting_value || "";
+    });
 
-    const content =
-        getModuleContent();
+    const content = $("moduleContent");
 
     content.innerHTML = `
 
-        <div class="admin-module">
+        <div class="admin-form-card">
 
-            <div class="module-actions">
+            <h3>Business information</h3>
 
-                <div>
+            <form id="settingsForm">
 
-                    <h2>
-                        Business Settings
-                    </h2>
+                <div class="form-grid">
 
-                    <p style="margin-top:7px;color:var(--muted);">
-                        These values are used by the website.
-                    </p>
+                    <input
+                        name="business_name"
+                        value="${escapeHTML(
+                            settings.business_name || ""
+                        )}"
+                        placeholder="Business name">
 
-                </div>
+                    <input
+                        name="artist_name"
+                        value="${escapeHTML(
+                            settings.artist_name || ""
+                        )}"
+                        placeholder="Artist name">
 
-            </div>
+                    <input
+                        name="phone"
+                        value="${escapeHTML(
+                            settings.phone || ""
+                        )}"
+                        placeholder="Phone">
 
+                    <input
+                        name="whatsapp"
+                        value="${escapeHTML(
+                            settings.whatsapp || ""
+                        )}"
+                        placeholder="WhatsApp">
 
-            <form
-                id="settingsForm"
-                class="admin-form"
-            >
-
-                ${settingField(
-                    "business_name",
-                    "Business Name",
-                    settings
-                )}
-
-                ${settingField(
-                    "artist_name",
-                    "Artist Name",
-                    settings
-                )}
-
-                ${settingField(
-                    "phone",
-                    "Phone",
-                    settings
-                )}
-
-                ${settingField(
-                    "whatsapp",
-                    "WhatsApp",
-                    settings
-                )}
-
-                ${settingField(
-                    "email",
-                    "Email",
-                    settings
-                )}
-
-                ${settingField(
-                    "address",
-                    "Address",
-                    settings,
-                    true
-                )}
-
-                <div class="form-actions">
-
-                    <button
-                        type="submit"
-                        class="primary-btn"
-                    >
-                        Save Settings
-                    </button>
+                    <input
+                        name="email"
+                        value="${escapeHTML(
+                            settings.email || ""
+                        )}"
+                        placeholder="Email">
 
                 </div>
+
+                <textarea
+                    name="address"
+                    placeholder="Address">${escapeHTML(
+                        settings.address || ""
+                    )}</textarea>
+
+                <button
+                    class="admin-btn"
+                    type="submit">
+                    Save settings
+                </button>
 
             </form>
 
@@ -7023,224 +2874,196 @@ async function loadSettings() {
     `;
 
     $("settingsForm")
-        ?.addEventListener(
+        .addEventListener(
             "submit",
-            async function (event) {
-
-                event.preventDefault();
-
-                try {
-
-                    const keys = [
-                        "business_name",
-                        "artist_name",
-                        "phone",
-                        "whatsapp",
-                        "email",
-                        "address"
-                    ];
-
-                    for (
-                        const key of keys
-                    ) {
-
-                        const input =
-                            document.querySelector(
-                                `[data-setting-key="${key}"]`
-                            );
-
-                        if (!input) {
-                            continue;
-                        }
-
-                        const value =
-                            input.value.trim();
-
-                        const existing =
-                            settings[key];
-
-                        let result;
-
-                        if (existing?.id) {
-
-                            result =
-                                await db
-                                    .from("settings")
-                                    .update({
-                                        setting_value:
-                                            value
-                                    })
-                                    .eq(
-                                        "id",
-                                        existing.id
-                                    );
-
-                        } else {
-
-                            result =
-                                await db
-                                    .from("settings")
-                                    .insert({
-                                        setting_key:
-                                            key,
-                                        setting_value:
-                                            value
-                                    });
-                        }
-
-                        if (result.error) {
-                            throw result.error;
-                        }
-                    }
-
-                    showMessage(
-                        "Settings saved successfully."
-                    );
-
-                    await loadSettings();
-
-                } catch (error) {
-
-                    console.error(
-                        "Settings error:",
-                        error
-                    );
-
-                    showMessage(
-                        error.message,
-                        "error"
-                    );
-                }
-
-            }
+            saveSettings
         );
 }
 
+async function saveSettings(event) {
 
-function settingField(
-    key,
-    label,
-    settings,
-    textarea = false
-) {
+    event.preventDefault();
 
-    const value =
-        settings[key]?.setting_value ||
-        "";
+    const fd =
+        new FormData(event.target);
+
+    const values = {
+        business_name:
+            fd.get("business_name")?.trim() || "",
+        artist_name:
+            fd.get("artist_name")?.trim() || "",
+        phone:
+            fd.get("phone")?.trim() || "",
+        whatsapp:
+            fd.get("whatsapp")?.trim() || "",
+        email:
+            fd.get("email")?.trim() || "",
+        address:
+            fd.get("address")?.trim() || ""
+    };
+
+    try {
+
+        for (const [key, value] of Object.entries(values)) {
+
+            const { data: existing, error: findError } =
+                await supabaseClient
+                    .from("settings")
+                    .select("id")
+                    .eq("setting_key", key)
+                    .maybeSingle();
+
+            if (findError) {
+                throw findError;
+            }
+
+            if (existing?.id) {
+
+                const { error } =
+                    await supabaseClient
+                        .from("settings")
+                        .update({
+                            setting_value: value,
+                            updated_at:
+                                new Date().toISOString()
+                        })
+                        .eq("id", existing.id);
+
+                if (error) throw error;
+
+            } else {
+
+                const { error } =
+                    await supabaseClient
+                        .from("settings")
+                        .insert({
+                            setting_key: key,
+                            setting_value: value
+                        });
+
+                if (error) throw error;
+            }
+        }
+
+        showMessage(
+            "Settings saved successfully."
+        );
+
+        await loadSettings();
+
+    } catch (error) {
+
+        showMessage(
+            error.message ||
+            "Unable to save settings.",
+            "error"
+        );
+    }
+}
+
+/* =========================================================
+   IMAGE GRID
+========================================================= */
+
+function imageGrid(data, table) {
+
+    if (!data?.length) {
+        return `
+            <div class="empty-state">
+                No records yet.
+            </div>
+        `;
+    }
+
+    const imageField =
+        table === "customer_gallery"
+        ? "photo_url"
+        : "image_url";
 
     return `
+        <div class="gallery-admin-grid">
 
-        <div>
+            ${data.map(item => {
 
-            <label>
-                ${escapeHTML(label)}
-            </label>
+                const image =
+                    item[imageField];
 
-            ${
-                textarea
-                ? `
-                    <textarea
-                        data-setting-key="${escapeAttribute(
-                            key
-                        )}"
-                    >${escapeHTML(
-                        value
-                    )}</textarea>
-                `
-                : `
-                    <input
-                        type="text"
-                        data-setting-key="${escapeAttribute(
-                            key
-                        )}"
-                        value="${escapeAttribute(
-                            value
-                        )}"
-                    >
-                `
-            }
+                const title =
+                    item.title ||
+                    item.customer_name ||
+                    item.name ||
+                    "Untitled";
+
+                return `
+
+                    <article class="admin-image-card">
+
+                        ${
+                            image
+                            ? `<img
+                                src="${escapeHTML(image)}"
+                                alt="${escapeHTML(title)}">
+                              `
+                            : ""
+                        }
+
+                        <div>
+
+                            <strong>
+                                ${escapeHTML(title)}
+                            </strong>
+
+                            ${
+                                item.role
+                                ? `<p>${escapeHTML(item.role)}</p>`
+                                : ""
+                            }
+
+                            ${
+                                item.service
+                                ? `<p>${escapeHTML(item.service)}</p>`
+                                : ""
+                            }
+
+                            <button
+                                class="delete-btn"
+                                data-delete-table="${table}"
+                                data-delete-id="${item.id}">
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </article>
+
+                `;
+            }).join("")}
 
         </div>
     `;
 }
 
+/* =========================================================
+   DELETE BINDING
+========================================================= */
 
-/* ============================================================
-   DELETE HANDLERS
-============================================================ */
+function bindDeleteButtons(table, prefix) {
 
-function attachDeleteHandlers() {
-
-    const content =
-        getModuleContent();
-
-    if (!content) {
-        return;
-    }
-
-    content
+    document
         .querySelectorAll(
-            ".delete-record"
+            `[data-delete-table="${table}"]`
         )
         .forEach(button => {
 
             button.addEventListener(
                 "click",
-                async function () {
+                () => {
 
-                    const table =
-                        button.dataset.table;
-
-                    const id =
-                        button.dataset.id;
-
-                    const label =
-                        button.dataset.label ||
-                        "this item";
-
-                    if (!confirmDelete(label)) {
-                        return;
-                    }
-
-                    const db =
-                        getDatabase();
-
-                    try {
-
-                        const {
-                            error
-                        } = await db
-                            .from(table)
-                            .delete()
-                            .eq(
-                                "id",
-                                id
-                            );
-
-                        if (error) {
-                            throw error;
-                        }
-
-                        showMessage(
-                            "Deleted successfully."
-                        );
-
-                        await openModule(
-                            currentModule
-                        );
-
-                    } catch (error) {
-
-                        console.error(
-                            "Delete error:",
-                            error
-                        );
-
-                        showMessage(
-                            error.message,
-                            "error"
-                        );
-                    }
+                    deleteRecord(
+                        table,
+                        button.dataset.deleteId,
+                        "this item"
+                    );
 
                 }
             );
@@ -7248,18 +3071,110 @@ function attachDeleteHandlers() {
         });
 }
 
+/* =========================================================
+   GLOBAL EVENTS
+========================================================= */
 
-/* ============================================================
-   PUBLIC FUNCTIONS
-   These are intentionally global because admin.html
-   calls openModule() from its navigation script.
-============================================================ */
+function setupAdminInterface() {
 
-window.openModule =
-    openModule;
+    const loginForm =
+        $("loginForm");
 
-window.showAdmin =
-    showAdmin;
+    const logoutBtn =
+        $("logoutBtn");
 
-window.showLogin =
-    showLogin;
+    if (loginForm) {
+        loginForm.addEventListener(
+            "submit",
+            handleLogin
+        );
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener(
+            "click",
+            handleLogout
+        );
+    }
+
+    /*
+     * Sidebar navigation.
+     *
+     * This works with the current admin.html:
+     * <button data-module="dashboard">
+     */
+
+    document
+        .querySelectorAll("[data-module]")
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const module =
+                        button.dataset.module;
+
+                    openModule(module);
+                }
+            );
+
+        });
+}
+
+/* =========================================================
+   SUPABASE AUTH STATE
+========================================================= */
+
+function setupAuthListener() {
+
+    if (!window.supabaseClient) {
+        console.error(
+            "supabaseClient is not available."
+        );
+        return;
+    }
+
+    supabaseClient.auth.onAuthStateChange(
+        (event, session) => {
+
+            currentUser =
+                session?.user || null;
+
+            if (session) {
+                showAdmin();
+            } else {
+                showLogin();
+            }
+        }
+    );
+}
+
+/* =========================================================
+   STARTUP
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        console.log(
+            "Manju Admin Panel loaded"
+        );
+
+        if (!window.supabaseClient) {
+
+            console.error(
+                "supabaseClient is not available. Check supabase-config.js."
+            );
+
+            return;
+        }
+
+        setupAdminInterface();
+
+        setupAuthListener();
+
+        checkAuth();
+    }
+);
