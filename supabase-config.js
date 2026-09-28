@@ -1,18 +1,34 @@
-/* =====================================================
+/* =========================================================
    MANJU'S THE WORLD OF GLAMOUR
    SUPABASE CONFIGURATION
-===================================================== */
+   ========================================================= */
 
-window.SUPABASE_URL =
-    "https://xrxpvjxqdqxybyohxrjy.supabase.co";
+const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";
 
-window.SUPABASE_PUBLISHABLE_KEY =
-    "sb_publishable_WDjegJoZs6zagx7jiPn6rQ_a60EdHtp";
+const SUPABASE_PUBLISHABLE_KEY =
+  "PASTE_YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY_HERE";
 
-window.supabaseClient =
-    window.supabase.createClient(
-        window.SUPABASE_URL,
-        window.SUPABASE_PUBLISHABLE_KEY
-    );
+if (
+  !SUPABASE_URL ||
+  SUPABASE_URL.includes("PASTE_YOUR") ||
+  !SUPABASE_PUBLISHABLE_KEY ||
+  SUPABASE_PUBLISHABLE_KEY.includes("PASTE_YOUR")
+) {
+  console.error(
+    "Supabase configuration is missing. Check supabase-config.js."
+  );
+}
 
-console.log("Supabase client created:", !!window.supabaseClient);
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  }
+);
+
+window.supabaseClient = supabaseClient;
