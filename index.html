@@ -1,3878 +1,3938 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <meta name="description"
-          content="Manju's The World of Glamour — Premium Makeup Studio and Beauty Experience in Sector 3, Rohini, New Delhi.">
-
-    <meta name="theme-color" content="#f5efe7">
-
-    <title>
-        Manju's The World of Glamour | Makeup Studio
-    </title>
-
-    <!-- Google Fonts -->
-    <link rel="preconnect"
-          href="https://fonts.googleapis.com">
-
-    <link rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossorigin>
-
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap"
-          rel="stylesheet">
-
-
-    <style>
-
-        /* =========================================
-           RESET
-        ========================================= */
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: "DM Sans", sans-serif;
-            background: #f7f2eb;
-            color: #292522;
-            line-height: 1.6;
-        }
-
-        a {
-            text-decoration: none;
-            color: inherit;
-        }
-
-        button,
-        input,
-        select,
-        textarea {
-            font: inherit;
-        }
-
-
-        /* =========================================
-           VARIABLES
-        ========================================= */
-
-        :root {
-            --ivory: #f7f2eb;
-            --cream: #eee4d8;
-            --white: #ffffff;
-            --charcoal: #292522;
-            --gold: #b28a52;
-            --light-gold: #d4b27c;
-            --border: #ddd2c5;
-            --muted: #756d65;
-        }
-
-
-        /* =========================================
-           LOADER
-        ========================================= */
-
-        #loader {
-
-            position: fixed;
-            inset: 0;
-
-            background: var(--ivory);
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            flex-direction: column;
-
-            z-index: 9999;
-
-            transition: 0.6s;
-        }
-
-        #loader.hide {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .loader-title {
-
-            font-family: "Cormorant Garamond", serif;
-
-            font-size: 32px;
-
-            letter-spacing: 5px;
-
-            text-align: center;
-        }
-
-        .loader-line {
-
-            width: 70px;
-
-            height: 1px;
-
-            background: var(--gold);
-
-            margin-top: 15px;
-        }
-
-
-        /* =========================================
-           HEADER
-        ========================================= */
-
-        header {
-
-            position: fixed;
-
-            top: 0;
-            left: 0;
-            right: 0;
-
-            height: 82px;
-
-            z-index: 1000;
-
-            display: flex;
-
-            align-items: center;
-
-            padding: 0 5%;
-
-            background: rgba(247,242,235,0.92);
-
-            backdrop-filter: blur(18px);
-
-            border-bottom: 1px solid var(--border);
-        }
-
-        .logo {
-
-            display: flex;
-
-            flex-direction: column;
-
-            line-height: 1;
-        }
-
-        .logo-main {
-
-            font-family: "Cormorant Garamond", serif;
-
-            font-size: 25px;
-
-            font-weight: 600;
-
-            letter-spacing: 4px;
-        }
-
-        .logo-sub {
-
-            font-size: 8px;
-
-            letter-spacing: 2.5px;
-
-            margin-top: 5px;
-        }
-
-
-        /* =========================================
-           NAVIGATION
-        ========================================= */
-
-        nav {
-
-            margin-left: auto;
-
-            display: flex;
-
-            gap: 24px;
-
-            align-items: center;
-        }
-
-        nav a {
-
-            font-size: 10px;
-
-            text-transform: uppercase;
-
-            letter-spacing: 1.3px;
-
-            color: #5e5750;
-
-            transition: 0.3s;
-        }
-
-        nav a:hover {
-            color: var(--gold);
-        }
-
-        .book-button {
-
-            background: var(--charcoal);
-
-            color: white;
-
-            padding: 13px 20px;
-        }
-
-        .menu-button {
-
-            display: none;
-
-            border: none;
-
-            background: none;
-
-            font-size: 27px;
-
-            cursor: pointer;
-        }
-
-
-        /* =========================================
-           MOBILE MENU
-        ========================================= */
-
-        #mobileMenu {
-
-            display: none;
-
-            position: fixed;
-
-            top: 82px;
-
-            left: 0;
-            right: 0;
-
-            background: var(--ivory);
-
-            z-index: 999;
-
-            padding: 20px;
-
-            border-bottom: 1px solid var(--border);
-        }
-
-        #mobileMenu.active {
-            display: block;
-        }
-
-        #mobileMenu a {
-
-            display: block;
-
-            padding: 14px 0;
-
-            border-bottom: 1px solid var(--border);
-
-            text-transform: uppercase;
-
-            font-size: 11px;
-
-            letter-spacing: 1.5px;
-        }
-
-
-        /* =========================================
-           HERO
-        ========================================= */
-
-        .hero {
-
-            min-height: 92vh;
-
-            padding: 160px 7% 70px;
-
-            position: relative;
-
-            display: flex;
-
-            align-items: flex-end;
-
-            color: white;
-
-            overflow: hidden;
-
-            background:
-                linear-gradient(
-                    90deg,
-                    rgba(31,27,24,0.92),
-                    rgba(31,27,24,0.55),
-                    rgba(31,27,24,0.18)
-                ),
-                linear-gradient(
-                    135deg,
-                    #3b332d,
-                    #9b8875
-                );
-        }
-
-        .hero-content {
-
-            max-width: 820px;
-
-            position: relative;
-
-            z-index: 2;
-        }
-
-        .eyebrow {
-
-            font-size: 10px;
-
-            text-transform: uppercase;
-
-            letter-spacing: 3px;
-
-            color: var(--gold);
-
-            font-weight: 700;
-
-            margin-bottom: 15px;
-        }
-
-        .hero .eyebrow {
-            color: #e6c991;
-        }
-
-        .hero h1 {
-
-            font-family: "Cormorant Garamond", serif;
-
-            font-size: clamp(65px, 9vw, 125px);
-
-            line-height: 0.82;
-
-            text-transform: uppercase;
-
-            font-weight: 500;
-
-            letter-spacing: -3px;
-        }
-
-        .hero h1 em {
-
-            color: var(--light-gold);
-
-            font-style: italic;
-        }
-
-        .hero-description {
-
-            max-width: 580px;
-
-            margin: 30px 0;
-
-            color: #eee6de;
-
-            font-size: 16px;
-        }
-
-        .hero-buttons {
-
-            display: flex;
-
-            gap: 12px;
-
-            flex-wrap: wrap;
-        }
-
-        .button {
-
-            display: inline-flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            padding: 14px 23px;
-
-            text-transform: uppercase;
-
-            font-size: 10px;
-
-            letter-spacing: 1.5px;
-
-            font-weight: 700;
-
-            border: 1px solid transparent;
-
-            cursor: pointer;
-        }
-
-        .button-gold {
-
-            background: var(--gold);
-
-            color: white;
-        }
-
-        .button-outline {
-
-            border-color: white;
-
-            color: white;
-        }
-
-        .trust {
-
-            display: flex;
-
-            flex-wrap: wrap;
-
-            gap: 12px;
-
-            margin-top: 45px;
-
-            font-size: 10px;
-
-            letter-spacing: 1px;
-        }
-
-        .stars {
-            color: #e2bd78;
-            letter-spacing: 3px;
-        }
-
-
-        /* =========================================
-           BOOKING
-        ========================================= */
-
-        .booking-wrapper {
-
-            padding: 0 6%;
-
-            margin-top: -40px;
-
-            position: relative;
-
-            z-index: 10;
-        }
-
-        .booking-card {
-
-            background: white;
-
-            padding: 35px;
-
-            display: grid;
-
-            grid-template-columns: 0.8fr 1.4fr;
-
-            gap: 40px;
-
-            box-shadow:
-                0 25px 70px rgba(40,30,20,0.14);
-        }
-
-        .booking-card h2 {
-
-            font-family: "Cormorant Garamond", serif;
-
-            font-size: 55px;
-
-            line-height: .95;
-        }
-
-        .booking-card h2 em {
-
-            color: var(--gold);
-
-            font-style: italic;
-        }
-
-        .booking-form {
-
-            display: grid;
-
-            grid-template-columns: 1fr 1fr;
-
-            gap: 12px;
-        }
-
-        .booking-form input,
-        .booking-form select {
-
-            width: 100%;
-
-            padding: 14px;
-
-            border: 1px solid var(--border);
-
-            background: #fbf9f6;
-
-            outline: none;
-        }
-
-        .booking-form button {
-            grid-column: 1 / -1;
-        }
-
-
-        /* =========================================
-           GENERAL SECTIONS
-        ========================================= */
-
-        .section {
-
-            padding: 110px 6%;
-        }
-
-        .section-title {
-
-            font-family: "Cormorant Garamond", serif;
-
-            font-size: clamp(45px, 6vw, 75px);
-
-            line-height: .95;
-
-            font-weight: 500;
-        }
-
-        .section-title em {
-
-            color: var(--gold);
-
-            font-style: italic;
-        }
-
-        .muted {
-
-            color: var(--muted);
-
-            font-size: 13px;
-        }
-
-
-        /* =========================================
-           ABOUT
-        ========================================= */
-
-        .about {
-
-            display: grid;
-
-            grid-template-columns: 1fr 1fr;
-
-            gap: 8%;
-
-            align-items: center;
-        }
-
-        .about-image {
-
-            min-height: 500px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #d8c9b8,
-                    #817365
-                );
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            color: white;
-
-            text-align: center;
-        }
-
-        .image-note {
-
-            border: 1px solid rgba(255,255,255,.8);
-
-            padding: 20px;
-        }
-
-        .about-text p {
-
-            margin: 22px 0;
-        }
-
-
-        /* =========================================
-           STATS
-        ========================================= */
-
-        .stats {
-
-            display: grid;
-
-            grid-template-columns: repeat(4,1fr);
-
-            background: var(--charcoal);
-
-            color: white;
-        }
-
-        .stat {
-
-            padding: 38px 20px;
-
-            text-align: center;
-
-            border-right: 1px solid #4a443f;
-        }
-
-        .stat strong {
-
-            display: block;
-
-            font-family: "Cormorant Garamond", serif;
-
-            font-size: 30px;
-
-            color: var(--light-gold);
-        }
-
-        .stat span {
-
-            font-size: 9px;
-
-            text-transform: uppercase;
-
-            letter-spacing: 1.5px;
-
-            color: #ccc3bb;
-        }
-
-
-        /* =========================================
-           SERVICES
-        ========================================= */
-
-        .section-heading-row {
-
-            display: flex;
-
-            justify-content: space-between;
-
-            align-items: flex-end;
-
-            gap: 30px;
-
-            margin-bottom: 40px;
-        }
-
-        .service-tools {
-
-            display: flex;
-
-            gap: 12px;
-
-            margin-bottom: 30px;
-
-            flex-wrap: wrap;
-        }
-
-        #serviceSearch {
-
-            padding: 14px;
-
-            border: 1px solid var(--border);
-
-            background: white;
-
-            min-width: 250px;
-
-            outline: none;
-        }
-
-        .filter {
-
-            border: 1px solid var(--border);
-
-            background: transparent;
-
-            padding: 11px 15px;
-
-            cursor: pointer;
-
-            font-size: 10px;
-
-            text-transform: uppercase;
-
-            letter-spacing: 1px;
-        }
-
-        .filter.active {
-
-            background: var(--charcoal);
-
-            color: white;
-        }
-
-        .service-grid {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(3, 1fr);
-
-            gap: 18px;
-        }
-
-        .service-card {
-
-            background: white;
-
-            border: 1px solid #e6ddd3;
-
-            overflow: hidden;
-        }
-
-        .service-image {
-
-            height: 280px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #d9c9b8,
-                    #817265
-                );
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            color: white;
-
-            text-align: center;
-        }
-
-        .service-content {
-
-            padding: 23px;
-        }
-
-        .service-content h3 {
-
-            font-family: "Cormorant Garamond", serif;
-
-            font-size: 30px;
-
-            margin-bottom: 8px;
-        }
-
-        .service-content p {
-
-            font-size: 13px;
-
-            color: var(--muted);
-
-            margin-bottom: 15px;
-        }
-
-        .service-meta {
-
-            display: flex;
-
-            justify-content: space-between;
-
-            font-size: 10px;
-
-            text-transform: uppercase;
-
-            letter-spacing: 1px;
-
-            color: var(--gold);
-        }
-
-        .service-book {
-
-            width: 100%;
-
-            margin-top: 18px;
-
-            border: none;
-
-            padding: 13px;
-
-            background: var(--charcoal);
-
-            color: white;
-
-            cursor: pointer;
-
-            text-transform: uppercase;
-
-            letter-spacing: 1px;
-
-            font-size: 10px;
-        }
-
-
-        /* =========================================
-           BRIDAL
-        ========================================= */
-
-        .bridal {
-
-            min-height: 650px;
-
-            display: flex;
-
-            align-items: center;
-
-            padding: 100px 7%;
-
-            color: white;
-
-            background:
-                linear-gradient(
-                    90deg,
-                    #332b25,
-                    #776452
-                );
-        }
-
-        .bridal-content {
-
-            max-width: 700px;
-        }
-
-        .bridal .section-title {
-
-            font-size: clamp(55px,7vw,100px);
-        }
-
-        .bridal p {
-
-            max-width: 560px;
-
-            margin: 25px 0;
-        }
-
-
-        /* =========================================
-           FORMS
-        ========================================= */
-
-        .form-grid {
-
-            display: grid;
-
-            grid-template-columns: 1fr 1fr;
-
-            gap: 12px;
-
-            margin-top: 35px;
-        }
-
-        .form-grid input,
-        .form-grid select,
-        .form-grid textarea {
-
-            padding: 15px;
-
-            border: 1px solid var(--border);
-
-            background: white;
-
-            outline: none;
-        }
-
-        .form-grid textarea {
-
-            min-height: 130px;
-
-            grid-column: 1 / -1;
-
-            resize: vertical;
-        }
-
-        .form-grid button {
-
-            grid-column: 1 / -1;
-
-            border: none;
-
-            background: var(--charcoal);
-
-            color: white;
-
-            cursor: pointer;
-        }
-
-
-        /* =========================================
-           GALLERIES
-        ========================================= */
-
-        .gallery-grid {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(4, 1fr);
-
-            gap: 15px;
-        }
-
-        .gallery-item {
-
-            min-height: 300px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #d3c1ae,
-                    #76685d
-                );
-
-            display: flex;
-
-            align-items: flex-end;
-
-            padding: 20px;
-
-            color: white;
-        }
-
-        .gallery-item:first-child {
-
-            grid-column: span 2;
-
-            grid-row: span 2;
-        }
-
-
-        /* =========================================
-           CUSTOMERS
-        ========================================= */
-
-        .customer-grid {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(3,1fr);
-
-            gap: 18px;
-        }
-
-        .customer-card {
-
-            background: white;
-
-            padding: 20px;
-
-            border: 1px solid var(--border);
-        }
-
-        .customer-photo {
-
-            height: 300px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #d8c7b5,
-                    #7b6c60
-                );
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            color: white;
-
-            margin-bottom: 20px;
-        }
-
-        .customer-card h3 {
-
-            font-family: "Cormorant Garamond", serif;
-
-            font-size: 28px;
-        }
-
-
-        /* =========================================
-           BEFORE AFTER
-        ========================================= */
-
-        .before-after {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(2,1fr);
-
-            gap: 18px;
-        }
-
-        .before-card {
-
-            background: var(--charcoal);
-
-            color: white;
-
-            padding: 14px;
-        }
-
-        .before-images {
-
-            display: grid;
-
-            grid-template-columns: 1fr 1fr;
-
-            gap: 5px;
-        }
-
-        .before-images div {
-
-            height: 270px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #c8b6a4,
-                    #73665b
-                );
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            font-size: 10px;
-
-            letter-spacing: 1px;
-        }
-
-        .before-card p {
-
-            padding: 14px 3px;
-
-            font-size: 12px;
-        }
-
-
-        /* =========================================
-           OFFERS
-        ========================================= */
-
-        .offers {
-
-            background: var(--cream);
-        }
-
-        .offer-grid {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(3,1fr);
-
-            gap: 18px;
-        }
-
-        .offer-card {
-
-            background: white;
-
-            padding: 28px;
-
-            border: 1px solid var(--border);
-        }
-
-        .offer-card h3 {
-
-            font-family: "Cormorant Garamond", serif;
-
-            font-size: 32px;
-        }
-
-        .offer-price {
-
-            font-size: 24px;
-
-            color: var(--gold);
-
-            margin: 12px 0;
-        }
-
-
-        /* =========================================
-           REVIEWS
-        ========================================= */
-
-        .review-grid {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(3,1fr);
-
-            gap: 18px;
-        }
-
-        .review {
-
-            background: white;
-
-            border: 1px solid var(--border);
-
-            padding: 28px;
-        }
-
-        .review blockquote {
-
-            font-family: "Cormorant Garamond", serif;
-
-            font-size: 25px;
-
-            line-height: 1.15;
-
-            margin: 18px 0;
-        }
-
-
-        /* =========================================
-           WHY CHOOSE US
-        ========================================= */
-
-        .why {
-
-            background: var(--charcoal);
-
-            color: white;
-
-            padding: 100px 7%;
-
-            display: grid;
-
-            grid-template-columns: 1fr 1fr;
-
-            gap: 70px;
-        }
-
-        .why-list div {
-
-            padding: 20px 0;
-
-            border-bottom: 1px solid #49433d;
-
-            display: flex;
-
-            gap: 25px;
-        }
-
-        .why-list b {
-
-            color: var(--light-gold);
-        }
-
-
-        /* =========================================
-           CONTACT
-        ========================================= */
-
-        .contact-grid {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(2,1fr);
-
-            gap: 18px;
-        }
-
-        .contact-card {
-
-            background: white;
-
-            border: 1px solid var(--border);
-
-            padding: 30px;
-
-            min-height: 200px;
-        }
-
-        .contact-card span {
-
-            display: block;
-
-            color: var(--gold);
-
-            text-transform: uppercase;
-
-            font-size: 9px;
-
-            letter-spacing: 2px;
-
-            margin-bottom: 15px;
-        }
-
-        .contact-card h3 {
-
-            font-family: "Cormorant Garamond", serif;
-
-            font-size: 30px;
-        }
-
-        .contact-card a {
-
-            display: block;
-
-            margin: 8px 0;
-
-            font-family: "Cormorant Garamond", serif;
-
-            font-size: 25px;
-        }
-
-        .contact-buttons {
-
-            display: flex;
-
-            gap: 10px;
-
-            margin-top: 18px;
-
-            flex-wrap: wrap;
-        }
-
-
-        /* =========================================
-           FOOTER
-        ========================================= */
-
-        footer {
-
-            background: #211e1c;
-
-            color: #ddd5cd;
-
-            padding: 60px 6%;
-
-            display: flex;
-
-            justify-content: space-between;
-
-            gap: 40px;
-        }
-
-        footer p {
-
-            font-size: 12px;
-
-            margin: 6px 0;
-        }
-
-
-        /* =========================================
-           FLOATING BUTTONS
-        ========================================= */
-
-        .floating-buttons {
-
-            position: fixed;
-
-            right: 18px;
-
-            bottom: 25px;
-
-            display: flex;
-
-            flex-direction: column;
-
-            gap: 8px;
-
-            z-index: 900;
-        }
-
-        .floating-buttons a {
-
-            width: 48px;
-
-            height: 48px;
-
-            border-radius: 50%;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            background: var(--charcoal);
-
-            color: white;
-
-            font-size: 10px;
-
-            box-shadow:
-                0 8px 25px rgba(0,0,0,.18);
-        }
-
-
-        /* =========================================
-           MOBILE BOOKING BAR
-        ========================================= */
-
-        .mobile-booking {
-
-            display: none;
-
-            position: fixed;
-
-            bottom: 0;
-
-            left: 0;
-
-            right: 0;
-
-            background: var(--gold);
-
-            color: white;
-
-            z-index: 999;
-
-            text-align: center;
-        }
-
-        .mobile-booking a {
-
-            display: block;
-
-            padding: 15px;
-
-            text-transform: uppercase;
-
-            font-size: 11px;
-
-            font-weight: 700;
-
-            letter-spacing: 1.5px;
-        }
-
-
-        /* =========================================
-           RESPONSIVE
-        ========================================= */
-
-        @media(max-width:1000px) {
-
-            nav {
-                display: none;
-            }
-
-            .menu-button {
-                display: block;
-
-                margin-left: auto;
-            }
-
-            .service-grid,
-            .offer-grid,
-            .review-grid,
-            .customer-grid {
-
-                grid-template-columns:
-                    repeat(2,1fr);
-            }
-
-            .gallery-grid {
-
-                grid-template-columns:
-                    repeat(2,1fr);
-            }
-
-            .stats {
-
-                grid-template-columns:
-                    repeat(2,1fr);
-            }
-
-            .about,
-            .why,
-            .booking-card {
-
-                grid-template-columns: 1fr;
-            }
-        }
-
-
-        @media(max-width:650px) {
-
-            body {
-                padding-bottom: 55px;
-            }
-
-            header {
-                height: 70px;
-
-                padding: 0 18px;
-            }
-
-            .logo-main {
-                font-size: 19px;
-            }
-
-            .logo-sub {
-                font-size: 6px;
-            }
-
-            .hero {
-
-                min-height: 750px;
-
-                padding:
-                    125px 22px 55px;
-            }
-
-            .hero h1 {
-                font-size: 70px;
-            }
-
-            .hero-description {
-                font-size: 14px;
-            }
-
-            .booking-wrapper {
-                padding: 0 18px;
-
-                margin-top: -20px;
-            }
-
-            .booking-card {
-                padding: 25px 18px;
-            }
-
-            .booking-card h2 {
-                font-size: 43px;
-            }
-
-            .booking-form,
-            .form-grid {
-
-                grid-template-columns: 1fr;
-            }
-
-            .section {
-
-                padding:
-                    75px 18px;
-            }
-
-            .section-heading-row {
-
-                display: block;
-            }
-
-            .service-grid,
-            .offer-grid,
-            .review-grid,
-            .customer-grid,
-            .contact-grid,
-            .before-after {
-
-                grid-template-columns: 1fr;
-            }
-
-            .gallery-grid {
-
-                grid-template-columns:
-                    1fr 1fr;
-            }
-
-            .gallery-item:first-child {
-
-                grid-column: span 2;
-            }
-
-            .stats {
-
-                grid-template-columns:
-                    1fr 1fr;
-            }
-
-            .stat {
-                padding: 25px 10px;
-            }
-
-            .why {
-
-                padding:
-                    75px 18px;
-            }
-
-            footer {
-
-                display: block;
-
-                padding:
-                    45px 18px;
-            }
-
-            footer > div + div {
-                margin-top: 25px;
-            }
-
-            .floating-buttons {
-                bottom: 70px;
-            }
-
-            .mobile-booking {
-                display: block;
-            }
-
-        }
-
-    </style>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Manju's The World of Glamour | Makeup Artist & Beauty Studio</title>
+
+  <meta
+    name="description"
+    content="Manju's The World of Glamour — makeup artist and beauty studio in Sector 3, Rohini, New Delhi."
+  >
+
+  <meta
+    name="keywords"
+    content="Manju's The World of Glamour, makeup artist Rohini, bridal makeup Rohini, beauty salon Rohini, makeup studio Delhi"
+  >
+
+  <meta name="author" content="Manju's The World of Glamour">
+
+  <meta property="og:title" content="Manju's The World of Glamour">
+  <meta
+    property="og:description"
+    content="Beauty, elevated. Explore services, bridal experiences, our work and appointment enquiries."
+  >
+  <meta property="og:type" content="website">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --ivory: #f8f4ed;
+      --cream: #efe7da;
+      --white: #ffffff;
+      --charcoal: #252321;
+      --muted: #756f68;
+      --gold: #b59a6b;
+      --gold-dark: #92784d;
+      --line: rgba(37, 35, 33, 0.12);
+      --shadow: 0 18px 50px rgba(37, 35, 33, 0.08);
+      --radius: 20px;
+      --max: 1240px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: "DM Sans", sans-serif;
+      background: var(--ivory);
+      color: var(--charcoal);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .container {
+      width: min(var(--max), calc(100% - 40px));
+      margin: auto;
+    }
+
+    .serif {
+      font-family: "Playfair Display", serif;
+    }
+
+    .section {
+      padding: 100px 0;
+    }
+
+    .section-head {
+      max-width: 760px;
+      margin-bottom: 45px;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 14px;
+      color: var(--gold-dark);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .section-title {
+      font-family: "Playfair Display", serif;
+      font-size: clamp(38px, 5vw, 68px);
+      line-height: 1.05;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+
+    .section-text {
+      color: var(--muted);
+      max-width: 680px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 50px;
+      padding: 0 25px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      transition: 0.25s ease;
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      background: var(--charcoal);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      background: #000;
+    }
+
+    .btn-outline {
+      border-color: var(--charcoal);
+      background: transparent;
+    }
+
+    .btn-outline:hover {
+      background: var(--charcoal);
+      color: white;
+    }
+
+    .btn-gold {
+      background: var(--gold);
+      color: white;
+    }
+
+    .btn-gold:hover {
+      background: var(--gold-dark);
+      transform: translateY(-2px);
+    }
+
+    /* LOADER */
+
+    #loader {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: var(--ivory);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+
+    #loader.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .loader-inner {
+      text-align: center;
+    }
+
+    .loader-brand {
+      font-family: "Playfair Display", serif;
+      font-size: 28px;
+      margin-bottom: 15px;
+    }
+
+    .loader-line {
+      width: 90px;
+      height: 1px;
+      margin: auto;
+      background: var(--gold);
+      animation: loader 1.4s infinite;
+    }
+
+    @keyframes loader {
+      0% {
+        transform: scaleX(0);
+      }
+
+      50% {
+        transform: scaleX(1);
+      }
+
+      100% {
+        transform: scaleX(0);
+      }
+    }
+
+    /* NAV */
+
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      background: rgba(248, 244, 237, 0.94);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav-inner {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 30px;
+    }
+
+    .brand {
+      font-family: "Playfair Display", serif;
+      font-size: 21px;
+      line-height: 1.1;
+      max-width: 210px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 14px;
+    }
+
+    .nav-links a {
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -6px;
+      width: 0;
+      height: 1px;
+      background: var(--gold-dark);
+      transition: 0.25s;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    .menu-btn {
+      display: none;
+      border: 0;
+      background: transparent;
+      font-size: 25px;
+    }
+
+    /* HERO */
+
+    .hero {
+      min-height: 100vh;
+      padding-top: 78px;
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 70px;
+      align-items: center;
+    }
+
+    .hero-copy {
+      padding: 50px 0;
+    }
+
+    .hero-title {
+      font-family: "Playfair Display", serif;
+      font-size: clamp(55px, 8vw, 110px);
+      line-height: 0.92;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      margin-bottom: 28px;
+    }
+
+    .hero-title span {
+      color: var(--gold-dark);
+      font-style: italic;
+    }
+
+    .hero-description {
+      color: var(--muted);
+      font-size: 17px;
+      max-width: 620px;
+      margin-bottom: 30px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .hero-visual {
+      position: relative;
+    }
+
+    .hero-image {
+      min-height: 650px;
+      border-radius: 220px 220px 20px 20px;
+      background:
+        linear-gradient(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05)),
+        url("https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1200&q=85")
+        center / cover;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-badge {
+      position: absolute;
+      bottom: 30px;
+      left: -30px;
+      padding: 22px;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: var(--shadow);
+      max-width: 230px;
+    }
+
+    .hero-badge strong {
+      display: block;
+      font-family: "Playfair Display", serif;
+      font-size: 27px;
+    }
+
+    .hero-badge span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .trust-strip {
+      margin-top: 45px;
+      padding-top: 25px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .trust-strip strong {
+      color: var(--charcoal);
+    }
+
+    /* BOOKING */
+
+    .booking-card {
+      background: var(--white);
+      padding: 35px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .booking-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    .field label {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--ivory);
+      border-radius: 12px;
+      padding: 13px 14px;
+      outline: none;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--gold);
+    }
+
+    .field textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .booking-actions {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .form-message {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    .success {
+      color: #347347;
+    }
+
+    .error {
+      color: #b64040;
+    }
+
+    /* SERVICES */
+
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      margin-bottom: 28px;
+    }
+
+    .filter-btn {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      background: transparent;
+      border-radius: 999px;
+      padding: 10px 17px;
+      font-size: 13px;
+    }
+
+    .filter-btn.active,
+    .filter-btn:hover {
+      background: var(--charcoal);
+      color: white;
+    }
+
+    .service-search {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 999px;
+      padding: 15px 20px;
+      margin-bottom: 30px;
+      outline: none;
+    }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .service-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: 0.25s;
+    }
+
+    .service-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow);
+    }
+
+    .service-image {
+      height: 240px;
+      background: var(--cream);
+      object-fit: cover;
+      width: 100%;
+    }
+
+    .service-body {
+      padding: 23px;
+    }
+
+    .service-category {
+      color: var(--gold-dark);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+    }
+
+    .service-name {
+      font-family: "Playfair Display", serif;
+      font-size: 27px;
+      margin: 8px 0;
+    }
+
+    .service-description {
+      color: var(--muted);
+      font-size: 14px;
+      min-height: 50px;
+    }
+
+    .service-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 18px;
+      padding-top: 15px;
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .service-price {
+      font-weight: 700;
+    }
+
+    /* ABOUT */
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 70px;
+      align-items: center;
+    }
+
+    .about-image {
+      min-height: 580px;
+      border-radius: 20px;
+      background:
+        url("https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=85")
+        center / cover;
+    }
+
+    .about-content p {
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .about-list {
+      margin-top: 25px;
+      display: grid;
+      gap: 13px;
+    }
+
+    .about-list div {
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 12px;
+    }
+
+    /* BRIDAL */
+
+    .bridal-section {
+      background: var(--charcoal);
+      color: white;
+    }
+
+    .bridal-section .section-text {
+      color: rgba(255,255,255,0.7);
+    }
+
+    .bridal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+    }
+
+    .bridal-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .bridal-card img {
+      width: 100%;
+      height: 330px;
+      object-fit: cover;
+    }
+
+    .bridal-card-body {
+      padding: 25px;
+    }
+
+    .bridal-card-body p {
+      color: rgba(255,255,255,0.68);
+      margin: 8px 0 18px;
+      font-size: 14px;
+    }
+
+    .bridal-price {
+      color: #e3cf9f;
+      font-weight: 700;
+    }
+
+    /* GALLERY */
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .gallery-item {
+      position: relative;
+      aspect-ratio: 1 / 1.25;
+      overflow: hidden;
+      border-radius: 14px;
+      background: var(--cream);
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .gallery-item:hover img {
+      transform: scale(1.05);
+    }
+
+    .gallery-overlay {
+      position: absolute;
+      inset: auto 0 0 0;
+      padding: 20px;
+      color: white;
+      background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    }
+
+    /* BEFORE AFTER */
+
+    .before-after-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 22px;
+    }
+
+    .before-after-card {
+      background: white;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .ba-images {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .ba-images div {
+      position: relative;
+    }
+
+    .ba-images img {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+    }
+
+    .ba-label {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      background: rgba(0,0,0,0.65);
+      color: white;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+    }
+
+    .ba-body {
+      padding: 20px;
+    }
+
+    .ba-body p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* OFFERS */
+
+    .offers-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .offer-card {
+      background: white;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .offer-card img {
+      width: 100%;
+      height: 230px;
+      object-fit: cover;
+    }
+
+    .offer-body {
+      padding: 24px;
+    }
+
+    .offer-body h3 {
+      font-family: "Playfair Display", serif;
+      font-size: 27px;
+      margin-bottom: 8px;
+    }
+
+    .offer-body p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .offer-price {
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .old-price {
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+
+    .new-price {
+      font-weight: 700;
+      font-size: 20px;
+    }
+
+    /* TEAM */
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .team-card {
+      background: white;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .team-card img {
+      width: 100%;
+      height: 350px;
+      object-fit: cover;
+    }
+
+    .team-body {
+      padding: 22px;
+    }
+
+    .team-role {
+      color: var(--gold-dark);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .team-body h3 {
+      font-family: "Playfair Display", serif;
+      font-size: 27px;
+      margin: 5px 0;
+    }
+
+    .team-body p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* TESTIMONIALS */
+
+    .testimonial-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .testimonial-card {
+      background: white;
+      padding: 30px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+    }
+
+    .stars {
+      color: var(--gold-dark);
+      letter-spacing: 3px;
+      margin-bottom: 18px;
+    }
+
+    .testimonial-card blockquote {
+      font-family: "Playfair Display", serif;
+      font-size: 22px;
+      line-height: 1.4;
+      margin-bottom: 20px;
+    }
+
+    .testimonial-name {
+      font-weight: 700;
+    }
+
+    .testimonial-service {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* FAQ */
+
+    .faq-list {
+      max-width: 900px;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .faq-question {
+      width: 100%;
+      background: transparent;
+      border: 0;
+      padding: 22px 0;
+      display: flex;
+      justify-content: space-between;
+      text-align: left;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .faq-answer {
+      display: none;
+      padding: 0 0 22px;
+      color: var(--muted);
+    }
+
+    .faq-item.open .faq-answer {
+      display: block;
+    }
+
+    /* CONTACT */
+
+    .contact-section {
+      background: var(--cream);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+    }
+
+    .contact-card {
+      background: white;
+      padding: 30px;
+      border-radius: var(--radius);
+    }
+
+    .contact-card h3 {
+      font-family: "Playfair Display", serif;
+      font-size: 30px;
+      margin-bottom: 18px;
+    }
+
+    .contact-item {
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .contact-item strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .contact-item span,
+    .contact-item a {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* EMPTY */
+
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: 50px 20px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+    }
+
+    /* FOOTER */
+
+    footer {
+      background: #1d1b19;
+      color: white;
+      padding: 65px 0 30px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr;
+      gap: 50px;
+      padding-bottom: 45px;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .footer-brand {
+      font-family: "Playfair Display", serif;
+      font-size: 32px;
+      margin-bottom: 15px;
+    }
+
+    footer p,
+    footer a {
+      color: rgba(255,255,255,0.65);
+      font-size: 14px;
+    }
+
+    .footer-title {
+      font-weight: 700;
+      margin-bottom: 15px;
+    }
+
+    .footer-links {
+      display: grid;
+      gap: 9px;
+    }
+
+    .copyright {
+      padding-top: 25px;
+      color: rgba(255,255,255,0.45);
+      font-size: 12px;
+    }
+
+    /* FLOATING BUTTONS */
+
+    .floating-actions {
+      position: fixed;
+      right: 18px;
+      bottom: 85px;
+      z-index: 900;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .floating-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--charcoal);
+      color: white;
+      box-shadow: var(--shadow);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .mobile-booking {
+      display: none;
+    }
+
+    /* RESPONSIVE */
+
+    @media (max-width: 1000px) {
+      .nav-links {
+        display: none;
+      }
+
+      .menu-btn {
+        display: block;
+      }
+
+      .nav.mobile-open .nav-links {
+        display: flex;
+        position: absolute;
+        top: 78px;
+        left: 0;
+        right: 0;
+        background: var(--ivory);
+        padding: 22px;
+        flex-direction: column;
+        align-items: flex-start;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .hero-grid,
+      .about-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-visual {
+        order: -1;
+      }
+
+      .hero-image {
+        min-height: 520px;
+      }
+
+      .service-grid,
+      .offers-grid,
+      .team-grid,
+      .testimonial-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .gallery-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .container {
+        width: min(var(--max), calc(100% - 26px));
+      }
+
+      .section {
+        padding: 70px 0;
+      }
+
+      .hero {
+        min-height: auto;
+      }
+
+      .hero-copy {
+        padding: 40px 0;
+      }
+
+      .hero-title {
+        font-size: clamp(50px, 17vw, 80px);
+      }
+
+      .hero-image {
+        min-height: 450px;
+        border-radius: 160px 160px 15px 15px;
+      }
+
+      .hero-badge {
+        left: 10px;
+        bottom: 15px;
+      }
+
+      .booking-grid,
+      .bridal-grid,
+      .before-after-grid,
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .service-grid,
+      .offers-grid,
+      .team-grid,
+      .testimonial-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .gallery-item {
+        aspect-ratio: 1 / 1.2;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .booking-card {
+        padding: 22px;
+      }
+
+      .floating-actions {
+        bottom: 80px;
+      }
+
+      .mobile-booking {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 950;
+        display: flex;
+        padding: 10px;
+        background: rgba(248,244,237,0.96);
+        backdrop-filter: blur(10px);
+        border-top: 1px solid var(--line);
+      }
+
+      .mobile-booking a {
+        width: 100%;
+      }
+
+      body {
+        padding-bottom: 64px;
+      }
+    }
+  </style>
 </head>
-
 
 <body>
 
-
-<!-- =========================================
-     LOADER
-========================================= -->
-
-<div id="loader">
-
-    <div class="loader-title">
-        MANJU'S
+  <!-- LOADER -->
+  <div id="loader">
+    <div class="loader-inner">
+      <div class="loader-brand">Manju's The World of Glamour</div>
+      <div class="loader-line"></div>
     </div>
+  </div>
 
-    <div class="loader-line"></div>
+  <!-- NAV -->
+  <header class="nav" id="mainNav">
+    <div class="container nav-inner">
 
-    <div>
-        THE WORLD OF GLAMOUR
-    </div>
+      <a href="#home" class="brand">
+        Manju's The World of Glamour
+      </a>
 
-</div>
-
-
-
-<!-- =========================================
-     HEADER
-========================================= -->
-
-<header>
-
-    <a href="#home" class="logo">
-
-        <span class="logo-main">
-            MANJU'S
-        </span>
-
-        <span class="logo-sub">
-            THE WORLD OF GLAMOUR
-        </span>
-
-    </a>
-
-
-    <nav>
-
-        <a href="#home">Home</a>
-
-        <a href="#about">About</a>
-
-        <a href="#services">Services</a>
-
-        <a href="#bridal">Bridal</a>
-
-        <a href="#gallery">Our Work</a>
-
-        <a href="#offers">Offers</a>
-
-        <a href="#reviews">Reviews</a>
-
-        <a href="#contact">Contact</a>
-
-        <a href="#booking" class="book-button">
-            Book Appointment
-        </a>
-
-    </nav>
-
-
-    <button
-        class="menu-button"
-        id="menuButton">
-
+      <button class="menu-btn" id="menuBtn" aria-label="Open menu">
         ☰
-
-    </button>
-
-</header>
-
-
-
-<!-- =========================================
-     MOBILE MENU
-========================================= -->
-
-<div id="mobileMenu">
-
-    <a href="#home">Home</a>
-
-    <a href="#about">About</a>
-
-    <a href="#services">Services</a>
-
-    <a href="#bridal">Bridal</a>
-
-    <a href="#gallery">Our Work</a>
-
-    <a href="#offers">Offers</a>
-
-    <a href="#reviews">Reviews</a>
-
-    <a href="#contact">Contact</a>
-
-    <a href="#booking">
-        Book Appointment
-    </a>
-
-</div>
-
-
-
-<!-- =========================================
-     HERO
-========================================= -->
-
-<section class="hero" id="home">
-
-    <div class="hero-content">
-
-        <p class="eyebrow">
-            MAKEUP ARTIST • MAKEUP STUDIO • ROHINI, DELHI
-        </p>
-
-
-        <h1>
-
-            Beauty,
-
-            <br>
-
-            <em>Elevated.</em>
-
-        </h1>
-
-
-        <p class="hero-description">
-
-            Where expert artistry meets personalized beauty.
-
-            Discover premium hair, makeup, bridal and beauty
-            experiences designed around you.
-
-        </p>
-
-
-        <div class="hero-buttons">
-
-            <a
-                href="#booking"
-                class="button button-gold">
-
-                BOOK APPOINTMENT
-
-            </a>
-
-
-            <a
-                href="#services"
-                class="button button-outline">
-
-                EXPLORE SERVICES
-
-            </a>
-
-        </div>
-
-
-        <div class="trust">
-
-            <span class="stars">
-                ★★★★★
-            </span>
-
-            <span>
-                4.9 Rated
-            </span>
-
-            <span>•</span>
-
-            <span>
-                1,300+ Client Reviews
-            </span>
-
-            <span>•</span>
-
-            <span>
-                Premium Beauty Experience
-            </span>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-
-<!-- =========================================
-     QUICK BOOKING
-========================================= -->
-
-<section class="booking-wrapper" id="booking">
-
-    <div class="booking-card">
-
-        <div>
-
-            <p class="eyebrow">
-                APPOINTMENT REQUEST
-            </p>
-
-            <h2>
-                Your beauty appointment,
-                <em>made easy.</em>
-            </h2>
-
-            <p class="muted">
-
-                Choose your preferred service, date and time.
-                Your request can then be continued through
-                WhatsApp.
-
-            </p>
-
-        </div>
-
-
-        <form
-            class="booking-form"
-            id="bookingForm">
-
-            <select
-                id="bookingService"
-                required>
-
-                <option value="">
-                    Select Service
-                </option>
-
-                <option>
-                    Bridal Makeup
-                </option>
-
-                <option>
-                    Engagement Makeup
-                </option>
-
-                <option>
-                    Party Makeup
-                </option>
-
-                <option>
-                    Hair Styling
-                </option>
-
-                <option>
-                    Makeup
-                </option>
-
-                <option>
-                    Beauty Service
-                </option>
-
-            </select>
-
-
-            <input
-                type="date"
-                id="bookingDate"
-                required>
-
-
-            <input
-                type="time"
-                id="bookingTime"
-                required>
-
-
-            <input
-                type="text"
-                id="bookingName"
-                placeholder="Your Name"
-                required>
-
-
-            <input
-                type="tel"
-                id="bookingPhone"
-                placeholder="Phone Number"
-                required>
-
-
-            <button
-                class="button"
-                style="background:#292522;color:white;border:none"
-                type="submit">
-
-                REQUEST APPOINTMENT
-
-            </button>
-
-        </form>
-
-    </div>
-
-</section>
-
-
-
-<!-- =========================================
-     ABOUT
-========================================= -->
-
-<section class="section" id="about">
-
-    <div class="about">
-
-        <div class="about-image">
-
-            <div class="image-note">
-
-                SALON IMAGE
-
-                <br><br>
-
-                Upload from Admin Panel
-
-            </div>
-
-        </div>
-
-
-        <div class="about-text">
-
-            <p class="eyebrow">
-                THE STORY
-            </p>
-
-
-            <h2 class="section-title">
-
-                More than a
-
-                <br>
-
-                <em>beauty parlour.</em>
-
-            </h2>
-
-
-            <p>
-
-                Welcome to Manju's The World of Glamour,
-                a makeup studio and beauty destination in
-                Sector 3, Rohini, New Delhi.
-
-            </p>
-
-
-            <p>
-
-                The website is designed around artistry,
-                personalized beauty experiences, bridal
-                makeup and a premium client journey.
-
-            </p>
-
-
-            <p class="muted">
-
-                Services, prices, offers, gallery images,
-                customer photos, team information and
-                testimonials will be managed through the
-                secure admin panel.
-
-            </p>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-
-<!-- =========================================
-     TRUST
-========================================= -->
-
-<section class="stats">
-
-    <div class="stat">
-
-        <strong>
-            ★★★★★
-        </strong>
-
-        <span>
-            Customer Rating
-        </span>
-
-    </div>
-
-
-    <div class="stat">
-
-        <strong>
-            1,300+
-        </strong>
-
-        <span>
-            Client Reviews
-        </span>
-
-    </div>
-
-
-    <div class="stat">
-
-        <strong>
-            ROHINI
-        </strong>
-
-        <span>
-            New Delhi
-        </span>
-
-    </div>
-
-
-    <div class="stat">
-
-        <strong>
-            GLAMOUR
-        </strong>
-
-        <span>
-            Beauty Experience
-        </span>
-
-    </div>
-
-</section>
-
-
-
-<!-- =========================================
-     SERVICES
-========================================= -->
-
-<section
-    class="section"
-    id="services">
-
-    <div class="section-heading-row">
-
-        <div>
-
-            <p class="eyebrow">
-                SIGNATURE BEAUTY SERVICES
-            </p>
-
-            <h2 class="section-title">
-
-                Beauty designed
-
-                <br>
-
-                <em>around you.</em>
-
-            </h2>
-
-        </div>
-
-
-        <p class="muted">
-
-            Services and prices will eventually be
-            controlled from the Supabase admin panel.
-
-            No unverified prices are displayed here.
-
-        </p>
-
-    </div>
-
-
-    <div class="service-tools">
-
-        <input
-            type="search"
-            id="serviceSearch"
-            placeholder="Search services...">
-
-
-        <button
-            class="filter active"
-            data-category="all">
-
-            All
-
-        </button>
-
-        <button
-            class="filter"
-            data-category="hair">
-
-            Hair
-
-        </button>
-
-        <button
-            class="filter"
-            data-category="skin">
-
-            Skin
-
-        </button>
-
-        <button
-            class="filter"
-            data-category="makeup">
-
-            Makeup
-
-        </button>
-
-        <button
-            class="filter"
-            data-category="bridal">
-
-            Bridal
-
-        </button>
-
-        <button
-            class="filter"
-            data-category="nails">
-
-            Nails
-
-        </button>
-
-        <button
-            class="filter"
-            data-category="spa">
-
-            Spa
-
-        </button>
-
-    </div>
-
-
-    <div
-        class="service-grid"
-        id="serviceGrid">
-
-    </div>
-
-</section>
-
-
-
-<!-- =========================================
-     BRIDAL
-========================================= -->
-
-<section
-    class="bridal"
-    id="bridal">
-
-    <div class="bridal-content">
-
-        <p class="eyebrow">
-            THE BRIDAL EXPERIENCE
-        </p>
-
-
-        <h2 class="section-title">
-
-            Your wedding.
-
-            <br>
-
-            <em>Your signature look.</em>
-
-        </h2>
-
-
-        <p>
-
-            Explore bridal makeup, engagement makeup,
-            reception makeup, party makeup, hair styling,
-            draping, bridal packages and pre-bridal services.
-
-        </p>
-
-
-        <a
-            href="#bridal-enquiry"
-            class="button button-outline">
-
-            ENQUIRE FOR BRIDAL BOOKING
-
+      </button>
+
+      <nav class="nav-links">
+        <a href="#home">Home</a>
+        <a href="#about">About</a>
+        <a href="#services">Services</a>
+        <a href="#bridal">Bridal</a>
+        <a href="#work">Our Work</a>
+        <a href="#offers">Offers</a>
+        <a href="#reviews">Reviews</a>
+        <a href="#contact">Contact</a>
+        <a href="#appointment" class="btn btn-primary">
+          Book Appointment
         </a>
+      </nav>
 
     </div>
+  </header>
 
-</section>
+  <!-- HERO -->
+  <main>
 
+    <section class="hero" id="home">
 
+      <div class="container hero-grid">
 
-<!-- =========================================
-     BRIDAL ENQUIRY
-========================================= -->
+        <div class="hero-copy">
 
-<section
-    class="section"
-    id="bridal-enquiry">
+          <div class="eyebrow">
+            Makeup Artist • Makeup Studio
+          </div>
 
-    <p class="eyebrow">
-        BRIDAL ENQUIRY
-    </p>
+          <h1 class="hero-title">
+            BEAUTY,<br>
+            <span>ELEVATED.</span>
+          </h1>
 
-    <h2 class="section-title">
+          <p class="hero-description">
+            A refined beauty destination where makeup, glamour and personal
+            beauty experiences come together with an editorial touch.
+          </p>
 
-        Let's plan your
+          <div class="hero-actions">
+            <a href="#appointment" class="btn btn-primary">
+              Book Appointment
+            </a>
 
-        <br>
+            <a href="#services" class="btn btn-outline">
+              Explore Services
+            </a>
+          </div>
 
-        <em>bridal look.</em>
+          <div class="trust-strip">
+            <span><strong>4.9★</strong> Rated</span>
+            <span><strong>1300+</strong> Client Reviews</span>
+            <span>Rohini, New Delhi</span>
+          </div>
 
-    </h2>
-
-
-    <form
-        class="form-grid"
-        id="bridalForm">
-
-        <input
-            id="brideName"
-            placeholder="Bride Name"
-            required>
-
-
-        <input
-            id="bridePhone"
-            placeholder="Phone Number"
-            required>
-
-
-        <input
-            id="weddingDate"
-            type="date"
-            required>
-
-
-        <input
-            id="functionName"
-            placeholder="Function">
-
-
-        <input
-            id="venue"
-            placeholder="Wedding Venue">
-
-
-        <input
-            id="functionCount"
-            type="number"
-            placeholder="Number of Functions">
-
-
-        <select id="makeupStyle">
-
-            <option value="">
-                Preferred Makeup Style
-            </option>
-
-            <option>
-                Natural
-            </option>
-
-            <option>
-                Soft Glam
-            </option>
-
-            <option>
-                Traditional
-            </option>
-
-            <option>
-                Modern Glam
-            </option>
-
-            <option>
-                Not Sure
-            </option>
-
-        </select>
-
-
-        <input
-            id="budget"
-            placeholder="Budget Range">
-
-
-        <textarea
-            id="requirements"
-            placeholder="Additional Requirements"></textarea>
-
-
-        <button
-            class="button"
-            type="submit">
-
-            SEND BRIDAL ENQUIRY
-
-        </button>
-
-    </form>
-
-</section>
-
-
-
-<!-- =========================================
-     BRIDE & GIRLS
-========================================= -->
-
-<section
-    class="section"
-    id="brides">
-
-    <p class="eyebrow">
-        OUR BEAUTIFUL BRIDES & GIRLS
-    </p>
-
-    <h2 class="section-title">
-
-        Looks worth
-
-        <br>
-
-        <em>remembering.</em>
-
-    </h2>
-
-
-    <p class="muted">
-
-        Bride and customer photographs uploaded and
-        approved by the admin will appear here.
-
-    </p>
-
-
-    <div
-        class="gallery-grid"
-        id="brideGallery"
-        style="margin-top:35px">
-
-    </div>
-
-</section>
-
-
-
-<!-- =========================================
-     OUR WORK
-========================================= -->
-
-<section
-    class="section"
-    id="gallery"
-    style="background:#eee5da">
-
-    <p class="eyebrow">
-        OUR WORK
-    </p>
-
-    <h2 class="section-title">
-
-        Beauty in
-
-        <br>
-
-        <em>every detail.</em>
-
-    </h2>
-
-
-    <div
-        class="gallery-grid"
-        id="workGallery"
-        style="margin-top:35px">
-
-    </div>
-
-</section>
-
-
-
-<!-- =========================================
-     REGULAR CUSTOMERS
-========================================= -->
-
-<section
-    class="section"
-    id="customers">
-
-    <p class="eyebrow">
-        REGULAR CUSTOMERS
-    </p>
-
-    <h2 class="section-title">
-
-        Real clients.
-
-        <br>
-
-        <em>Real experiences.</em>
-
-    </h2>
-
-
-    <p class="muted">
-
-        Customer photographs and names should only be
-        published after appropriate permission.
-
-    </p>
-
-
-    <div
-        class="customer-grid"
-        id="customerGrid"
-        style="margin-top:35px">
-
-    </div>
-
-</section>
-
-
-
-<!-- =========================================
-     BEFORE / AFTER
-========================================= -->
-
-<section
-    class="section"
-    id="before-after"
-    style="background:#292522;color:white">
-
-    <p class="eyebrow">
-        TRANSFORMATIONS
-    </p>
-
-    <h2 class="section-title">
-
-        Before
-
-        <em>→</em>
-
-        After
-
-    </h2>
-
-
-    <div
-        class="before-after"
-        style="margin-top:35px"
-        id="beforeAfterGrid">
-
-    </div>
-
-</section>
-
-
-
-<!-- =========================================
-     OFFERS
-========================================= -->
-
-<section
-    class="section offers"
-    id="offers">
-
-    <p class="eyebrow">
-        CURRENT BEAUTY OFFERS
-    </p>
-
-    <h2 class="section-title">
-
-        Special
-
-        <br>
-
-        <em>offers.</em>
-
-    </h2>
-
-
-    <div
-        class="offer-grid"
-        id="offerGrid"
-        style="margin-top:35px">
-
-    </div>
-
-</section>
-
-
-
-<!-- =========================================
-     REVIEWS
-========================================= -->
-
-<section
-    class="section"
-    id="reviews">
-
-    <p class="eyebrow">
-        CLIENT LOVE
-    </p>
-
-    <h2 class="section-title">
-
-        Beauty experiences,
-
-        <br>
-
-        <em>shared.</em>
-
-    </h2>
-
-
-    <div
-        class="review-grid"
-        id="reviewGrid"
-        style="margin-top:35px">
-
-    </div>
-
-</section>
-
-
-
-<!-- =========================================
-     WHY CHOOSE US
-========================================= -->
-
-<section class="why">
-
-    <div>
-
-        <p class="eyebrow">
-            WHY MANJU'S
-        </p>
-
-        <h2 class="section-title">
-
-            Designed
-
-            <br>
-
-            around <em>you.</em>
-
-        </h2>
-
-    </div>
-
-
-    <div class="why-list">
-
-        <div>
-            <b>01</b>
-            <span>
-                Personalized consultations
-            </span>
         </div>
 
-        <div>
-            <b>02</b>
-            <span>
-                Professional beauty service
-            </span>
+        <div class="hero-visual">
+
+          <div class="hero-image"></div>
+
+          <div class="hero-badge">
+            <strong>Manju Chaudhary</strong>
+            <span>Makeup Artist & Makeup Studio</span>
+          </div>
+
         </div>
 
-        <div>
-            <b>03</b>
-            <span>
-                Bridal-focused experience
-            </span>
+      </div>
+
+    </section>
+
+    <!-- APPOINTMENT -->
+    <section class="section" id="appointment">
+
+      <div class="container">
+
+        <div class="section-head">
+          <span class="eyebrow">Appointment</span>
+
+          <h2 class="section-title">
+            Let's create your beauty experience.
+          </h2>
+
+          <p class="section-text">
+            Send an appointment request and the studio can confirm the
+            availability with you.
+          </p>
         </div>
 
-        <div>
-            <b>04</b>
-            <span>
-                Customer-focused beauty journey
-            </span>
-        </div>
+        <div class="booking-card">
 
-    </div>
+          <form id="appointmentForm">
 
-</section>
+            <div class="booking-grid">
 
+              <div class="field">
+                <label for="customerName">Name *</label>
+                <input
+                  id="customerName"
+                  name="customerName"
+                  type="text"
+                  required
+                  autocomplete="name"
+                  placeholder="Your name"
+                >
+              </div>
 
+              <div class="field">
+                <label for="phone">Phone *</label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  autocomplete="tel"
+                  placeholder="Your phone number"
+                >
+              </div>
 
-<!-- =========================================
-     CONTACT
-========================================= -->
+              <div class="field">
+                <label for="email">Email</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="Your email"
+                >
+              </div>
 
-<section
-    class="section"
-    id="contact">
+              <div class="field">
+                <label for="serviceSelect">Service</label>
+                <select id="serviceSelect" name="serviceId">
+                  <option value="">Select a service</option>
+                </select>
+              </div>
 
-    <p class="eyebrow">
-        CONTACT
-    </p>
+              <div class="field">
+                <label for="appointmentDate">Preferred Date</label>
+                <input
+                  id="appointmentDate"
+                  name="appointmentDate"
+                  type="date"
+                >
+              </div>
 
-    <h2 class="section-title">
+              <div class="field">
+                <label for="appointmentTime">Preferred Time</label>
+                <input
+                  id="appointmentTime"
+                  name="appointmentTime"
+                  type="time"
+                >
+              </div>
 
-        Let's make you
+              <div class="field full">
+                <label for="appointmentMessage">Message</label>
+                <textarea
+                  id="appointmentMessage"
+                  name="message"
+                  placeholder="Tell us what you would like to book..."
+                ></textarea>
+              </div>
 
-        <br>
+              <div class="field full">
 
-        <em>feel beautiful.</em>
+                <label>
+                  <input
+                    id="privacyConsent"
+                    type="checkbox"
+                    required
+                  >
+                  I agree to be contacted regarding this appointment request.
+                </label>
 
-    </h2>
-
-
-    <div
-        class="contact-grid"
-        style="margin-top:40px">
-
-
-        <!-- PHONE -->
-
-        <div class="contact-card">
-
-            <span>
-                CALL / WHATSAPP
-            </span>
-
-            <h3>
-                +91 88267 74495
-            </h3>
-
-            <div class="contact-buttons">
-
-                <a
-                    class="button"
-                    style="background:#292522;color:white"
-                    href="tel:+918826774495">
-
-                    CALL NOW
-
-                </a>
-
-
-                <a
-                    class="button"
-                    style="background:#b28a52;color:white"
-                    href="https://wa.me/918826774495"
-                    target="_blank">
-
-                    WHATSAPP
-
-                </a>
+              </div>
 
             </div>
 
+            <div class="booking-actions">
+
+              <button
+                type="submit"
+                class="btn btn-primary"
+              >
+                Send Appointment Request
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-gold"
+                id="whatsappAppointmentBtn"
+              >
+                Request on WhatsApp
+              </button>
+
+            </div>
+
+            <div
+              id="appointmentMessage"
+              class="form-message"
+              aria-live="polite"
+            ></div>
+
+          </form>
+
         </div>
 
+      </div>
 
-        <!-- EMAIL -->
+    </section>
 
-        <div class="contact-card">
+    <!-- ABOUT -->
+    <section class="section" id="about">
 
-            <span>
-                BUSINESS RELATED QUERIES
-            </span>
+      <div class="container about-grid">
 
-            <h3>
+        <div class="about-image"></div>
+
+        <div class="about-content">
+
+          <span class="eyebrow">About the Studio</span>
+
+          <h2 class="section-title">
+            A beauty space made for your moment.
+          </h2>
+
+          <p>
+            Manju's The World of Glamour is a makeup and beauty studio in
+            Sector 3, Rohini, New Delhi.
+          </p>
+
+          <p>
+            The studio focuses on creating polished, personalised beauty
+            experiences for clients who want to feel confident and
+            beautifully themselves.
+          </p>
+
+          <div class="about-list">
+
+            <div>
+              <strong>01</strong>
+              <span>Personalised beauty experiences</span>
+            </div>
+
+            <div>
+              <strong>02</strong>
+              <span>Makeup and glamour services</span>
+            </div>
+
+            <div>
+              <strong>03</strong>
+              <span>Bridal and special-occasion enquiries</span>
+            </div>
+
+            <div>
+              <strong>04</strong>
+              <span>Appointment-based service</span>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- SERVICES -->
+    <section class="section" id="services">
+
+      <div class="container">
+
+        <div class="section-head">
+
+          <span class="eyebrow">Services</span>
+
+          <h2 class="section-title">
+            Beauty, curated around you.
+          </h2>
+
+          <p class="section-text">
+            Explore the services currently listed by the studio.
+            Prices and availability are shown only when provided by the
+            studio.
+          </p>
+
+        </div>
+
+        <input
+          type="search"
+          id="serviceSearch"
+          class="service-search"
+          placeholder="Search services..."
+          aria-label="Search services"
+        >
+
+        <div
+          id="categoryFilters"
+          class="filter-bar"
+        ></div>
+
+        <div
+          id="servicesGrid"
+          class="service-grid"
+        >
+          <div class="empty-state">
+            Loading services...
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- BRIDAL -->
+    <section class="section bridal-section" id="bridal">
+
+      <div class="container">
+
+        <div class="section-head">
+
+          <span class="eyebrow">Bridal</span>
+
+          <h2 class="section-title">
+            Your bridal chapter, beautifully yours.
+          </h2>
+
+          <p class="section-text">
+            Explore bridal packages and send an enquiry directly to the
+            studio.
+          </p>
+
+        </div>
+
+        <div
+          id="bridalPackagesGrid"
+          class="bridal-grid"
+        >
+          <div class="empty-state">
+            Loading bridal packages...
+          </div>
+        </div>
+
+        <div style="margin-top:30px;">
+
+          <a
+            href="#appointment"
+            class="btn btn-gold"
+          >
+            Send Bridal Enquiry
+          </a>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- BRIDE GALLERY -->
+    <section class="section" id="brideGallery">
+
+      <div class="container">
+
+        <div class="section-head">
+
+          <span class="eyebrow">Bride & Girls</span>
+
+          <h2 class="section-title">
+            Bridal moments.
+          </h2>
+
+          <p class="section-text">
+            A gallery of bridal and girls' looks uploaded by the studio.
+          </p>
+
+        </div>
+
+        <div
+          id="brideGalleryGrid"
+          class="gallery-grid"
+        >
+          <div class="empty-state">
+            Loading gallery...
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- OUR WORK -->
+    <section class="section" id="work">
+
+      <div class="container">
+
+        <div class="section-head">
+
+          <span class="eyebrow">Our Work</span>
+
+          <h2 class="section-title">
+            The glamour gallery.
+          </h2>
+
+          <p class="section-text">
+            Discover selected work and beauty looks shared by the studio.
+          </p>
+
+        </div>
+
+        <div
+          id="galleryGrid"
+          class="gallery-grid"
+        >
+          <div class="empty-state">
+            Loading work...
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- CUSTOMER GALLERY -->
+    <section class="section">
+
+      <div class="container">
+
+        <div class="section-head">
+
+          <span class="eyebrow">Our Clients</span>
+
+          <h2 class="section-title">
+            Real clients, real moments.
+          </h2>
+
+          <p class="section-text">
+            Client photographs are displayed only when consent has been
+            provided to the studio.
+          </p>
+
+        </div>
+
+        <div
+          id="customerGalleryGrid"
+          class="gallery-grid"
+        >
+          <div class="empty-state">
+            Loading customer gallery...
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- BEFORE AFTER -->
+    <section class="section" id="beforeAfter">
+
+      <div class="container">
+
+        <div class="section-head">
+
+          <span class="eyebrow">Transformation</span>
+
+          <h2 class="section-title">
+            Before & After.
+          </h2>
+
+          <p class="section-text">
+            Transformation photographs uploaded by the studio.
+          </p>
+
+        </div>
+
+        <div
+          id="beforeAfterGrid"
+          class="before-after-grid"
+        >
+          <div class="empty-state">
+            Loading transformations...
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- OFFERS -->
+    <section class="section" id="offers">
+
+      <div class="container">
+
+        <div class="section-head">
+
+          <span class="eyebrow">Offers</span>
+
+          <h2 class="section-title">
+            Current studio offers.
+          </h2>
+
+          <p class="section-text">
+            Offers and prices appear here when they are published through
+            the studio admin panel.
+          </p>
+
+        </div>
+
+        <div
+          id="offersGrid"
+          class="offers-grid"
+        >
+          <div class="empty-state">
+            Loading offers...
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- TEAM -->
+    <section class="section" id="team">
+
+      <div class="container">
+
+        <div class="section-head">
+
+          <span class="eyebrow">Team</span>
+
+          <h2 class="section-title">
+            Meet the people behind the studio.
+          </h2>
+
+        </div>
+
+        <div
+          id="teamGrid"
+          class="team-grid"
+        >
+          <div class="empty-state">
+            Loading team...
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- REVIEWS -->
+    <section class="section" id="reviews">
+
+      <div class="container">
+
+        <div class="section-head">
+
+          <span class="eyebrow">Reviews</span>
+
+          <h2 class="section-title">
+            What clients are saying.
+          </h2>
+
+        </div>
+
+        <div
+          id="testimonialsGrid"
+          class="testimonial-grid"
+        >
+          <div class="empty-state">
+            Loading reviews...
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- FAQ -->
+    <section class="section">
+
+      <div class="container">
+
+        <div class="section-head">
+
+          <span class="eyebrow">FAQ</span>
+
+          <h2 class="section-title">
+            Frequently asked questions.
+          </h2>
+
+        </div>
+
+        <div
+          id="faqList"
+          class="faq-list"
+        >
+          <div class="empty-state">
+            Loading FAQs...
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- CONTACT -->
+    <section class="section contact-section" id="contact">
+
+      <div class="container">
+
+        <div class="section-head">
+
+          <span class="eyebrow">Contact</span>
+
+          <h2 class="section-title">
+            Visit the studio.
+          </h2>
+
+        </div>
+
+        <div class="contact-grid">
+
+          <div class="contact-card">
+
+            <h3>Manju's The World of Glamour</h3>
+
+            <div class="contact-item">
+              <strong>Address</strong>
+              <span id="contactAddress">
+                F-22/170, 2nd Floor, Sector 3, Rohini,
+                New Delhi - 110085
+              </span>
+            </div>
+
+            <div class="contact-item">
+              <strong>Phone</strong>
+              <a id="contactPhone" href="tel:+918826774495">
+                +91 88267 74495
+              </a>
+            </div>
+
+            <div class="contact-item">
+              <strong>Email</strong>
+              <a
+                id="contactEmail"
+                href="mailto:manjustudio83@gmail.com"
+              >
                 manjustudio83@gmail.com
-            </h3>
+              </a>
+            </div>
 
-            <a
-                href="mailto:manjustudio83@gmail.com">
+            <div class="contact-item">
+              <strong>Instagram</strong>
+              <a
+                href="https://instagram.com/manjuchaudharyy"
+                target="_blank"
+                rel="noopener"
+              >
+                @manjuchaudharyy
+              </a>
+            </div>
 
-                Send Email
-
-            </a>
-
-        </div>
-
-
-        <!-- ADDRESS -->
-
-        <div class="contact-card">
-
-            <span>
-                VISIT US
-            </span>
-
-            <h3>
-
-                F-22/170, 2nd Floor,
-
-                <br>
-
-                Sector 3, Rohini,
-
-                <br>
-
-                New Delhi – 110085
-
-            </h3>
-
-
-            <a
-                href="https://www.google.com/maps/search/?api=1&query=F-22%2F170%2C%202nd%20Floor%2C%20Sector%203%2C%20Rohini%2C%20New%20Delhi%20110085"
-                target="_blank">
-
-                GET DIRECTIONS →
-
-            </a>
-
-        </div>
-
-
-        <!-- SOCIAL -->
-
-        <div class="contact-card">
-
-            <span>
-                SOCIAL
-            </span>
-
-
-            <h3>
-                Manju Chaudhary
-            </h3>
-
-
-            <a
-                href="https://instagram.com/manjuchaudharyy?igshid=YmMyMTA2M2Y="
-                target="_blank">
-
-                Instagram · @manjuchaudharyy
-
-            </a>
-
-
-            <a
+            <div class="contact-item">
+              <strong>YouTube</strong>
+              <a
                 href="https://youtube.com/c/ManjuStudio"
-                target="_blank">
+                target="_blank"
+                rel="noopener"
+              >
+                Manju Studio
+              </a>
+            </div>
 
-                YouTube · ManjuStudio
+          </div>
 
-            </a>
+          <div class="contact-card">
 
+            <h3>Find us</h3>
 
-            <p class="muted">
-
-                manjus_the_world_of_glamour
-
-                <br>
-
-                442 posts · 6,048 followers · 4 following
-
+            <p style="color:var(--muted); margin-bottom:25px;">
+              F-22/170, 2nd Floor, Sector 3, Rohini,
+              New Delhi - 110085
             </p>
 
-        </div>
+            <a
+              class="btn btn-primary"
+              href="https://www.google.com/maps/search/?api=1&query=F-22%2F170%202nd%20Floor%20Sector%203%20Rohini%20New%20Delhi%20110085"
+              target="_blank"
+              rel="noopener"
+            >
+              Get Directions
+            </a>
 
-    </div>
+            <a
+              class="btn btn-gold"
+              style="margin-top:10px;"
+              href="https://wa.me/918826774495"
+              target="_blank"
+              rel="noopener"
+            >
+              WhatsApp
+            </a>
 
-</section>
-
-
-
-<!-- =========================================
-     FOOTER
-========================================= -->
-
-<footer>
-
-    <div>
-
-        <div class="logo">
-
-            <span class="logo-main">
-                MANJU'S
-            </span>
-
-            <span class="logo-sub">
-                THE WORLD OF GLAMOUR
-            </span>
+          </div>
 
         </div>
 
+      </div>
 
-        <p>
-            Makeup Artist • Makeup Studio
-        </p>
+    </section>
 
-    </div>
+  </main>
 
+  <!-- FOOTER -->
 
-    <div>
+  <footer>
 
-        <p>
-            F-22/170, 2nd Floor,
-            Sector 3, Rohini,
-            New Delhi – 110085
-        </p>
+    <div class="container">
 
-        <p>
-            +91 88267 74495
-        </p>
+      <div class="footer-grid">
 
-        <p>
-            manjustudio83@gmail.com
-        </p>
+        <div>
 
-        <p>
-            © <span id="year"></span>
+          <div class="footer-brand">
             Manju's The World of Glamour
-        </p>
+          </div>
+
+          <p>
+            Makeup Artist & Makeup Studio
+          </p>
+
+          <p style="margin-top:10px;">
+            Sector 3, Rohini, New Delhi
+          </p>
+
+        </div>
+
+        <div>
+
+          <div class="footer-title">
+            Explore
+          </div>
+
+          <div class="footer-links">
+            <a href="#about">About</a>
+            <a href="#services">Services</a>
+            <a href="#bridal">Bridal</a>
+            <a href="#work">Our Work</a>
+            <a href="#offers">Offers</a>
+            <a href="#reviews">Reviews</a>
+          </div>
+
+        </div>
+
+        <div>
+
+          <div class="footer-title">
+            Contact
+          </div>
+
+          <div class="footer-links">
+            <a href="tel:+918826774495">
+              +91 88267 74495
+            </a>
+
+            <a href="mailto:manjustudio83@gmail.com">
+              manjustudio83@gmail.com
+            </a>
+
+            <a
+              href="https://instagram.com/manjuchaudharyy"
+              target="_blank"
+              rel="noopener"
+            >
+              Instagram
+            </a>
+
+            <a
+              href="https://youtube.com/c/ManjuStudio"
+              target="_blank"
+              rel="noopener"
+            >
+              YouTube
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="copyright">
+        © <span id="year"></span> Manju's The World of Glamour. All rights reserved.
+      </div>
 
     </div>
 
-</footer>
+  </footer>
 
+  <!-- FLOATING ACTIONS -->
 
-
-<!-- =========================================
-     FLOATING BUTTONS
-========================================= -->
-
-<div class="floating-buttons">
+  <div class="floating-actions">
 
     <a
-        href="tel:+918826774495"
-        aria-label="Call">
-
-        ☎
-
+      class="floating-btn"
+      href="tel:+918826774495"
+      aria-label="Call"
+    >
+      ☎
     </a>
-
 
     <a
-        href="https://wa.me/918826774495"
-        target="_blank"
-        aria-label="WhatsApp">
-
-        WA
-
+      class="floating-btn"
+      href="https://wa.me/918826774495"
+      target="_blank"
+      rel="noopener"
+      aria-label="WhatsApp"
+    >
+      WA
     </a>
 
-</div>
+  </div>
 
+  <!-- MOBILE BOOKING -->
 
+  <div class="mobile-booking">
 
-<!-- MOBILE BOOKING -->
-
-<div class="mobile-booking">
-
-    <a href="#booking">
-
-        BOOK APPOINTMENT
-
+    <a
+      href="#appointment"
+      class="btn btn-primary"
+    >
+      Book Appointment
     </a>
 
-</div>
+  </div>
 
+  <script>
 
+    /* =========================================================
+       MANJU'S THE WORLD OF GLAMOUR
+       PUBLIC WEBSITE
+       ========================================================= */
 
-<!-- =========================================
-     SUPABASE
-========================================= -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
+    const SUPABASE_URL =
+      "https://xrxpvjxqdqxybyohxrjy.supabase.co";
 
-<!-- =========================================
-     JAVASCRIPT
-========================================= -->
+    /*
+      IMPORTANT:
+      Paste the SAME publishable/anon key that is already inside
+      your existing supabase-config.js here.
 
-<script>
+      Do not use a service-role key.
+    */
 
+    const SUPABASE_PUBLISHABLE_KEY =
+      "PASTE_YOUR_EXISTING_PUBLISHABLE_KEY_HERE";
 
-/* =========================================
-   BUSINESS INFORMATION
-========================================= */
+    const supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
 
-const MANJU = {
-
-    name:
-        "Manju's The World of Glamour",
-
-    phone:
-        "+91 88267 74495",
-
-    whatsapp:
-        "918826774495",
-
-    email:
-        "manjustudio83@gmail.com",
-
-    address:
+    const MANJU = {
+      name: "Manju's The World of Glamour",
+      phone: "+91 88267 74495",
+      whatsapp: "918826774495",
+      email: "manjustudio83@gmail.com",
+      address:
         "F-22/170, 2nd Floor, Sector 3, Rohini, New Delhi - 110085",
+      instagram:
+        "https://instagram.com/manjuchaudharyy",
+      youtube:
+        "https://youtube.com/c/ManjuStudio"
+    };
 
-    instagram:
-        "https://instagram.com/manjuchaudharyy?igshid=YmMyMTA2M2Y=",
+    let allServices = [];
+    let allCategories = [];
 
-    youtube:
-        "https://youtube.com/c/ManjuStudio",
+    /* =========================================================
+       HELPERS
+       ========================================================= */
 
-    instagramHandle:
-        "@manjuchaudharyy",
+    function escapeHTML(value) {
 
-    businessHandle:
-        "manjus_the_world_of_glamour",
+      if (value === null || value === undefined) {
+        return "";
+      }
 
-    artist:
-        "Manju Chaudhary"
-
-};
-
-
-/*
-IMPORTANT:
-
-088267 74495 and
-+91 88267 74495
-
-represent the same phone number.
-
-Therefore WhatsApp uses:
-
-918826774495
-*/
-
-
-/* =========================================
-   DEMO SERVICES
-
-   Later these will come from Supabase.
-========================================= */
-
-const services = [
-
-    {
-        name: "Bridal Makeup",
-        category: "bridal",
-        description:
-            "Premium bridal makeup experience.",
-        price:
-            "Price on enquiry",
-        duration:
-            "Enquire"
-    },
-
-    {
-        name: "Engagement Makeup",
-        category: "bridal",
-        description:
-            "A polished look for your special celebration.",
-        price:
-            "Price on enquiry",
-        duration:
-            "Enquire"
-    },
-
-    {
-        name: "Party Makeup",
-        category: "makeup",
-        description:
-            "Glamorous makeup for parties and occasions.",
-        price:
-            "Price on enquiry",
-        duration:
-            "Enquire"
-    },
-
-    {
-        name: "Hair Styling",
-        category: "hair",
-        description:
-            "Professional styling for your chosen look.",
-        price:
-            "Price on enquiry",
-        duration:
-            "Enquire"
-    },
-
-    {
-        name: "Makeup",
-        category: "makeup",
-        description:
-            "Personalized makeup for your occasion.",
-        price:
-            "Price on enquiry",
-        duration:
-            "Enquire"
-    },
-
-    {
-        name: "Beauty Service",
-        category: "skin",
-        description:
-            "Beauty services will be published from admin.",
-        price:
-            "Price on enquiry",
-        duration:
-            "Enquire"
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
 
-];
+    function formatPrice(price, label) {
 
+      if (price !== null && price !== undefined && price !== "") {
+        return "₹" + Number(price).toLocaleString("en-IN");
+      }
 
+      return label || "Price on enquiry";
+    }
 
-/* =========================================
-   RENDER SERVICES
-========================================= */
+    function formatDate(date) {
 
-function renderServices(
-    category = "all",
-    search = ""
-) {
+      if (!date) {
+        return "";
+      }
 
-    const grid =
-        document.getElementById("serviceGrid");
+      const d = new Date(date);
 
-    const searchText =
-        search.toLowerCase();
+      if (Number.isNaN(d.getTime())) {
+        return date;
+      }
 
+      return d.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      });
+    }
 
-    const filtered =
-        services.filter(service => {
+    function showEmpty(element, text) {
 
-            const categoryMatch =
-                category === "all" ||
-                service.category === category;
+      element.innerHTML = `
+        <div class="empty-state">
+          ${escapeHTML(text)}
+        </div>
+      `;
+    }
 
-            const searchMatch =
-                service.name
-                    .toLowerCase()
-                    .includes(searchText);
+    /* =========================================================
+       NAVIGATION
+       ========================================================= */
 
-            return categoryMatch &&
-                   searchMatch;
+    const mainNav = document.getElementById("mainNav");
+    const menuBtn = document.getElementById("menuBtn");
 
+    menuBtn.addEventListener("click", () => {
+      mainNav.classList.toggle("mobile-open");
+    });
+
+    document.querySelectorAll(".nav-links a").forEach(link => {
+
+      link.addEventListener("click", () => {
+        mainNav.classList.remove("mobile-open");
+      });
+
+    });
+
+    /* =========================================================
+       SERVICES
+       ========================================================= */
+
+    async function loadCategories() {
+
+      const { data, error } = await supabaseClient
+        .from("categories")
+        .select("*")
+        .eq("active", true)
+        .order("display_order", {
+          ascending: true
         });
 
+      if (error) {
+        console.error("Categories error:", error);
+        return;
+      }
 
-    grid.innerHTML =
-        filtered.map(service => `
+      allCategories = data || [];
 
-            <article class="service-card">
+      renderCategoryFilters();
+    }
 
-                <div class="service-image">
+    function renderCategoryFilters() {
 
-                    SERVICE IMAGE
+      const container =
+        document.getElementById("categoryFilters");
 
-                    <br>
+      container.innerHTML = `
+        <button
+          class="filter-btn active"
+          data-category="all"
+        >
+          All
+        </button>
+      `;
 
-                    ADMIN UPLOAD
+      allCategories.forEach(category => {
 
-                </div>
+        const button =
+          document.createElement("button");
 
+        button.className = "filter-btn";
 
-                <div class="service-content">
+        button.dataset.category = category.id;
 
-                    <div class="service-meta">
+        button.textContent = category.name;
 
-                        <span>
-                            ${service.category}
-                        </span>
+        container.appendChild(button);
 
-                        <span>
-                            ${service.duration}
-                        </span>
+      });
 
-                    </div>
+      container
+        .querySelectorAll(".filter-btn")
+        .forEach(button => {
 
+          button.addEventListener("click", () => {
 
-                    <h3>
-                        ${service.name}
-                    </h3>
-
-
-                    <p>
-                        ${service.description}
-                    </p>
-
-
-                    <div class="service-meta">
-
-                        <span>
-                            ${service.price}
-                        </span>
-
-                    </div>
-
-
-                    <button
-                        class="service-book"
-                        onclick="selectService('${service.name}')">
-
-                        BOOK / ENQUIRE
-
-                    </button>
-
-                </div>
-
-            </article>
-
-        `).join("");
-
-}
-
-
-renderServices();
-
-
-
-/* =========================================
-   SERVICE FILTER
-========================================= */
-
-document
-.querySelectorAll(".filter")
-.forEach(button => {
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            document
-            .querySelectorAll(".filter")
-            .forEach(item =>
-                item.classList.remove("active")
-            );
-
+            container
+              .querySelectorAll(".filter-btn")
+              .forEach(btn =>
+                btn.classList.remove("active")
+              );
 
             button.classList.add("active");
 
-
             renderServices(
-                button.dataset.category,
-                document.getElementById(
-                    "serviceSearch"
-                ).value
+              button.dataset.category
             );
 
-        }
-    );
+          });
 
-});
+        });
 
+    }
 
+    async function loadServices() {
 
-/* =========================================
-   SERVICE SEARCH
-========================================= */
+      const grid =
+        document.getElementById("servicesGrid");
 
-document
-.getElementById("serviceSearch")
-.addEventListener(
-    "input",
-    event => {
+      const select =
+        document.getElementById("serviceSelect");
+
+      const { data, error } = await supabaseClient
+        .from("services")
+        .select(`
+          id,
+          category_id,
+          name,
+          slug,
+          description,
+          price,
+          price_label,
+          duration_minutes,
+          image_url,
+          featured,
+          active,
+          display_order
+        `)
+        .eq("active", true)
+        .order("display_order", {
+          ascending: true
+        });
+
+      if (error) {
+
+        console.error("Services error:", error);
+
+        showEmpty(
+          grid,
+          "Services could not be loaded right now."
+        );
+
+        return;
+      }
+
+      allServices = data || [];
+
+      select.innerHTML = `
+        <option value="">
+          Select a service
+        </option>
+      `;
+
+      allServices.forEach(service => {
+
+        const option =
+          document.createElement("option");
+
+        option.value = service.id;
+
+        option.textContent = service.name;
+
+        select.appendChild(option);
+
+      });
+
+      renderServices("all");
+    }
+
+    function getCategoryName(categoryId) {
+
+      const category =
+        allCategories.find(
+          item => item.id === categoryId
+        );
+
+      return category
+        ? category.name
+        : "";
+    }
+
+    function renderServices(categoryId = "all") {
+
+      const grid =
+        document.getElementById("servicesGrid");
+
+      const search =
+        document.getElementById("serviceSearch")
+          .value
+          .trim()
+          .toLowerCase();
+
+      let services = [...allServices];
+
+      if (categoryId !== "all") {
+
+        services =
+          services.filter(
+            service =>
+              service.category_id === categoryId
+          );
+
+      }
+
+      if (search) {
+
+        services =
+          services.filter(service => {
+
+            const text = [
+              service.name,
+              service.description,
+              getCategoryName(service.category_id)
+            ]
+              .join(" ")
+              .toLowerCase();
+
+            return text.includes(search);
+
+          });
+
+      }
+
+      if (!services.length) {
+
+        showEmpty(
+          grid,
+          "No services are currently listed."
+        );
+
+        return;
+      }
+
+      grid.innerHTML = services
+        .map(service => {
+
+          const category =
+            getCategoryName(
+              service.category_id
+            );
+
+          const image =
+            service.image_url ||
+            "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=900&q=80";
+
+          return `
+            <article class="service-card">
+
+              <img
+                class="service-image"
+                src="${escapeHTML(image)}"
+                alt="${escapeHTML(service.name)}"
+                loading="lazy"
+              >
+
+              <div class="service-body">
+
+                ${
+                  category
+                    ? `
+                      <div class="service-category">
+                        ${escapeHTML(category)}
+                      </div>
+                    `
+                    : ""
+                }
+
+                <h3 class="service-name">
+                  ${escapeHTML(service.name)}
+                </h3>
+
+                <p class="service-description">
+                  ${escapeHTML(
+                    service.description ||
+                    "Service details available on enquiry."
+                  )}
+                </p>
+
+                <div class="service-meta">
+
+                  <span class="service-price">
+                    ${escapeHTML(
+                      formatPrice(
+                        service.price,
+                        service.price_label
+                      )
+                    )}
+                  </span>
+
+                  ${
+                    service.duration_minutes
+                      ? `
+                        <span>
+                          ${escapeHTML(
+                            service.duration_minutes
+                          )} min
+                        </span>
+                      `
+                      : ""
+                  }
+
+                </div>
+
+                <div style="margin-top:18px;">
+
+                  <a
+                    href="#appointment"
+                    class="btn btn-outline"
+                    style="width:100%;"
+                    onclick="selectService('${service.id}')"
+                  >
+                    Enquire
+                  </a>
+
+                </div>
+
+              </div>
+
+            </article>
+          `;
+
+        })
+        .join("");
+
+    }
+
+    function selectService(serviceId) {
+
+      const select =
+        document.getElementById("serviceSelect");
+
+      select.value = serviceId;
+
+      document
+        .getElementById("appointment")
+        .scrollIntoView({
+          behavior: "smooth"
+        });
+
+    }
+
+    document
+      .getElementById("serviceSearch")
+      .addEventListener("input", () => {
 
         const active =
-            document
-            .querySelector(".filter.active")
-            .dataset.category;
-
+          document.querySelector(
+            ".filter-btn.active"
+          );
 
         renderServices(
-            active,
-            event.target.value
+          active
+            ? active.dataset.category
+            : "all"
         );
 
+      });
+
+    /* =========================================================
+       APPOINTMENTS
+       ========================================================= */
+
+    async function submitAppointment(
+      whatsappRequested = false
+    ) {
+
+      const form =
+        document.getElementById("appointmentForm");
+
+      const message =
+        document.getElementById(
+          "appointmentMessage"
+        );
+
+      const formData =
+        new FormData(form);
+
+      const customerName =
+        formData.get("customerName")?.trim();
+
+      const phone =
+        formData.get("phone")?.trim();
+
+      const email =
+        formData.get("email")?.trim() || null;
+
+      const serviceId =
+        formData.get("serviceId") || null;
+
+      const appointmentDate =
+        formData.get("appointmentDate") || null;
+
+      const appointmentTime =
+        formData.get("appointmentTime") || null;
+
+      const appointmentMessage =
+        formData.get("message")?.trim() || null;
+
+      const privacyConsent =
+        document.getElementById(
+          "privacyConsent"
+        ).checked;
+
+      if (!customerName || !phone) {
+
+        message.className =
+          "form-message error";
+
+        message.textContent =
+          "Please enter your name and phone number.";
+
+        return false;
+      }
+
+      if (!privacyConsent) {
+
+        message.className =
+          "form-message error";
+
+        message.textContent =
+          "Please accept the contact consent.";
+
+        return false;
+      }
+
+      message.className =
+        "form-message";
+
+      message.textContent =
+        "Sending appointment request...";
+
+      const payload = {
+
+        service_id: serviceId,
+
+        customer_name: customerName,
+
+        phone: phone,
+
+        email: email,
+
+        appointment_date:
+          appointmentDate,
+
+        appointment_time:
+          appointmentTime,
+
+        message:
+          appointmentMessage,
+
+        status: "New",
+
+        whatsapp_requested:
+          whatsappRequested,
+
+        privacy_consent:
+          privacyConsent
+
+      };
+
+      const { error } =
+        await supabaseClient
+          .from("appointments")
+          .insert(payload);
+
+      if (error) {
+
+        console.error(
+          "Appointment error:",
+          error
+        );
+
+        message.className =
+          "form-message error";
+
+        message.textContent =
+          "We could not submit your request. Please contact us directly on WhatsApp.";
+
+        return false;
+      }
+
+      message.className =
+        "form-message success";
+
+      message.textContent =
+        "Your appointment request has been received. The studio can confirm availability with you.";
+
+      if (whatsappRequested) {
+
+        const selectedService =
+          serviceId
+            ? allServices.find(
+                service =>
+                  service.id === serviceId
+              )
+            : null;
+
+        const text = [
+
+          "Hello Manju's The World of Glamour,",
+
+          "",
+
+          "I would like to request an appointment.",
+
+          `Name: ${customerName}`,
+
+          `Phone: ${phone}`,
+
+          selectedService
+            ? `Service: ${selectedService.name}`
+            : "",
+
+          appointmentDate
+            ? `Preferred Date: ${appointmentDate}`
+            : "",
+
+          appointmentTime
+            ? `Preferred Time: ${appointmentTime}`
+            : "",
+
+          appointmentMessage
+            ? `Message: ${appointmentMessage}`
+            : ""
+
+        ]
+          .filter(Boolean)
+          .join("\n");
+
+        window.open(
+          `https://wa.me/${MANJU.whatsapp}?text=${encodeURIComponent(text)}`,
+          "_blank"
+        );
+
+      }
+
+      if (!whatsappRequested) {
+        form.reset();
+      }
+
+      return true;
     }
-);
-
-
-
-/* =========================================
-   SELECT SERVICE
-========================================= */
-
-function selectService(serviceName) {
 
     document
-    .getElementById("bookingService")
-    .value = serviceName;
-
-
-    document
-    .getElementById("booking")
-    .scrollIntoView({
-        behavior: "smooth"
-    });
-
-}
-
-
-
-/* =========================================
-   WHATSAPP FUNCTION
-========================================= */
-
-function openWhatsApp(message) {
-
-    const url =
-        "https://wa.me/" +
-        MANJU.whatsapp +
-        "?text=" +
-        encodeURIComponent(message);
-
-
-    window.open(
-        url,
-        "_blank"
-    );
-
-}
-
-
-
-/* =========================================
-   APPOINTMENT FORM
-========================================= */
-
-document
-.getElementById("bookingForm")
-.addEventListener(
-    "submit",
-    async function(event) {
+      .getElementById("appointmentForm")
+      .addEventListener("submit", async event => {
 
         event.preventDefault();
 
-        const service =
-            document.getElementById("bookingService").value.trim();
-        const date =
-            document.getElementById("bookingDate").value;
-        const time =
-            document.getElementById("bookingTime").value;
-        const name =
-            document.getElementById("bookingName").value.trim();
-        const phone =
-            document.getElementById("bookingPhone").value.trim();
+        await submitAppointment(false);
 
-        if (!service || !date || !time || !name || !phone) {
-            alert("Please complete all appointment fields.");
-            return;
-        }
-
-        const message =
-`Hello Manju's The World of Glamour,
-
-I would like to request an appointment.
-
-Service: ${service}
-Preferred Date: ${date}
-Preferred Time: ${time}
-
-Name: ${name}
-Phone: ${phone}`;
-
-        const submitButton =
-            this.querySelector("button[type='submit']");
-        const oldText = submitButton?.textContent || "REQUEST APPOINTMENT";
-
-        if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.textContent = "Saving request...";
-        }
-
-        try {
-            if (typeof supabaseClient === "undefined") {
-                throw new Error("Website database configuration is unavailable.");
-            }
-
-            const { error } = await supabaseClient
-                .from("appointments")
-                .insert({
-                    name,
-                    phone,
-                    service,
-                    date,
-                    time,
-                    status: "New"
-                });
-
-            if (error) throw error;
-
-            this.reset();
-            alert("Appointment request submitted successfully. We will contact you shortly.");
-            openWhatsApp(message);
-
-        } catch (error) {
-            console.error("Appointment save error:", error);
-            alert(
-                "Your appointment could not be saved. Please try again or contact us on WhatsApp.\n\n" +
-                (error.message || "Database error")
-            );
-            openWhatsApp(message);
-        } finally {
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.textContent = oldText;
-            }
-        }
-    }
-);
-
-
-
-/* =========================================
-   BRIDAL FORM
-========================================= */
-
-document
-.getElementById("bridalForm")
-.addEventListener(
-    "submit",
-    function(event) {
-
-        event.preventDefault();
-
-
-        const message =
-
-`Hello Manju's The World of Glamour,
-
-I would like to enquire about bridal booking.
-
-Bride Name:
-${document.getElementById("brideName").value}
-
-Phone:
-${document.getElementById("bridePhone").value}
-
-Wedding Date:
-${document.getElementById("weddingDate").value}
-
-Function:
-${document.getElementById("functionName").value}
-
-Venue:
-${document.getElementById("venue").value}
-
-Number of Functions:
-${document.getElementById("functionCount").value}
-
-Preferred Makeup Style:
-${document.getElementById("makeupStyle").value}
-
-Budget:
-${document.getElementById("budget").value}
-
-Additional Requirements:
-${document.getElementById("requirements").value}`;
-
-
-        openWhatsApp(message);
-
-    }
-);
-
-
-
-/* =========================================
-   DEMO GALLERY
-
-   These placeholders will later be replaced
-   by Supabase Storage images.
-========================================= */
-
-const galleryItems = [
-
-    "Bride / Bridal Look",
-
-    "Makeup Look",
-
-    "Hair Styling",
-
-    "Beauty Transformation",
-
-    "Party Makeup",
-
-    "Bridal Glam"
-
-];
-
-
-function createGallery(
-    elementId,
-    items
-) {
+      });
 
     document
-    .getElementById(elementId)
-    .innerHTML =
+      .getElementById("whatsappAppointmentBtn")
+      .addEventListener("click", async () => {
 
-        items.map(
-            item => `
+        await submitAppointment(true);
 
-                <div class="gallery-item">
+      });
 
-                    <span>
-                        ${item}
-                        <br>
-                        Admin Upload
-                    </span>
+    /* =========================================================
+       BRIDAL PACKAGES
+       ========================================================= */
 
+    async function loadBridalPackages() {
+
+      const grid =
+        document.getElementById(
+          "bridalPackagesGrid"
+        );
+
+      const { data, error } =
+        await supabaseClient
+          .from("bridal_packages")
+          .select(`
+            id,
+            name,
+            description,
+            image_url,
+            price,
+            price_label,
+            included_services,
+            duration,
+            featured,
+            active,
+            display_order
+          `)
+          .eq("active", true)
+          .order("display_order", {
+            ascending: true
+          });
+
+      if (error) {
+
+        console.error(
+          "Bridal packages error:",
+          error
+        );
+
+        showEmpty(
+          grid,
+          "Bridal packages will appear here when published."
+        );
+
+        return;
+      }
+
+      if (!data?.length) {
+
+        showEmpty(
+          grid,
+          "Bridal packages will appear here when published."
+        );
+
+        return;
+      }
+
+      grid.innerHTML =
+        data.map(item => {
+
+          return `
+            <article class="bridal-card">
+
+              ${
+                item.image_url
+                  ? `
+                    <img
+                      src="${escapeHTML(
+                        item.image_url
+                      )}"
+                      alt="${escapeHTML(
+                        item.name
+                      )}"
+                      loading="lazy"
+                    >
+                  `
+                  : ""
+              }
+
+              <div class="bridal-card-body">
+
+                <h3 class="serif">
+                  ${escapeHTML(item.name)}
+                </h3>
+
+                <p>
+                  ${escapeHTML(
+                    item.description || ""
+                  )}
+                </p>
+
+                ${
+                  item.included_services
+                    ? `
+                      <p>
+                        ${escapeHTML(
+                          item.included_services
+                        )}
+                      </p>
+                    `
+                    : ""
+                }
+
+                ${
+                  item.duration
+                    ? `
+                      <p>
+                        Duration:
+                        ${escapeHTML(
+                          item.duration
+                        )}
+                      </p>
+                    `
+                    : ""
+                }
+
+                <div class="bridal-price">
+                  ${escapeHTML(
+                    formatPrice(
+                      item.price,
+                      item.price_label
+                    )
+                  )}
                 </div>
 
-            `
-        ).join("");
+              </div>
 
-}
+            </article>
+          `;
 
-
-createGallery(
-    "brideGallery",
-    galleryItems.slice(0,4)
-);
-
-
-createGallery(
-    "workGallery",
-    galleryItems
-);
-
-
-
-/* =========================================
-   CUSTOMER SECTION
-========================================= */
-
-document
-.getElementById("customerGrid")
-.innerHTML = `
-
-    <article class="customer-card">
-
-        <div class="customer-photo">
-
-            CUSTOMER PHOTO
-
-            <br>
-
-            ADMIN UPLOAD
-
-        </div>
-
-        <h3>
-            Regular Customer
-        </h3>
-
-        <p class="muted">
-
-            Customer profiles will appear here
-            after being added and approved
-            through the admin panel.
-
-        </p>
-
-    </article>
-
-
-    <article class="customer-card">
-
-        <div class="customer-photo">
-
-            CUSTOMER PHOTO
-
-        </div>
-
-        <h3>
-            Regular Customer
-        </h3>
-
-        <p class="muted">
-            Admin-managed customer profile.
-        </p>
-
-    </article>
-
-
-    <article class="customer-card">
-
-        <div class="customer-photo">
-
-            CUSTOMER PHOTO
-
-        </div>
-
-        <h3>
-            Regular Customer
-        </h3>
-
-        <p class="muted">
-            Admin-managed customer profile.
-        </p>
-
-    </article>
-
-`;
-
-
-
-/* =========================================
-   BEFORE AFTER
-========================================= */
-
-document
-.getElementById("beforeAfterGrid")
-.innerHTML = `
-
-    <div class="before-card">
-
-        <div class="before-images">
-
-            <div>
-                BEFORE
-                <br>
-                ADMIN IMAGE
-            </div>
-
-            <div>
-                AFTER
-                <br>
-                ADMIN IMAGE
-            </div>
-
-        </div>
-
-        <p>
-            Before and after transformations
-            will be uploaded and managed by admin.
-        </p>
-
-    </div>
-
-`;
-
-
-
-/* =========================================
-   OFFERS
-========================================= */
-
-document
-.getElementById("offerGrid")
-.innerHTML = `
-
-    <article class="offer-card">
-
-        <p class="eyebrow">
-            OFFER
-        </p>
-
-        <h3>
-            Offers Coming Soon
-        </h3>
-
-        <p class="muted">
-
-            Current offers, original prices,
-            offer prices, validity and terms
-            will be managed from the admin panel.
-
-        </p>
-
-    </article>
-
-`;
-
-
-
-/* =========================================
-   REVIEWS
-========================================= */
-
-document
-.getElementById("reviewGrid")
-.innerHTML = `
-
-    <article class="review">
-
-        <div class="stars">
-            ★★★★★
-        </div>
-
-        <blockquote>
-
-            Customer testimonials will appear
-            here after being added and approved.
-
-        </blockquote>
-
-        <small>
-            Reviews managed by admin
-        </small>
-
-    </article>
-
-
-    <article class="review">
-
-        <div class="stars">
-            ★★★★★
-        </div>
-
-        <blockquote>
-
-            Real customer experiences
-            will be displayed here.
-
-        </blockquote>
-
-        <small>
-            Reviews managed by admin
-        </small>
-
-    </article>
-
-
-    <article class="review">
-
-        <div class="stars">
-            ★★★★★
-        </div>
-
-        <blockquote>
-
-            Verified salon testimonials
-            will appear here.
-
-        </blockquote>
-
-        <small>
-            Reviews managed by admin
-        </small>
-
-    </article>
-
-`;
-
-
-
-/* =========================================
-   MOBILE MENU
-========================================= */
-
-const menuButton =
-    document.getElementById(
-        "menuButton"
-    );
-
-
-const mobileMenu =
-    document.getElementById(
-        "mobileMenu"
-    );
-
-
-menuButton.addEventListener(
-    "click",
-    () => {
-
-        mobileMenu.classList.toggle(
-            "active"
-        );
+        }).join("");
 
     }
-);
 
+    /* =========================================================
+       GALLERY
+       ========================================================= */
 
-document
-.querySelectorAll("#mobileMenu a")
-.forEach(link => {
+    async function loadGallery() {
 
-    link.addEventListener(
-        "click",
-        () => {
+      const grid =
+        document.getElementById(
+          "galleryGrid"
+        );
 
-            mobileMenu.classList.remove(
-                "active"
+      const { data, error } =
+        await supabaseClient
+          .from("gallery")
+          .select(`
+            id,
+            title,
+            description,
+            image_url,
+            category,
+            featured,
+            visible,
+            display_order
+          `)
+          .eq("visible", true)
+          .order("display_order", {
+            ascending: true
+          });
+
+      if (error) {
+
+        console.error(
+          "Gallery error:",
+          error
+        );
+
+        showEmpty(
+          grid,
+          "Our work will appear here when published."
+        );
+
+        return;
+      }
+
+      if (!data?.length) {
+
+        showEmpty(
+          grid,
+          "Our work will appear here when published."
+        );
+
+        return;
+      }
+
+      grid.innerHTML =
+        data.map(item => {
+
+          return `
+            <div class="gallery-item">
+
+              <img
+                src="${escapeHTML(
+                  item.image_url
+                )}"
+                alt="${escapeHTML(
+                  item.title ||
+                  "Manju's The World of Glamour"
+                )}"
+                loading="lazy"
+              >
+
+              ${
+                item.title
+                  ? `
+                    <div class="gallery-overlay">
+                      ${escapeHTML(
+                        item.title
+                      )}
+                    </div>
+                  `
+                  : ""
+              }
+
+            </div>
+          `;
+
+        }).join("");
+
+    }
+
+    async function loadBrideGallery() {
+
+      const grid =
+        document.getElementById(
+          "brideGalleryGrid"
+        );
+
+      const { data, error } =
+        await supabaseClient
+          .from("bride_gallery")
+          .select(`
+            id,
+            title,
+            description,
+            image_url,
+            category,
+            photo_date,
+            featured,
+            visible,
+            display_order
+          `)
+          .eq("visible", true)
+          .order("display_order", {
+            ascending: true
+          });
+
+      if (error) {
+
+        console.error(
+          "Bride gallery error:",
+          error
+        );
+
+        showEmpty(
+          grid,
+          "Bride and girls photographs will appear here when published."
+        );
+
+        return;
+      }
+
+      if (!data?.length) {
+
+        showEmpty(
+          grid,
+          "Bride and girls photographs will appear here when published."
+        );
+
+        return;
+      }
+
+      grid.innerHTML =
+        data.map(item => {
+
+          return `
+            <div class="gallery-item">
+
+              <img
+                src="${escapeHTML(
+                  item.image_url
+                )}"
+                alt="${escapeHTML(
+                  item.title ||
+                  "Bride gallery"
+                )}"
+                loading="lazy"
+              >
+
+              ${
+                item.title
+                  ? `
+                    <div class="gallery-overlay">
+                      ${escapeHTML(
+                        item.title
+                      )}
+                    </div>
+                  `
+                  : ""
+              }
+
+            </div>
+          `;
+
+        }).join("");
+
+    }
+
+    async function loadCustomerGallery() {
+
+      const grid =
+        document.getElementById(
+          "customerGalleryGrid"
+        );
+
+      const { data, error } =
+        await supabaseClient
+          .from("customer_gallery")
+          .select(`
+            id,
+            customer_name,
+            photo_url,
+            service,
+            testimonial,
+            rating,
+            photo_date,
+            featured,
+            visible,
+            consent_given,
+            display_order
+          `)
+          .eq("visible", true)
+          .eq("consent_given", true)
+          .order("display_order", {
+            ascending: true
+          });
+
+      if (error) {
+
+        console.error(
+          "Customer gallery error:",
+          error
+        );
+
+        showEmpty(
+          grid,
+          "Customer photographs will appear here when published."
+        );
+
+        return;
+      }
+
+      if (!data?.length) {
+
+        showEmpty(
+          grid,
+          "Customer photographs will appear here when published."
+        );
+
+        return;
+      }
+
+      grid.innerHTML =
+        data.map(item => {
+
+          return `
+            <div class="gallery-item">
+
+              <img
+                src="${escapeHTML(
+                  item.photo_url
+                )}"
+                alt="${escapeHTML(
+                  item.customer_name ||
+                  "Customer photograph"
+                )}"
+                loading="lazy"
+              >
+
+              ${
+                item.customer_name
+                  ? `
+                    <div class="gallery-overlay">
+                      ${escapeHTML(
+                        item.customer_name
+                      )}
+                    </div>
+                  `
+                  : ""
+              }
+
+            </div>
+          `;
+
+        }).join("");
+
+    }
+
+    /* =========================================================
+       BEFORE / AFTER
+       ========================================================= */
+
+    async function loadBeforeAfter() {
+
+      const grid =
+        document.getElementById(
+          "beforeAfterGrid"
+        );
+
+      const { data, error } =
+        await supabaseClient
+          .from("before_after")
+          .select(`
+            id,
+            title,
+            description,
+            before_image_url,
+            after_image_url,
+            category,
+            featured,
+            visible,
+            display_order
+          `)
+          .eq("visible", true)
+          .order("display_order", {
+            ascending: true
+          });
+
+      if (error) {
+
+        console.error(
+          "Before after error:",
+          error
+        );
+
+        showEmpty(
+          grid,
+          "Transformations will appear here when published."
+        );
+
+        return;
+      }
+
+      if (!data?.length) {
+
+        showEmpty(
+          grid,
+          "Transformations will appear here when published."
+        );
+
+        return;
+      }
+
+      grid.innerHTML =
+        data.map(item => {
+
+          return `
+            <article class="before-after-card">
+
+              <div class="ba-images">
+
+                <div>
+                  <span class="ba-label">
+                    Before
+                  </span>
+
+                  <img
+                    src="${escapeHTML(
+                      item.before_image_url
+                    )}"
+                    alt="Before"
+                    loading="lazy"
+                  >
+                </div>
+
+                <div>
+                  <span class="ba-label">
+                    After
+                  </span>
+
+                  <img
+                    src="${escapeHTML(
+                      item.after_image_url
+                    )}"
+                    alt="After"
+                    loading="lazy"
+                  >
+                </div>
+
+              </div>
+
+              <div class="ba-body">
+
+                ${
+                  item.title
+                    ? `
+                      <h3 class="serif">
+                        ${escapeHTML(
+                          item.title
+                        )}
+                      </h3>
+                    `
+                    : ""
+                }
+
+                ${
+                  item.description
+                    ? `
+                      <p>
+                        ${escapeHTML(
+                          item.description
+                        )}
+                      </p>
+                    `
+                    : ""
+                }
+
+              </div>
+
+            </article>
+          `;
+
+        }).join("");
+
+    }
+
+    /* =========================================================
+       OFFERS
+       ========================================================= */
+
+    async function loadOffers() {
+
+      const grid =
+        document.getElementById(
+          "offersGrid"
+        );
+
+      const today =
+        new Date().toISOString().split("T")[0];
+
+      const { data, error } =
+        await supabaseClient
+          .from("offers")
+          .select(`
+            id,
+            name,
+            description,
+            image_url,
+            original_price,
+            offer_price,
+            discount_percent,
+            valid_from,
+            valid_until,
+            included_services,
+            terms,
+            active,
+            featured,
+            start_date,
+            end_date
+          `)
+          .eq("active", true)
+          .order("created_at", {
+            ascending: false
+          });
+
+      if (error) {
+
+        console.error(
+          "Offers error:",
+          error
+        );
+
+        showEmpty(
+          grid,
+          "Current offers will appear here when published."
+        );
+
+        return;
+      }
+
+      const validOffers =
+        (data || []).filter(item => {
+
+          const start =
+            item.valid_from ||
+            (
+              item.start_date
+                ? item.start_date.slice(0,10)
+                : null
             );
 
-        }
-    );
+          const end =
+            item.valid_until ||
+            (
+              item.end_date
+                ? item.end_date.slice(0,10)
+                : null
+            );
 
-});
+          if (start && start > today) {
+            return false;
+          }
 
+          if (end && end < today) {
+            return false;
+          }
 
+          return true;
 
-/* =========================================
-   YEAR
-========================================= */
+        });
 
-document
-.getElementById("year")
-.textContent =
-    new Date().getFullYear();
+      if (!validOffers.length) {
 
+        showEmpty(
+          grid,
+          "No current offers are published right now."
+        );
 
+        return;
+      }
 
-/* =========================================
-   LOADER
-========================================= */
+      grid.innerHTML =
+        validOffers.map(item => {
 
-window.addEventListener(
-    "load",
-    () => {
+          return `
+            <article class="offer-card">
 
-        setTimeout(
+              ${
+                item.image_url
+                  ? `
+                    <img
+                      src="${escapeHTML(
+                        item.image_url
+                      )}"
+                      alt="${escapeHTML(
+                        item.name
+                      )}"
+                      loading="lazy"
+                    >
+                  `
+                  : ""
+              }
+
+              <div class="offer-body">
+
+                <h3>
+                  ${escapeHTML(
+                    item.name
+                  )}
+                </h3>
+
+                <p>
+                  ${escapeHTML(
+                    item.description || ""
+                  )}
+                </p>
+
+                ${
+                  item.included_services
+                    ? `
+                      <p style="margin-top:12px;">
+                        ${escapeHTML(
+                          item.included_services
+                        )}
+                      </p>
+                    `
+                    : ""
+                }
+
+                ${
+                  item.original_price ||
+                  item.offer_price
+                    ? `
+                      <div class="offer-price">
+
+                        ${
+                          item.original_price
+                            ? `
+                              <span class="old-price">
+                                ₹${Number(
+                                  item.original_price
+                                ).toLocaleString(
+                                  "en-IN"
+                                )}
+                              </span>
+                            `
+                            : ""
+                        }
+
+                        ${
+                          item.offer_price
+                            ? `
+                              <span class="new-price">
+                                ₹${Number(
+                                  item.offer_price
+                                ).toLocaleString(
+                                  "en-IN"
+                                )}
+                              </span>
+                            `
+                            : ""
+                        }
+
+                      </div>
+                    `
+                    : ""
+                }
+
+                ${
+                  item.discount_percent
+                    ? `
+                      <div style="
+                        margin-top:12px;
+                        color:var(--gold-dark);
+                        font-weight:700;
+                      ">
+                        ${escapeHTML(
+                          item.discount_percent
+                        )}% OFF
+                      </div>
+                    `
+                    : ""
+                }
+
+                ${
+                  item.valid_until
+                    ? `
+                      <p style="margin-top:12px;">
+                        Valid until
+                        ${formatDate(
+                          item.valid_until
+                        )}
+                      </p>
+                    `
+                    : ""
+                }
+
+                ${
+                  item.terms
+                    ? `
+                      <p style="
+                        margin-top:12px;
+                        font-size:12px;
+                      ">
+                        ${escapeHTML(
+                          item.terms
+                        )}
+                      </p>
+                    `
+                    : ""
+                }
+
+              </div>
+
+            </article>
+          `;
+
+        }).join("");
+
+    }
+
+    /* =========================================================
+       TEAM
+       ========================================================= */
+
+    async function loadTeam() {
+
+      const grid =
+        document.getElementById(
+          "teamGrid"
+        );
+
+      const { data, error } =
+        await supabaseClient
+          .from("team")
+          .select(`
+            id,
+            name,
+            role,
+            bio,
+            image_url,
+            instagram_url,
+            display_order
+          `)
+          .eq("active", true)
+          .order("display_order", {
+            ascending: true
+          });
+
+      if (error) {
+
+        console.error(
+          "Team error:",
+          error
+        );
+
+        showEmpty(
+          grid,
+          "Team information will appear here when published."
+        );
+
+        return;
+      }
+
+      if (!data?.length) {
+
+        showEmpty(
+          grid,
+          "Team information will appear here when published."
+        );
+
+        return;
+      }
+
+      grid.innerHTML =
+        data.map(item => {
+
+          return `
+            <article class="team-card">
+
+              ${
+                item.image_url
+                  ? `
+                    <img
+                      src="${escapeHTML(
+                        item.image_url
+                      )}"
+                      alt="${escapeHTML(
+                        item.name
+                      )}"
+                      loading="lazy"
+                    >
+                  `
+                  : ""
+              }
+
+              <div class="team-body">
+
+                ${
+                  item.role
+                    ? `
+                      <div class="team-role">
+                        ${escapeHTML(
+                          item.role
+                        )}
+                      </div>
+                    `
+                    : ""
+                }
+
+                <h3>
+                  ${escapeHTML(
+                    item.name
+                  )}
+                </h3>
+
+                ${
+                  item.bio
+                    ? `
+                      <p>
+                        ${escapeHTML(
+                          item.bio
+                        )}
+                      </p>
+                    `
+                    : ""
+                }
+
+                ${
+                  item.instagram_url
+                    ? `
+                      <a
+                        href="${escapeHTML(
+                          item.instagram_url
+                        )}"
+                        target="_blank"
+                        rel="noopener"
+                        class="btn btn-outline"
+                        style="margin-top:16px;"
+                      >
+                        Instagram
+                      </a>
+                    `
+                    : ""
+                }
+
+              </div>
+
+            </article>
+          `;
+
+        }).join("");
+
+    }
+
+    /* =========================================================
+       TESTIMONIALS
+       ========================================================= */
+
+    async function loadTestimonials() {
+
+      const grid =
+        document.getElementById(
+          "testimonialsGrid"
+        );
+
+      const { data, error } =
+        await supabaseClient
+          .from("testimonials")
+          .select(`
+            id,
+            customer_name,
+            testimonial,
+            rating,
+            image_url,
+            service,
+            featured,
+            visible
+          `)
+          .eq("visible", true)
+          .order("created_at", {
+            ascending: false
+          });
+
+      if (error) {
+
+        console.error(
+          "Testimonials error:",
+          error
+        );
+
+        showEmpty(
+          grid,
+          "Reviews will appear here when published."
+        );
+
+        return;
+      }
+
+      if (!data?.length) {
+
+        showEmpty(
+          grid,
+          "Reviews will appear here when published."
+        );
+
+        return;
+      }
+
+      grid.innerHTML =
+        data.map(item => {
+
+          const rating =
+            Number(item.rating || 0);
+
+          const stars =
+            rating
+              ? "★".repeat(
+                  Math.min(rating, 5)
+                )
+              : "";
+
+          return `
+            <article class="testimonial-card">
+
+              ${
+                stars
+                  ? `
+                    <div class="stars">
+                      ${stars}
+                    </div>
+                  `
+                  : ""
+              }
+
+              <blockquote>
+                “${escapeHTML(
+                  item.testimonial
+                )}”
+              </blockquote>
+
+              <div class="testimonial-name">
+                ${escapeHTML(
+                  item.customer_name
+                )}
+              </div>
+
+              ${
+                item.service
+                  ? `
+                    <div class="testimonial-service">
+                      ${escapeHTML(
+                        item.service
+                      )}
+                    </div>
+                  `
+                  : ""
+              }
+
+            </article>
+          `;
+
+        }).join("");
+
+    }
+
+    /* =========================================================
+       FAQ
+       ========================================================= */
+
+    async function loadFAQs() {
+
+      const list =
+        document.getElementById(
+          "faqList"
+        );
+
+      const { data, error } =
+        await supabaseClient
+          .from("faqs")
+          .select(`
+            id,
+            question,
+            answer,
+            display_order
+          `)
+          .eq("active", true)
+          .order("display_order", {
+            ascending: true
+          });
+
+      if (error) {
+
+        console.error(
+          "FAQ error:",
+          error
+        );
+
+        showEmpty(
+          list,
+          "FAQs will appear here when published."
+        );
+
+        return;
+      }
+
+      if (!data?.length) {
+
+        showEmpty(
+          list,
+          "FAQs will appear here when published."
+        );
+
+        return;
+      }
+
+      list.innerHTML =
+        data.map((item, index) => {
+
+          return `
+            <div class="faq-item">
+
+              <button
+                class="faq-question"
+                type="button"
+                aria-expanded="false"
+              >
+
+                <span>
+                  ${escapeHTML(
+                    item.question
+                  )}
+                </span>
+
+                <span>
+                  +
+                </span>
+
+              </button>
+
+              <div class="faq-answer">
+                ${escapeHTML(
+                  item.answer
+                )}
+              </div>
+
+            </div>
+          `;
+
+        }).join("");
+
+      list
+        .querySelectorAll(".faq-question")
+        .forEach(button => {
+
+          button.addEventListener(
+            "click",
             () => {
 
-                document
-                .getElementById("loader")
-                .classList.add("hide");
+              const item =
+                button.closest(
+                  ".faq-item"
+                );
 
-            },
-            600
+              item.classList.toggle(
+                "open"
+              );
+
+              button.setAttribute(
+                "aria-expanded",
+                item.classList.contains(
+                  "open"
+                )
+              );
+
+              const symbol =
+                button.querySelector(
+                  "span:last-child"
+                );
+
+              symbol.textContent =
+                item.classList.contains(
+                  "open"
+                )
+                  ? "−"
+                  : "+";
+
+            }
+          );
+
+        });
+
+    }
+
+    /* =========================================================
+       SETTINGS
+       ========================================================= */
+
+    async function loadSettings() {
+
+      const { data, error } =
+        await supabaseClient
+          .from("settings")
+          .select(`
+            setting_key,
+            setting_value
+          `);
+
+      if (error) {
+
+        console.error(
+          "Settings error:",
+          error
         );
 
-    }
-);
+        return;
+      }
 
-</script>
+      const settings = {};
 
+      (data || []).forEach(item => {
 
+        settings[item.setting_key] =
+          item.setting_value;
 
-<script>
-/* =========================================================
-   MANJU PUBLIC DATABASE CONTENT
-   This layer loads content entered from the admin panel.
-========================================================= */
-(function () {
-    "use strict";
+      });
 
-    function esc(value) {
-        return String(value ?? "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
+      if (settings.business_name) {
 
-    function imageUrl(item) {
-        return item?.image_url || item?.url || item?.photo_url || "";
-    }
+        document.title =
+          settings.business_name +
+          " | Makeup Artist & Beauty Studio";
 
-    function empty(id, text) {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = `<div class="muted" style="padding:25px;text-align:center">${esc(text)}</div>`;
-    }
+      }
 
-    function renderPublicServices(rows) {
-        const grid = document.getElementById("serviceGrid");
-        if (!grid) return;
-        if (!rows.length) {
-            empty("serviceGrid", "Services will be published here soon.");
-            return;
-        }
-        grid.innerHTML = rows.map(service => `
-            <article class="service-card">
-                <div class="service-content">
-                    <p class="eyebrow">${esc(service.category || "BEAUTY SERVICE")}</p>
-                    <h3>${esc(service.name || "Service")}</h3>
-                    <p>${esc(service.description || "")}</p>
-                    <div class="service-meta"><span>${service.price != null && service.price !== "" ? "₹" + esc(service.price) : "Price on enquiry"}</span></div>
-                    ${service.duration ? `<small>${esc(service.duration)}</small>` : ""}
-                    <button class="service-book" type="button" data-db-service="${esc(service.name || "")}">BOOK / ENQUIRE</button>
-                </div>
-            </article>
-        `).join("");
-        grid.querySelectorAll("[data-db-service]").forEach(btn => {
-            btn.addEventListener("click", () => selectService(btn.dataset.dbService));
-        });
-    }
+      if (settings.address) {
 
-    function renderOffers(rows) {
-        const grid = document.getElementById("offerGrid");
-        if (!grid) return;
-        const now = Date.now();
-        const active = rows.filter(o => {
-            if (o.active === false) return false;
-            if (o.start_date && new Date(o.start_date).getTime() > now) return false;
-            if (o.end_date && new Date(o.end_date).getTime() < now) return false;
-            return true;
-        });
-        if (!active.length) {
-            empty("offerGrid", "No active offers are available right now.");
-            return;
-        }
-        grid.innerHTML = active.map(o => `
-            <article class="offer-card">
-                <p class="eyebrow">OFFER</p>
-                <h3>${esc(o.name || "Special Offer")}</h3>
-                <p>${esc(o.description || "")}</p>
-                <div>
-                    ${o.original_price != null ? `<del>₹${esc(o.original_price)}</del> ` : ""}
-                    ${o.offer_price != null ? `<strong>₹${esc(o.offer_price)}</strong>` : ""}
-                </div>
-                ${o.start_date || o.end_date ? `<small>Valid ${o.start_date ? esc(new Date(o.start_date).toLocaleDateString()) : "now"}${o.end_date ? " – " + esc(new Date(o.end_date).toLocaleDateString()) : ""}</small>` : ""}
-                ${o.terms ? `<p class="muted">${esc(o.terms)}</p>` : ""}
-            </article>
-        `).join("");
+        document.getElementById(
+          "contactAddress"
+        ).textContent =
+          settings.address;
+
+      }
+
+      if (settings.phone) {
+
+        const phone =
+          document.getElementById(
+            "contactPhone"
+          );
+
+        phone.textContent =
+          settings.phone;
+
+        phone.href =
+          "tel:" +
+          settings.phone
+            .replace(/[^\d+]/g, "");
+
+      }
+
+      if (settings.email) {
+
+        const email =
+          document.getElementById(
+            "contactEmail"
+          );
+
+        email.textContent =
+          settings.email;
+
+        email.href =
+          "mailto:" +
+          settings.email;
+
+      }
+
     }
 
-    function renderGallery(id, rows, type) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        if (!rows.length) {
-            empty(id, "No photos have been published yet.");
-            return;
-        }
-        el.innerHTML = rows.map(item => {
-            const url = imageUrl(item);
-            if (!url) return "";
-            const title = item.title || item.name || "Beauty photo";
-            return `<div class="gallery-item" style="background-image:url('${esc(url)}');background-size:cover;background-position:center;min-height:260px;display:flex;align-items:flex-end;padding:0;overflow:hidden">
-                <div style="width:100%;padding:14px;background:linear-gradient(transparent,rgba(0,0,0,.75));color:#fff">${esc(title)}</div>
-            </div>`;
-        }).join("");
+    /* =========================================================
+       INITIALIZATION
+       ========================================================= */
+
+    async function initializeWebsite() {
+
+      document.getElementById(
+        "year"
+      ).textContent =
+        new Date().getFullYear();
+
+      await Promise.allSettled([
+
+        loadSettings(),
+
+        loadCategories(),
+
+        loadServices(),
+
+        loadBridalPackages(),
+
+        loadGallery(),
+
+        loadBrideGallery(),
+
+        loadCustomerGallery(),
+
+        loadBeforeAfter(),
+
+        loadOffers(),
+
+        loadTeam(),
+
+        loadTestimonials(),
+
+        loadFAQs()
+
+      ]);
+
+      setTimeout(() => {
+
+        document
+          .getElementById("loader")
+          .classList.add("hidden");
+
+      }, 500);
+
     }
 
-    function renderCustomers(rows) {
-        const grid = document.getElementById("customerGrid");
-        if (!grid) return;
-        if (!rows.length) { empty("customerGrid", "Customer photos will appear here after approval."); return; }
-        grid.innerHTML = rows.map(item => {
-            const url = imageUrl(item);
-            return `<article class="customer-card">
-                ${url ? `<img src="${esc(url)}" alt="${esc(item.title || item.name || "Customer")}" style="width:100%;height:280px;object-fit:cover;border-radius:inherit">` : `<div class="customer-photo">PHOTO</div>`}
-                <h3>${esc(item.title || item.name || "Customer")}</h3>
-                ${item.description ? `<p class="muted">${esc(item.description)}</p>` : ""}
-            </article>`;
-        }).join("");
-    }
+    initializeWebsite();
 
-    function renderBeforeAfter(rows) {
-        const grid = document.getElementById("beforeAfterGrid");
-        if (!grid) return;
-        if (!rows.length) { empty("beforeAfterGrid", "Before / After transformations will appear here."); return; }
-        grid.innerHTML = rows.map(item => `
-            <div class="before-card">
-                <div class="before-images">
-                    ${item.before_image_url ? `<div><img src="${esc(item.before_image_url)}" alt="Before" style="width:100%;height:260px;object-fit:cover"><span>BEFORE</span></div>` : ""}
-                    ${item.after_image_url ? `<div><img src="${esc(item.after_image_url)}" alt="After" style="width:100%;height:260px;object-fit:cover"><span>AFTER</span></div>` : ""}
-                </div>
-                ${item.title ? `<p>${esc(item.title)}</p>` : ""}
-            </div>
-        `).join("");
-    }
-
-    function renderReviews(rows) {
-        const grid = document.getElementById("reviewGrid");
-        if (!grid) return;
-        if (!rows.length) { empty("reviewGrid", "Customer reviews will appear here."); return; }
-        grid.innerHTML = rows.map(item => `
-            <article class="review">
-                <div class="stars">★★★★★</div>
-                <blockquote>${esc(item.message || item.description || item.answer || "")}</blockquote>
-                <small>${esc(item.name || item.title || "Customer")}</small>
-            </article>
-        `).join("");
-    }
-
-    async function loadTable(table, order = "created_at") {
-        const result = await supabaseClient.from(table).select("*").order(order, { ascending:false });
-        if (result.error) throw result.error;
-        return result.data || [];
-    }
-
-    async function loadPublicContent() {
-        if (typeof supabaseClient === "undefined") return;
-        try {
-            const results = await Promise.allSettled([
-                loadTable("services"),
-                loadTable("offers"),
-                loadTable("gallery"),
-                loadTable("bride_gallery"),
-                loadTable("customer_gallery"),
-                loadTable("before_after"),
-                loadTable("testimonials")
-            ]);
-
-            const [services, offers, gallery, bride, customers, beforeAfter, reviews] = results;
-            if (services.status === "fulfilled") renderPublicServices(services.value.filter(x => x.active !== false));
-            if (offers.status === "fulfilled") renderOffers(offers.value);
-            if (gallery.status === "fulfilled") renderGallery("workGallery", gallery.value, "gallery");
-            if (bride.status === "fulfilled") renderGallery("brideGallery", bride.value, "bride");
-            if (customers.status === "fulfilled") renderCustomers(customers.value);
-            if (beforeAfter.status === "fulfilled") renderBeforeAfter(beforeAfter.value);
-            if (reviews.status === "fulfilled") renderReviews(reviews.value);
-
-            results.forEach((r, i) => {
-                if (r.status === "rejected") console.warn("Public content load failed:", i, r.reason);
-            });
-        } catch (error) {
-            console.warn("Public Supabase content load failed:", error);
-        }
-    }
-
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", loadPublicContent);
-    } else {
-        loadPublicContent();
-    }
-})();
-</script>
+  </script>
 
 </body>
 </html>
