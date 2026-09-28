@@ -1,4805 +1,2965 @@
 
-/* =========================================================
+/* ============================================================
    MANJU'S THE WORLD OF GLAMOUR
-   ADMIN.JS
-   Stable schema-compatible admin system
-   ========================================================= */
+   ADMIN PANEL — MATCHED VERSION
+   Works with the current admin.html + existing Supabase schema
+   ============================================================ */
 
-(function () {
-  "use strict";
+let currentUser = null;
+let currentModule = "dashboard";
 
-  const supabase = window.supabaseClient;
+const $ = (id) => document.getElementById(id);
 
-  if (!supabase) {
-    console.error(
-      "Supabase client not found. Check supabase-config.js."
-    );
-    return;
-  }
-
-  /* =======================================================
-     STATE
-     ======================================================= */
-
-  let currentUser = null;
-  let currentModule = "dashboard";
-  let authListener = null;
-
-  const $ = (selector) => document.querySelector(selector);
-
-  const $$ = (selector) =>
-    Array.from(document.querySelectorAll(selector));
-
-
-  /* =======================================================
-     MODULE INFORMATION
-     ======================================================= */
-
-  const MODULES = {
-
-    dashboard: {
-      title: "Dashboard",
-      description:
-        "Overview of your Manju's The World of Glamour website."
-    },
-
-    appointments: {
-      title: "Appointments",
-      description:
-        "View and manage customer appointment requests."
-    },
-
-    categories: {
-      title: "Categories",
-      description:
-        "Create and manage service categories."
-    },
-
-    services: {
-      title: "Services",
-      description:
-        "Manage services, prices, durations and visibility."
-    },
-
-    offers: {
-      title: "Offers",
-      description:
-        "Manage offers, prices, dates and promotional content."
-    },
-
-    gallery: {
-      title: "Our Work",
-      description:
-        "Manage your main beauty and salon gallery."
-    },
-
-    bride_gallery: {
-      title: "Bride & Girls",
-      description:
-        "Upload and manage bridal and girls photographs."
-    },
-
-    customer_gallery: {
-      title: "Customers",
-      description:
-        "Manage customer photographs with consent."
-    },
-
-    before_after: {
-      title: "Before / After",
-      description:
-        "Manage transformation photographs."
-    },
-
-    bridal_packages: {
-      title: "Bridal Packages",
-      description:
-        "Manage bridal packages and package pricing."
-    },
-
-    team: {
-      title: "Team",
-      description:
-        "Manage team members shown on the website."
-    },
-
-    testimonials: {
-      title: "Testimonials",
-      description:
-        "Manage customer testimonials and ratings."
-    },
-
-    faqs: {
-      title: "FAQs",
-      description:
-        "Manage frequently asked questions."
-    },
-
-    settings: {
-      title: "Settings",
-      description:
-        "Manage business information and website settings."
-    }
-
-  };
-
-
-  /* =======================================================
-     SECURITY / HTML HELPERS
-     ======================================================= */
-
-  function escapeHTML(value) {
-
-    if (value === null || value === undefined) {
-      return "";
-    }
-
+function escapeHTML(value) {
+    if (value === null || value === undefined) return "";
     return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
+function escapeAttr(value) {
+    return escapeHTML(value);
+}
 
-  function safeUrl(url) {
-
-    if (!url) return "";
-
-    try {
-
-      const parsed = new URL(url);
-
-      if (
-        parsed.protocol === "http:" ||
-        parsed.protocol === "https:"
-      ) {
-        return parsed.href;
-      }
-
-    } catch (error) {}
-
-    return "";
-  }
-
-
-  function formatDate(value) {
-
+function formatDate(value) {
     if (!value) return "—";
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return escapeHTML(value);
+    try {
+        return new Date(value).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        });
+    } catch {
+        return String(value);
     }
+}
 
-    return date.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    });
-  }
-
-
-  function formatMoney(value) {
-
-    if (
-      value === null ||
-      value === undefined ||
-      value === ""
-    ) {
-      return "Price on enquiry";
+function formatDateTime(value) {
+    if (!value) return "—";
+    try {
+        return new Date(value).toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    } catch {
+        return String(value);
     }
+}
 
-    return "₹" + Number(value).toLocaleString("en-IN");
-  }
-
-
-  function showAlert(message, type = "success") {
-
-    const old = $(".admin-alert");
-
+function showMessage(message, type = "success") {
+    const old = $("adminMessage");
     if (old) old.remove();
 
     const box = document.createElement("div");
-
-    box.className = `admin-alert ${type}`;
-
+    box.id = "adminMessage";
+    box.className = `admin-message ${type}`;
     box.textContent = message;
 
-    const content = $("#moduleContent");
+    const target = $("moduleContent") || document.body;
+    target.prepend(box);
 
-    if (content) {
-      content.prepend(box);
-    }
-  }
+    setTimeout(() => box.remove(), 5000);
+}
 
-
-  function showLoading(message = "Loading...") {
-
-    $("#moduleContent").innerHTML = `
-      <div class="loading">
-        ${escapeHTML(message)}
-      </div>
-    `;
-  }
-
-
-  function showError(error) {
-
+function showDatabaseError(error) {
     console.error(error);
 
-    const message =
-      error?.message ||
-      error?.error_description ||
-      "Something went wrong.";
+    const message = error?.message || "Database request failed.";
 
-    $("#moduleContent").innerHTML = `
-      <div class="admin-alert error">
-        ${escapeHTML(message)}
-      </div>
-    `;
-  }
-
-
-  /* =======================================================
-     AUTH
-     ======================================================= */
-
-  async function checkAuth() {
-
-    try {
-
-      const {
-        data,
-        error
-      } = await supabase.auth.getSession();
-
-      if (error) {
-        throw error;
-      }
-
-      const session = data?.session || null;
-
-      if (session?.user) {
-        currentUser = session.user;
-        showAdmin();
-      } else {
-        currentUser = null;
-        showLogin();
-      }
-
-    } catch (error) {
-
-      console.error("Auth check failed:", error);
-
-      currentUser = null;
-
-      showLogin();
-
-      showLoginMessage(
-        "Unable to check your login session. Please try again.",
-        "error"
-      );
+    if ($("moduleContent")) {
+        $("moduleContent").innerHTML = `
+            <div class="admin-error">
+                <h3>Could not load this section</h3>
+                <p>${escapeHTML(message)}</p>
+                <button type="button" class="primary-button"
+                    onclick="openModule('${escapeAttr(currentModule)}')">
+                    Try Again
+                </button>
+            </div>
+        `;
     }
-  }
+}
 
+function moduleHeader(title, description = "") {
+    return `
+        <div class="module-header">
+            <div>
+                <h2>${escapeHTML(title)}</h2>
+                <p>${escapeHTML(description)}</p>
+            </div>
+        </div>
+    `;
+}
 
-  function showLogin() {
+function emptyMessage(message) {
+    return `
+        <div class="empty-admin">
+            <strong>${escapeHTML(message)}</strong>
+        </div>
+    `;
+}
 
-    $("#loginSection").classList.remove("hidden");
-    $("#adminPanel").classList.add("hidden");
+/* ============================================================
+   AUTH
+   ============================================================ */
 
-    $("#userEmail").textContent = "";
+function showLogin() {
+    const loginSection = $("loginSection");
+    const adminPanel = $("adminPanel");
 
-    closeMobileSidebar();
-  }
+    if (loginSection) loginSection.style.display = "flex";
+    if (adminPanel) adminPanel.style.display = "none";
 
+    document.body.classList.remove("admin-logged-in");
+}
 
-  function showAdmin() {
+function showAdmin() {
+    const loginSection = $("loginSection");
+    const adminPanel = $("adminPanel");
 
-    $("#loginSection").classList.add("hidden");
-    $("#adminPanel").classList.remove("hidden");
+    if (loginSection) loginSection.style.display = "none";
 
-    $("#userEmail").textContent =
-      currentUser?.email || "";
+    if (!adminPanel) {
+        console.error("adminPanel not found in admin.html");
+        return;
+    }
 
-    openModule(
-      currentModule || "dashboard"
-    );
-  }
+    adminPanel.style.display = "block";
+    document.body.classList.add("admin-logged-in");
 
+    document.querySelectorAll("[data-admin-email]").forEach(el => {
+        el.textContent = currentUser?.email || "";
+    });
 
-  function showLoginMessage(message, type) {
+    openModule("dashboard");
+}
 
-    const box = $("#loginMessage");
+async function checkAuth() {
+    try {
+        const {
+            data: { session },
+            error
+        } = await supabaseClient.auth.getSession();
 
-    if (!box) return;
+        if (error) throw error;
 
-    box.textContent = message;
+        if (session) {
+            currentUser = session.user;
+            showAdmin();
+        } else {
+            showLogin();
+        }
+    } catch (error) {
+        console.error("Auth check error:", error);
+        showLogin();
+    }
+}
 
-    box.className =
-      `message show ${type || ""}`;
-  }
-
-
-  async function login(event) {
-
+async function handleLogin(event) {
     event.preventDefault();
 
-    const email =
-      $("#adminEmail").value.trim();
-
-    const password =
-      $("#adminPassword").value;
+    const email = $("adminEmail")?.value.trim();
+    const password = $("adminPassword")?.value || "";
 
     if (!email || !password) {
-
-      showLoginMessage(
-        "Enter your email and password.",
-        "error"
-      );
-
-      return;
+        showMessage("Please enter your email and password.", "error");
+        return;
     }
 
-    const button = $("#loginBtn");
+    const button = $("loginForm")?.querySelector(
+        "button[type='submit']"
+    );
 
-    button.disabled = true;
-    button.textContent = "Signing in...";
+    const originalText = button?.textContent;
 
-    showLoginMessage("", "");
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Signing in...";
+    }
 
     try {
+        const { data, error } =
+            await supabaseClient.auth.signInWithPassword({
+                email,
+                password
+            });
 
-      const {
-        data,
-        error
-      } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+        if (error) throw error;
 
-      if (error) {
-        throw error;
-      }
-
-      currentUser = data.user;
-
-      showLoginMessage(
-        "Login successful.",
-        "success"
-      );
-
-      $("#adminPassword").value = "";
-
-      showAdmin();
+        currentUser = data.user;
+        showAdmin();
 
     } catch (error) {
-
-      console.error("Login error:", error);
-
-      showLoginMessage(
-        error?.message ||
-        "Login failed. Check your email and password.",
-        "error"
-      );
-
+        console.error("Login error:", error);
+        showMessage(
+            error.message || "Login failed.",
+            "error"
+        );
     } finally {
-
-      button.disabled = false;
-      button.textContent = "Sign In";
+        if (button) {
+            button.disabled = false;
+            button.textContent = originalText || "Login";
+        }
     }
-  }
+}
 
-
-  async function logout() {
-
+async function handleLogout() {
     try {
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) throw error;
 
-      const {
-        error
-      } = await supabase.auth.signOut();
-
-      if (error) {
-        throw error;
-      }
-
-      currentUser = null;
-
-      showLogin();
-
+        currentUser = null;
+        showLogin();
     } catch (error) {
-
-      console.error("Logout error:", error);
-
-      alert(
-        error?.message ||
-        "Unable to sign out."
-      );
+        console.error("Logout error:", error);
+        showMessage(error.message || "Logout failed.", "error");
     }
-  }
+}
 
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
 
-  /* =======================================================
-     NAVIGATION
-     ======================================================= */
+function setupNavigation() {
+    document.addEventListener("click", event => {
+        const button = event.target.closest("[data-module]");
+        if (!button) return;
 
-  function updateModuleHeader(module) {
+        event.preventDefault();
 
-    const info =
-      MODULES[module] ||
-      MODULES.dashboard;
+        const moduleName = button.dataset.module;
+        if (!moduleName) return;
 
-    $("#moduleTitle").textContent =
-      info.title;
-
-    $("#moduleDescription").textContent =
-      info.description;
-
-    $$(".nav-btn").forEach((button) => {
-
-      button.classList.toggle(
-        "active",
-        button.dataset.module === module
-      );
-
-    });
-  }
-
-
-  async function openModule(module) {
-
-    if (!currentUser) {
-      return;
-    }
-
-    currentModule = MODULES[module]
-      ? module
-      : "dashboard";
-
-    updateModuleHeader(currentModule);
-
-    closeMobileSidebar();
-
-    const loaders = {
-
-      dashboard:
-        loadDashboard,
-
-      appointments:
-        loadAppointments,
-
-      categories:
-        loadCategories,
-
-      services:
-        loadServices,
-
-      offers:
-        loadOffers,
-
-      gallery:
-        loadGallery,
-
-      bride_gallery:
-        loadBrideGallery,
-
-      customer_gallery:
-        loadCustomerGallery,
-
-      before_after:
-        loadBeforeAfter,
-
-      bridal_packages:
-        loadBridalPackages,
-
-      team:
-        loadTeam,
-
-      testimonials:
-        loadTestimonials,
-
-      faqs:
-        loadFaqs,
-
-      settings:
-        loadSettings
-
-    };
-
-    const loader =
-      loaders[currentModule];
-
-    if (!loader) {
-      loadDashboard();
-      return;
-    }
-
-    try {
-      await loader();
-    } catch (error) {
-      showError(error);
-    }
-  }
-
-
-  /* =======================================================
-     DASHBOARD
-     ======================================================= */
-
-  async function countRows(
-    table,
-    filter = null
-  ) {
-
-    try {
-
-      let query = supabase
-        .from(table)
-        .select("*", {
-          count: "exact",
-          head: true
+        document.querySelectorAll("[data-module]").forEach(item => {
+            item.classList.remove("active");
         });
 
-      if (filter) {
-        query = filter(query);
-      }
+        button.classList.add("active");
 
-      const {
-        count,
-        error
-      } = await query;
+        openModule(moduleName);
+    });
+}
 
-      if (error) {
-        console.warn(
-          `Dashboard count failed for ${table}:`,
-          error
-        );
+async function openModule(moduleName) {
+    currentModule = moduleName;
 
-        return 0;
-      }
+    const container = $("moduleContent");
 
-      return count || 0;
-
-    } catch (error) {
-
-      console.warn(
-        `Dashboard count failed for ${table}:`,
-        error
-      );
-
-      return 0;
+    if (!container) {
+        console.error("moduleContent not found in admin.html");
+        return;
     }
-  }
 
-
-  async function loadDashboard() {
-
-    showLoading("Loading dashboard...");
-
-    const [
-      appointments,
-      categories,
-      services,
-      offers,
-      gallery,
-      brideGallery,
-      customerGallery,
-      beforeAfter,
-      bridalPackages,
-      team,
-      testimonials,
-      faqs
-    ] = await Promise.all([
-
-      countRows("appointments"),
-
-      countRows("categories"),
-
-      countRows("services"),
-
-      countRows("offers"),
-
-      countRows("gallery"),
-
-      countRows("bride_gallery"),
-
-      countRows("customer_gallery"),
-
-      countRows("before_after"),
-
-      countRows("bridal_packages"),
-
-      countRows("team"),
-
-      countRows("testimonials"),
-
-      countRows("faqs")
-
-    ]);
-
-    $("#moduleContent").innerHTML = `
-
-      <div class="dashboard-grid">
-
-        ${dashboardCard(
-          "Appointments",
-          appointments,
-          "appointments"
-        )}
-
-        ${dashboardCard(
-          "Categories",
-          categories,
-          "categories"
-        )}
-
-        ${dashboardCard(
-          "Services",
-          services,
-          "services"
-        )}
-
-        ${dashboardCard(
-          "Offers",
-          offers,
-          "offers"
-        )}
-
-        ${dashboardCard(
-          "Our Work",
-          gallery,
-          "gallery"
-        )}
-
-        ${dashboardCard(
-          "Bride & Girls",
-          brideGallery,
-          "bride_gallery"
-        )}
-
-        ${dashboardCard(
-          "Customers",
-          customerGallery,
-          "customer_gallery"
-        )}
-
-        ${dashboardCard(
-          "Before / After",
-          beforeAfter,
-          "before_after"
-        )}
-
-        ${dashboardCard(
-          "Bridal Packages",
-          bridalPackages,
-          "bridal_packages"
-        )}
-
-        ${dashboardCard(
-          "Team",
-          team,
-          "team"
-        )}
-
-        ${dashboardCard(
-          "Testimonials",
-          testimonials,
-          "testimonials"
-        )}
-
-        ${dashboardCard(
-          "FAQs",
-          faqs,
-          "faqs"
-        )}
-
-      </div>
-
+    container.innerHTML = `
+        <div class="module-loading">
+            Loading ${escapeHTML(moduleName.replaceAll("_", " "))}...
+        </div>
     `;
 
-    $$(".dashboard-card").forEach((card) => {
+    try {
+        switch (moduleName) {
+            case "dashboard":
+                await loadDashboard();
+                break;
 
-      card.addEventListener(
-        "click",
-        () => openModule(card.dataset.module)
-      );
+            case "appointments":
+                await loadAppointments();
+                break;
 
-    });
-  }
+            case "services":
+                await loadServices();
+                break;
 
+            case "offers":
+                await loadOffers();
+                break;
 
-  function dashboardCard(
-    label,
-    count,
-    module
-  ) {
+            case "gallery":
+                await loadGallery();
+                break;
+
+            case "bride_gallery":
+                await loadBrideGallery();
+                break;
+
+            case "customer_gallery":
+                await loadCustomerGallery();
+                break;
+
+            case "before_after":
+                await loadBeforeAfter();
+                break;
+
+            case "bridal_packages":
+                await loadBridalPackages();
+                break;
+
+            case "team":
+                await loadTeam();
+                break;
+
+            case "testimonials":
+                await loadTestimonials();
+                break;
+
+            case "faqs":
+                await loadFAQs();
+                break;
+
+            case "settings":
+                await loadSettings();
+                break;
+
+            default:
+                container.innerHTML = emptyMessage(
+                    "This module is not available."
+                );
+        }
+    } catch (error) {
+        showDatabaseError(error);
+    }
+}
+
+/* ============================================================
+   STORAGE
+   ============================================================ */
+
+async function uploadStorageFile(bucket, file) {
+    if (!file) return null;
+
+    const {
+        data: { session } = {}
+    } = await supabaseClient.auth.getSession();
+
+    if (!session) {
+        alert("Your admin session has expired. Please log in again.");
+        showLogin();
+        return null;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+        throw new Error("Maximum image size is 10 MB.");
+    }
+
+    const allowed = [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+    ];
+
+    if (!allowed.includes(file.type)) {
+        throw new Error(
+            "Only JPG, PNG and WEBP images are allowed."
+        );
+    }
+
+    const extension =
+        file.name.split(".").pop()?.toLowerCase() ||
+        "jpg";
+
+    const path =
+        `${Date.now()}-${crypto.randomUUID()}.${extension}`;
+
+    const { error } = await supabaseClient
+        .storage
+        .from(bucket)
+        .upload(path, file, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: file.type
+        });
+
+    if (error) throw error;
+
+    const { data } =
+        supabaseClient
+            .storage
+            .from(bucket)
+            .getPublicUrl(path);
+
+    return data.publicUrl;
+}
+
+function imagePreview(url, alt = "Image") {
+    if (!url) return "";
 
     return `
-      <div
-        class="dashboard-card"
-        data-module="${escapeHTML(module)}"
-      >
-        <div class="label">
-          ${escapeHTML(label)}
+        <div class="image-preview">
+            <img
+                src="${escapeAttr(url)}"
+                alt="${escapeAttr(alt)}"
+                loading="lazy"
+                onerror="this.style.display='none'"
+            >
         </div>
-
-        <div class="count">
-          ${Number(count) || 0}
-        </div>
-      </div>
     `;
-  }
+}
 
+function fileInput(name, label, accept = "image/jpeg,image/png,image/webp") {
+    return `
+        <label class="form-field">
+            <span>${escapeHTML(label)}</span>
+            <input
+                type="file"
+                name="${escapeAttr(name)}"
+                accept="${escapeAttr(accept)}"
+            >
+            <small>JPG, PNG or WEBP — maximum 10 MB</small>
+        </label>
+    `;
+}
 
-  /* =======================================================
-     GENERIC DELETE
-     ======================================================= */
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
 
-  async function deleteRow(
-    table,
-    id,
-    reloadModule
-  ) {
+async function getCount(table) {
+    const { count, error } = await supabaseClient
+        .from(table)
+        .select("*", {
+            count: "exact",
+            head: true
+        });
 
-    if (!id) return;
+    if (error) {
+        console.error(`Count error for ${table}:`, error);
+        return 0;
+    }
 
-    const confirmed =
-      window.confirm(
+    return count || 0;
+}
+
+async function loadDashboard() {
+    const container = $("moduleContent");
+
+    container.innerHTML =
+        moduleHeader(
+            "Dashboard",
+            "Manage Manju's The World of Glamour website."
+        ) +
+        `
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <span class="dashboard-card-label">Appointments</span>
+                <strong id="dashboardAppointments">—</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="dashboard-card-label">Services</span>
+                <strong id="dashboardServices">—</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="dashboard-card-label">Offers</span>
+                <strong id="dashboardOffers">—</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="dashboard-card-label">Gallery Photos</span>
+                <strong id="dashboardGallery">—</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="dashboard-card-label">Bride & Girls Photos</span>
+                <strong id="dashboardBrideGallery">—</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="dashboard-card-label">Customer Photos</span>
+                <strong id="dashboardCustomerGallery">—</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="dashboard-card-label">Before / After</span>
+                <strong id="dashboardBeforeAfter">—</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="dashboard-card-label">Bridal Packages</span>
+                <strong id="dashboardBridalPackages">—</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="dashboard-card-label">Team Members</span>
+                <strong id="dashboardTeam">—</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="dashboard-card-label">Testimonials</span>
+                <strong id="dashboardTestimonials">—</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="dashboard-card-label">FAQs</span>
+                <strong id="dashboardFAQs">—</strong>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="dashboard-card-label">Categories</span>
+                <strong id="dashboardCategories">—</strong>
+            </div>
+        </div>
+        `;
+
+    const counts = await Promise.all([
+        getCount("appointments"),
+        getCount("services"),
+        getCount("offers"),
+        getCount("gallery"),
+        getCount("bride_gallery"),
+        getCount("customer_gallery"),
+        getCount("before_after"),
+        getCount("bridal_packages"),
+        getCount("team"),
+        getCount("testimonials"),
+        getCount("faqs"),
+        getCount("categories")
+    ]);
+
+    const ids = [
+        "dashboardAppointments",
+        "dashboardServices",
+        "dashboardOffers",
+        "dashboardGallery",
+        "dashboardBrideGallery",
+        "dashboardCustomerGallery",
+        "dashboardBeforeAfter",
+        "dashboardBridalPackages",
+        "dashboardTeam",
+        "dashboardTestimonials",
+        "dashboardFAQs",
+        "dashboardCategories"
+    ];
+
+    counts.forEach((count, index) => {
+        const element = $(ids[index]);
+        if (element) {
+            element.textContent = count;
+        }
+    });
+}
+
+/* ============================================================
+   APPOINTMENTS
+   ============================================================ */
+
+async function loadAppointments() {
+    const container = $("moduleContent");
+
+    const { data, error } = await supabaseClient
+        .from("appointments")
+        .select(`
+            id,
+            service_id,
+            customer_name,
+            phone,
+            email,
+            appointment_date,
+            appointment_time,
+            message,
+            status,
+            whatsapp_requested,
+            privacy_consent,
+            created_at
+        `)
+        .order("created_at", {
+            ascending: false
+        });
+
+    if (error) throw error;
+
+    container.innerHTML =
+        moduleHeader(
+            "Appointments",
+            "Appointment requests submitted through the public website."
+        ) +
+        `
+        <div class="admin-table-wrap">
+            ${
+                data?.length
+                    ? `
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Phone</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>WhatsApp</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            ${data.map(item => `
+                                <tr>
+                                    <td>
+                                        <strong>
+                                            ${escapeHTML(item.customer_name)}
+                                        </strong>
+                                        ${
+                                            item.email
+                                                ? `<small>${escapeHTML(item.email)}</small>`
+                                                : ""
+                                        }
+                                    </td>
+
+                                    <td>
+                                        ${escapeHTML(item.phone)}
+                                    </td>
+
+                                    <td>
+                                        ${formatDate(item.appointment_date)}
+                                    </td>
+
+                                    <td>
+                                        ${escapeHTML(
+                                            item.appointment_time || "—"
+                                        )}
+                                    </td>
+
+                                    <td>
+                                        <select
+                                            onchange="updateAppointmentStatus('${escapeAttr(item.id)}', this.value)"
+                                        >
+                                            ${[
+                                                "New",
+                                                "Confirmed",
+                                                "Completed",
+                                                "Cancelled",
+                                                "No-show"
+                                            ].map(status => `
+                                                <option
+                                                    value="${escapeAttr(status)}"
+                                                    ${
+                                                        item.status === status
+                                                            ? "selected"
+                                                            : ""
+                                                    }
+                                                >
+                                                    ${escapeHTML(status)}
+                                                </option>
+                                            `).join("")}
+                                                            );
+        }
+    } catch (error) {
+        console.error(`Module ${moduleName} error:`, error);
+        showDatabaseError(error);
+    }
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+
+async function getCount(table) {
+    const { count, error } = await supabaseClient
+        .from(table)
+        .select("*", { count: "exact", head: true });
+
+    if (error) {
+        console.error(`Count error: ${table}`, error);
+        return 0;
+    }
+
+    return count || 0;
+}
+
+async function loadDashboard() {
+    const tables = [
+        "appointments",
+        "services",
+        "offers",
+        "gallery",
+        "bride_gallery",
+        "customer_gallery",
+        "before_after",
+        "bridal_packages",
+        "team",
+        "testimonials",
+        "faqs"
+    ];
+
+    const results = await Promise.all(
+        tables.map(table => getCount(table))
+    );
+
+    const counts = {};
+    tables.forEach((table, index) => {
+        counts[table] = results[index];
+    });
+
+    const container = $("moduleContent");
+
+    container.innerHTML = `
+        ${moduleHeader(
+            "Dashboard",
+            "Manage Manju's The World of Glamour."
+        )}
+
+        <div class="dashboard-grid">
+
+            ${dashboardCard(
+                "📅",
+                "Appointments",
+                counts.appointments,
+                "Manage appointment requests",
+                "appointments"
+            )}
+
+            ${dashboardCard(
+                "💄",
+                "Services",
+                counts.services,
+                "Manage salon services",
+                "services"
+            )}
+
+            ${dashboardCard(
+                "🏷️",
+                "Offers",
+                counts.offers,
+                "Manage offers and prices",
+                "offers"
+            )}
+
+            ${dashboardCard(
+                "🖼️",
+                "Gallery",
+                counts.gallery,
+                "Manage portfolio images",
+                "gallery"
+            )}
+
+            ${dashboardCard(
+                "👰",
+                "Bride Gallery",
+                counts.bride_gallery,
+                "Manage bridal photos",
+                "bride_gallery"
+            )}
+
+            ${dashboardCard(
+                "✨",
+                "Customer Gallery",
+                counts.customer_gallery,
+                "Manage customer photos",
+                "customer_gallery"
+            )}
+
+            ${dashboardCard(
+                "↔️",
+                "Before / After",
+                counts.before_after,
+                "Manage transformation photos",
+                "before_after"
+            )}
+
+            ${dashboardCard(
+                "💍",
+                "Bridal Packages",
+                counts.bridal_packages,
+                "Manage bridal packages",
+                "bridal_packages"
+            )}
+
+            ${dashboardCard(
+                "👩‍🎨",
+                "Team",
+                counts.team,
+                "Manage team members",
+                "team"
+            )}
+
+            ${dashboardCard(
+                "⭐",
+                "Testimonials",
+                counts.testimonials,
+                "Manage customer reviews",
+                "testimonials"
+            )}
+
+            ${dashboardCard(
+                "❓",
+                "FAQs",
+                counts.faqs,
+                "Manage frequently asked questions",
+                "faqs"
+            )}
+
+        </div>
+
+        <div class="admin-form-card" style="margin-top:24px;">
+            <h3>Admin account</h3>
+            <p>
+                Signed in as:
+                <strong>${escapeHTML(currentUser?.email || "—")}</strong>
+            </p>
+        </div>
+    `;
+}
+
+function dashboardCard(icon, title, count, description, module) {
+    return `
+        <button
+            type="button"
+            class="dashboard-card"
+            data-module="${escapeAttr(module)}"
+        >
+            <div class="dashboard-card-icon">${icon}</div>
+            <div class="dashboard-card-title">
+                ${escapeHTML(title)}
+            </div>
+            <div class="dashboard-card-count">
+                ${Number(count) || 0}
+            </div>
+            <div class="dashboard-card-description">
+                ${escapeHTML(description)}
+            </div>
+        </button>
+    `;
+}
+
+/* ============================================================
+   APPOINTMENTS
+   ============================================================ */
+
+async function loadAppointments() {
+    const { data, error } = await supabaseClient
+        .from("appointments")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        showDatabaseError(error);
+        return;
+    }
+
+    const rows = data || [];
+
+    $("moduleContent").innerHTML = `
+        ${moduleHeader(
+            "Appointments",
+            "Review and manage customer appointment requests."
+        )}
+
+        ${
+            rows.length
+                ? `
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Phone</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Service ID</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.map(appointmentRow).join("")}
+                        </tbody>
+                    </table>
+                </div>
+                `
+                : emptyMessage("No appointment requests yet.")
+        }
+    `;
+}
+
+function appointmentRow(item) {
+    const statuses = [
+        "New",
+        "Confirmed",
+        "Completed",
+        "Cancelled",
+        "No-show"
+    ];
+
+    return `
+        <tr>
+            <td>
+                <strong>${escapeHTML(item.customer_name)}</strong>
+                ${
+                    item.email
+                        ? `<small>${escapeHTML(item.email)}</small>`
+                        : ""
+                }
+                ${
+                    item.message
+                        ? `<small>${escapeHTML(item.message)}</small>`
+                        : ""
+                }
+            </td>
+
+            <td>${escapeHTML(item.phone)}</td>
+
+            <td>${formatDate(item.appointment_date)}</td>
+
+            <td>${escapeHTML(item.appointment_time || "—")}</td>
+
+            <td>${escapeHTML(item.service_id || "—")}</td>
+
+            <td>
+                <select
+                    onchange="updateAppointmentStatus(
+                        '${escapeAttr(item.id)}',
+                        this.value
+                    )"
+                >
+                    ${statuses.map(status => `
+                        <option
+                            value="${escapeAttr(status)}"
+                            ${item.status === status ? "selected" : ""}
+                        >
+                            ${escapeHTML(status)}
+                        </option>
+                    `).join("")}
+                </select>
+            </td>
+
+            <td>${formatDateTime(item.created_at)}</td>
+
+            <td>
+                <button
+                    type="button"
+                    class="delete-btn"
+                    onclick="deleteRecord(
+                        'appointments',
+                        '${escapeAttr(item.id)}'
+                    )"
+                >
+                    Delete
+                </button>
+            </td>
+        </tr>
+    `;
+}
+
+async function updateAppointmentStatus(id, status) {
+    const { error } = await supabaseClient
+        .from("appointments")
+        .update({
+            status,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", id);
+
+    if (error) {
+        console.error(error);
+        alert(error.message);
+        return;
+    }
+
+    showMessage("Appointment status updated.");
+    await loadAppointments();
+}
+
+/* ============================================================
+   GENERIC DELETE
+   ============================================================ */
+
+async function deleteRecord(table, id) {
+    if (!table || !id) return;
+
+    const confirmed = confirm(
         "Are you sure you want to delete this item?"
-      );
+    );
 
     if (!confirmed) return;
 
-    try {
-
-      const {
-        error
-      } = await supabase
+    const { error } = await supabaseClient
         .from(table)
         .delete()
         .eq("id", id);
 
-      if (error) {
-        throw error;
-      }
-
-      await openModule(
-        reloadModule || currentModule
-      );
-
-    } catch (error) {
-
-      console.error(
-        `Delete failed: ${table}`,
-        error
-      );
-
-      showAlert(
-        error?.message ||
-        "Delete failed.",
-        "error"
-      );
-    }
-  }
-
-
-  function bindDeleteButtons() {
-
-    $$(".delete-btn").forEach((button) => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          deleteRow(
-            button.dataset.table,
-            button.dataset.id,
-            button.dataset.module
-          );
-
-        }
-      );
-
-    });
-  }
-
-
-  /* =======================================================
-     CATEGORIES
-     Actual schema:
-     id, name, slug, description, image_url,
-     display_order, active, created_at
-     ======================================================= */
-
-  async function loadCategories() {
-
-    showLoading();
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("categories")
-      .select("*")
-      .order("display_order", {
-        ascending: true
-      })
-      .order("name", {
-        ascending: true
-      });
-
     if (error) {
-      throw error;
+        console.error(error);
+        alert(error.message);
+        return;
     }
 
-    $("#moduleContent").innerHTML = `
+    showMessage("Item deleted successfully.");
 
-      <div class="admin-form-card">
+    await openModule(currentModule);
+}
 
-        <h3>Add Category</h3>
+/* ============================================================
+   SERVICES
+   ============================================================ */
 
-        <form id="categoryForm">
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Name</label>
-              <input
-                id="categoryName"
-                required
-              >
-            </div>
-
-            <div class="field">
-              <label>Slug</label>
-              <input
-                id="categorySlug"
-                placeholder="Example: bridal"
-              >
-            </div>
-
-            <div class="field full">
-              <label>Description</label>
-              <textarea
-                id="categoryDescription"
-              ></textarea>
-            </div>
-
-            <div class="field">
-              <label>Display order</label>
-              <input
-                id="categoryOrder"
-                type="number"
-                value="0"
-              >
-            </div>
-
-            <label class="checkbox-field">
-              <input
-                id="categoryActive"
-                type="checkbox"
-                checked
-              >
-              Active
-            </label>
-
-          </div>
-
-          <div class="form-actions">
-
-            <button
-              class="primary-btn"
-              type="submit"
-            >
-              Save Category
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-      ${renderCategoriesTable(data || [])}
-
-    `;
-
-    $("#categoryForm")
-      .addEventListener(
-        "submit",
-        saveCategory
-      );
-
-    bindDeleteButtons();
-  }
-
-
-  function renderCategoriesTable(rows) {
-
-    if (!rows.length) {
-      return emptyState(
-        "No categories added yet."
-      );
-    }
-
-    return `
-
-      <div class="admin-table-wrap">
-
-        <table>
-
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Slug</th>
-              <th>Order</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-
-            ${rows.map(row => `
-
-              <tr>
-
-                <td>
-                  <strong>
-                    ${escapeHTML(row.name)}
-                  </strong>
-                </td>
-
-                <td>
-                  ${escapeHTML(row.slug)}
-                </td>
-
-                <td>
-                  ${row.display_order ?? 0}
-                </td>
-
-                <td>
-                  <span class="status">
-                    ${row.active ? "Active" : "Inactive"}
-                  </span>
-                </td>
-
-                <td>
-                  <button
-                    class="danger-btn small-btn delete-btn"
-                    data-table="categories"
-                    data-id="${row.id}"
-                    data-module="categories"
-                  >
-                    Delete
-                  </button>
-                </td>
-
-              </tr>
-
-            `).join("")}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    `;
-  }
-
-
-  async function saveCategory(event) {
-
-    event.preventDefault();
-
-    const name =
-      $("#categoryName").value.trim();
-
-    if (!name) return;
-
-    const slug =
-      $("#categorySlug").value.trim() ||
-      name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "");
-
-    const payload = {
-
-      name,
-
-      slug,
-
-      description:
-        $("#categoryDescription").value.trim() ||
-        null,
-
-      display_order:
-        Number($("#categoryOrder").value) || 0,
-
-      active:
-        $("#categoryActive").checked
-
-    };
-
-    try {
-
-      const {
-        error
-      } = await supabase
-        .from("categories")
-        .insert(payload);
-
-      if (error) throw error;
-
-      await loadCategories();
-
-      showAlert(
-        "Category saved successfully."
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      showAlert(
-        error?.message ||
-        "Unable to save category.",
-        "error"
-      );
-    }
-  }
-
-
-  /* =======================================================
-     SERVICES
-     Actual schema:
-     id, category_id, name, slug, description,
-     price, price_label, duration_minutes,
-     image_url, featured, active, display_order...
-     ======================================================= */
-
-  async function getCategories() {
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("categories")
-      .select("id,name,active")
-      .order("name");
-
-    if (error) {
-      throw error;
-    }
-
-    return data || [];
-  }
-
-
-  async function loadServices() {
-
-    showLoading();
-
+async function loadServices() {
     const [
-      servicesResult,
-      categories
+        { data: services, error: servicesError },
+        { data: categories, error: categoriesError }
     ] = await Promise.all([
+        supabaseClient
+            .from("services")
+            .select("*")
+            .order("display_order", { ascending: true }),
 
-      supabase
-        .from("services")
-        .select("*")
-        .order("display_order", {
-          ascending: true
-        })
-        .order("name", {
-          ascending: true
-        }),
-
-      getCategories()
-
+        supabaseClient
+            .from("categories")
+            .select("*")
+            .order("display_order", { ascending: true })
     ]);
 
-    if (servicesResult.error) {
-      throw servicesResult.error;
+    if (servicesError) {
+        showDatabaseError(servicesError);
+        return;
     }
 
-    const services =
-      servicesResult.data || [];
-
-    $("#moduleContent").innerHTML = `
-
-      <div class="admin-form-card">
-
-        <h3>Add Service</h3>
-
-        <form id="serviceForm">
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Service name</label>
-              <input
-                id="serviceName"
-                required
-              >
-            </div>
-
-            <div class="field">
-              <label>Category</label>
-
-              <select id="serviceCategory">
-
-                <option value="">
-                  No category
-                </option>
-
-                ${categories.map(category => `
-
-                  <option value="${category.id}">
-                    ${escapeHTML(category.name)}
-                  </option>
-
-                `).join("")}
-
-              </select>
-            </div>
-
-            <div class="field">
-              <label>Slug</label>
-              <input
-                id="serviceSlug"
-                placeholder="Example: bridal-makeup"
-              >
-            </div>
-
-            <div class="field">
-              <label>Price</label>
-              <input
-                id="servicePrice"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Leave empty if enquiry only"
-              >
-            </div>
-
-            <div class="field">
-              <label>Price label</label>
-              <input
-                id="servicePriceLabel"
-                value="Price on enquiry"
-              >
-            </div>
-
-            <div class="field">
-              <label>Duration (minutes)</label>
-              <input
-                id="serviceDuration"
-                type="number"
-                min="0"
-              >
-            </div>
-
-            <div class="field full">
-              <label>Description</label>
-              <textarea
-                id="serviceDescription"
-              ></textarea>
-            </div>
-
-            <div class="field">
-              <label>Image URL</label>
-              <input
-                id="serviceImage"
-                type="url"
-                placeholder="Optional"
-              >
-            </div>
-
-            <div class="field">
-              <label>Display order</label>
-              <input
-                id="serviceOrder"
-                type="number"
-                value="0"
-              >
-            </div>
-
-            <label class="checkbox-field">
-              <input
-                id="serviceFeatured"
-                type="checkbox"
-              >
-              Featured
-            </label>
-
-            <label class="checkbox-field">
-              <input
-                id="serviceActive"
-                type="checkbox"
-                checked
-              >
-              Active
-            </label>
-
-          </div>
-
-          <div class="form-actions">
-
-            <button
-              class="primary-btn"
-              type="submit"
-            >
-              Save Service
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-      ${renderServicesTable(
-        services,
-        categories
-      )}
-
-    `;
-
-    $("#serviceForm")
-      .addEventListener(
-        "submit",
-        saveService
-      );
-
-    bindDeleteButtons();
-  }
-
-
-  function renderServicesTable(
-    services,
-    categories
-  ) {
-
-    if (!services.length) {
-      return emptyState(
-        "No services added yet."
-      );
+    if (categoriesError) {
+        showDatabaseError(categoriesError);
+        return;
     }
 
     const categoryMap = {};
 
-    categories.forEach(category => {
-      categoryMap[category.id] =
-        category.name;
+    (categories || []).forEach(category => {
+        categoryMap[category.id] = category.name;
     });
 
-    return `
-
-      <div class="admin-table-wrap">
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Service</th>
-              <th>Category</th>
-              <th>Price</th>
-              <th>Duration</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${services.map(service => `
-
-              <tr>
-
-                <td>
-
-                  <strong>
-                    ${escapeHTML(service.name)}
-                  </strong>
-
-                  <br>
-
-                  <small>
-                    ${escapeHTML(service.slug)}
-                  </small>
-
-                </td>
-
-                <td>
-                  ${escapeHTML(
-                    categoryMap[service.category_id] ||
-                    "No category"
-                  )}
-                </td>
-
-                <td>
-                  ${service.price !== null &&
-                    service.price !== undefined &&
-                    service.price !== ""
-                    ? formatMoney(service.price)
-                    : escapeHTML(
-                        service.price_label ||
-                        "Price on enquiry"
-                      )}
-                </td>
-
-                <td>
-                  ${
-                    service.duration_minutes
-                      ? `${service.duration_minutes} min`
-                      : "—"
-                  }
-                </td>
-
-                <td>
-                  <span class="status">
-                    ${service.active
-                      ? "Active"
-                      : "Inactive"}
-                  </span>
-                </td>
-
-                <td>
-
-                  <button
-                    class="danger-btn small-btn delete-btn"
-                    data-table="services"
-                    data-id="${service.id}"
-                    data-module="services"
-                  >
-                    Delete
-                  </button>
-
-                </td>
-
-              </tr>
-
-            `).join("")}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    `;
-  }
-
-
-  async function saveService(event) {
-
-    event.preventDefault();
-
-    const name =
-      $("#serviceName").value.trim();
-
-    if (!name) return;
-
-    const slug =
-      $("#serviceSlug").value.trim() ||
-      name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "");
-
-    const rawPrice =
-      $("#servicePrice").value.trim();
-
-    const rawDuration =
-      $("#serviceDuration").value.trim();
-
-    const payload = {
-
-      category_id:
-        $("#serviceCategory").value ||
-        null,
-
-      name,
-
-      slug,
-
-      description:
-        $("#serviceDescription").value.trim() ||
-        null,
-
-      price:
-        rawPrice === ""
-          ? null
-          : Number(rawPrice),
-
-      price_label:
-        $("#servicePriceLabel").value.trim() ||
-        "Price on enquiry",
-
-      duration_minutes:
-        rawDuration === ""
-          ? null
-          : Number(rawDuration),
-
-      image_url:
-        safeUrl(
-          $("#serviceImage").value.trim()
-        ) || null,
-
-      featured:
-        $("#serviceFeatured").checked,
-
-      active:
-        $("#serviceActive").checked,
-
-      display_order:
-        Number($("#serviceOrder").value) || 0
-
-    };
-
-    try {
-
-      const {
-        error
-      } = await supabase
-        .from("services")
-        .insert(payload);
-
-      if (error) throw error;
-
-      await loadServices();
-
-      showAlert(
-        "Service saved successfully."
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      showAlert(
-        error?.message ||
-        "Unable to save service.",
-        "error"
-      );
-    }
-  }
-
-
-  /* =======================================================
-     OFFERS
-     Actual schema:
-     id, name, description, image_url,
-     original_price, offer_price, discount_percent,
-     valid_from, valid_until, included_services,
-     terms, active, featured, created_at,
-     updated_at, end_date, start_date
-     ======================================================= */
-
-  async function loadOffers() {
-
-    showLoading();
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("offers")
-      .select("*")
-      .order("created_at", {
-        ascending: false
-      });
-
-    if (error) throw error;
-
-    $("#moduleContent").innerHTML = `
-
-      <div class="admin-form-card">
-
-        <h3>Add Offer</h3>
-
-        <form id="offerForm">
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Offer name</label>
-              <input
-                id="offerName"
-                required
-              >
-            </div>
-
-            <div class="field">
-              <label>Original price</label>
-              <input
-                id="offerOriginalPrice"
-                type="number"
-                min="0"
-                step="0.01"
-              >
-            </div>
-
-            <div class="field">
-              <label>Offer price</label>
-              <input
-                id="offerPrice"
-                type="number"
-                min="0"
-                step="0.01"
-              >
-            </div>
-
-            <div class="field">
-              <label>Discount %</label>
-              <input
-                id="offerDiscount"
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-              >
-            </div>
-
-            <div class="field">
-              <label>Valid from</label>
-              <input
-                id="offerStart"
-                type="date"
-              >
-            </div>
-
-            <div class="field">
-              <label>Valid until</label>
-              <input
-                id="offerEnd"
-                type="date"
-              >
-            </div>
-
-            <div class="field full">
-              <label>Description</label>
-              <textarea
-                id="offerDescription"
-              ></textarea>
-            </div>
-
-            <div class="field full">
-              <label>Included services</label>
-              <textarea
-                id="offerIncluded"
-                placeholder="Only enter verified services."
-              ></textarea>
-            </div>
-
-            <div class="field full">
-              <label>Terms</label>
-              <textarea
-                id="offerTerms"
-              ></textarea>
-            </div>
-
-            <div class="field">
-              <label>Image URL</label>
-              <input
-                id="offerImage"
-                type="url"
-              >
-            </div>
-
-            <label class="checkbox-field">
-              <input
-                id="offerFeatured"
-                type="checkbox"
-              >
-              Featured
-            </label>
-
-            <label class="checkbox-field">
-              <input
-                id="offerActive"
-                type="checkbox"
-                checked
-              >
-              Active
-            </label>
-
-          </div>
-
-          <div class="form-actions">
-
-            <button
-              class="primary-btn"
-              type="submit"
-            >
-              Save Offer
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-      ${renderOffersTable(data || [])}
-
-    `;
-
-    $("#offerForm")
-      .addEventListener(
-        "submit",
-        saveOffer
-      );
-
-    bindDeleteButtons();
-  }
-
-
-  function renderOffersTable(rows) {
-
-    if (!rows.length) {
-      return emptyState(
-        "No offers added yet."
-      );
-    }
-
-    return `
-
-      <div class="admin-table-wrap">
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Offer</th>
-              <th>Price</th>
-              <th>Validity</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${rows.map(row => `
-
-              <tr>
-
-                <td>
-
-                  <strong>
-                    ${escapeHTML(row.name)}
-                  </strong>
-
-                  <br>
-
-                  <small>
-                    ${escapeHTML(
-                      row.description || ""
+    $("moduleContent").innerHTML = `
+        ${moduleHeader(
+            "Services",
+            "Add and manage salon and makeup services."
+        )}
+
+        <div class="admin-form-card">
+            <h3>Add Service</h3>
+
+            <form id="serviceForm">
+                <div class="form-grid">
+
+                    <label class="form-field">
+                        <span>Service name *</span>
+                        <input
+                            type="text"
+                            name="name"
+                            required
+                        >
+                    </label>
+
+                    <label class="form-field">
+                        <span>Slug *</span>
+                        <input
+                            type="text"
+                            name="slug"
+                            placeholder="bridal-makeup"
+                            required
+                        >
+                    </label>
+
+                    <label class="form-field">
+                        <span>Category</span>
+                        <select name="category_id">
+                            <option value="">
+                                Select category
+                            </option>
+
+                            ${(categories || []).map(category => `
+                                <option value="${escapeAttr(category.id)}">
+                                    ${escapeHTML(category.name)}
+                                </option>
+                            `).join("")}
+                        </select>
+                    </label>
+
+                    <label class="form-field">
+                        <span>Price</span>
+                        <input
+                            type="number"
+                            name="price"
+                            min="0"
+                            step="0.01"
+                        >
+                    </label>
+
+                    <label class="form-field">
+                        <span>Price label</span>
+                        <input
+                            type="text"
+                            name="price_label"
+                            value="Price on enquiry"
+                        >
+                    </label>
+
+                    <label class="form-field">
+                        <span>Duration (minutes)</span>
+                        <input
+                            type="number"
+                            name="duration_minutes"
+                            min="0"
+                        >
+                    </label>
+
+                    <label class="form-field">
+                        <span>Display order</span>
+                        <input
+                            type="number"
+                            name="display_order"
+                            value="0"
+                        >
+                    </label>
+
+                    <label class="form-field checkbox-field">
+                        <input
+                            type="checkbox"
+                            name="featured"
+                        >
+                        <span>Featured</span>
+                    </label>
+
+                    <label class="form-field checkbox-field">
+                        <input
+                            type="checkbox"
+                            name="active"
+                            checked
+                        >
+                        <span>Active</span>
+                    </label>
+
+                    ${fileInput(
+                        "image",
+                        "Service image"
                     )}
-                  </small>
 
-                </td>
+                </div>
 
-                <td>
+                <label class="form-field">
+                    <span>Description</span>
+                    <textarea
+                        name="description"
+                        rows="5"
+                    ></textarea>
+                </label>
 
-                  ${
-                    row.offer_price !== null
-                      ? formatMoney(row.offer_price)
-                      : "—"
-                  }
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Save Service
+                </button>
+            </form>
+        </div>
 
-                  ${
-                    row.original_price !== null
-                      ? `<br><small>
-                           Original:
-                           ${formatMoney(row.original_price)}
-                         </small>`
-                      : ""
-                  }
+        <div class="admin-table-wrap">
+            <h3>Existing Services</h3>
 
-                </td>
+            ${
+                services?.length
+                    ? `
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Duration</th>
+                                <th>Featured</th>
+                                <th>Active</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
 
-                <td>
-                  ${formatDate(
-                    row.valid_from ||
-                    row.start_date
-                  )}
-                  →
-                  ${formatDate(
-                    row.valid_until ||
-                    row.end_date
-                  )}
-                </td>
+                        <tbody>
+                            ${(services || []).map(service => `
+                                <tr>
+                                    <td>
+                                        ${
+                                            service.image_url
+                                                ? `
+                                                <img
+                                                    src="${escapeAttr(service.image_url)}"
+                                                    alt=""
+                                                    class="admin-thumb"
+                                                >
+                                                `
+                                                : "—"
+                                        }
+                                    </td>
 
-                <td>
-                  <span class="status">
-                    ${row.active
-                      ? "Active"
-                      : "Inactive"}
-                  </span>
-                </td>
+                                    <td>
+                                        <strong>
+                                            ${escapeHTML(service.name)}
+                                        </strong>
+                                        ${
+                                            service.description
+                                                ? `
+                                                <small>
+                                                    ${escapeHTML(
+                                                        service.description
+                                                    )}
+                                                </small>
+                                                `
+                                                : ""
+                                        }
+                                    </td>
 
-                <td>
+                                    <td>
+                                        ${
+                                            categoryMap[
+                                                service.category_id
+                                            ] || "—"
+                                        }
+                                    </td>
 
-                  <button
-                    class="danger-btn small-btn delete-btn"
-                    data-table="offers"
-                    data-id="${row.id}"
-                    data-module="offers"
-                  >
-                    Delete
-                  </button>
+                                    <td>
+                                        ${
+                                            service.price !== null &&
+                                            service.price !== undefined
+                                                ? `₹${escapeHTML(service.price)}`
+                                                : escapeHTML(
+                                                    service.price_label ||
+                                                    "Price on enquiry"
+                                                )
+                                        }
+                                    </td>
 
-                </td>
+                                    <td>
+                                        ${
+                                            service.duration_minutes
+                                                ? `${service.duration_minutes} min`
+                                                : "—"
+                                        }
+                                    </td>
 
-              </tr>
+                                    <td>
+                                        ${service.featured ? "Yes" : "No"}
+                                    </td>
 
-            `).join("")}
+                                    <td>
+                                        ${service.active ? "Yes" : "No"}
+                                    </td>
 
-          </tbody>
-
-        </table>
-
-      </div>
-
+                                    <td>
+                                        <button
+                                            type="button"
+                                            class="delete-btn"
+                                            onclick="deleteRecord(
+                                                'services',
+                                                '${escapeAttr(service.id)}'
+                                            )"
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join("")}
+                        </tbody>
+                    </table>
+                    `
+                    : emptyMessage("No services added yet.")
+            }
+        </div>
     `;
-  }
 
+    const form = $("serviceForm");
 
-  async function saveOffer(event) {
+    if (form) {
+        form.addEventListener("submit", saveService);
+    }
+}
 
+async function saveService(event) {
     event.preventDefault();
 
-    const name =
-      $("#offerName").value.trim();
+    const form = event.target;
+    const formData = new FormData(form);
 
-    if (!name) return;
-
-    const start =
-      $("#offerStart").value || null;
-
-    const end =
-      $("#offerEnd").value || null;
-
-    const original =
-      $("#offerOriginalPrice").value;
-
-    const offer =
-      $("#offerPrice").value;
-
-    const discount =
-      $("#offerDiscount").value;
-
-    const payload = {
-
-      name,
-
-      description:
-        $("#offerDescription").value.trim() ||
-        null,
-
-      image_url:
-        safeUrl(
-          $("#offerImage").value.trim()
-        ) || null,
-
-      original_price:
-        original === ""
-          ? null
-          : Number(original),
-
-      offer_price:
-        offer === ""
-          ? null
-          : Number(offer),
-
-      discount_percent:
-        discount === ""
-          ? null
-          : Number(discount),
-
-      valid_from: start,
-
-      valid_until: end,
-
-      included_services:
-        $("#offerIncluded").value.trim() ||
-        null,
-
-      terms:
-        $("#offerTerms").value.trim() ||
-        null,
-
-      active:
-        $("#offerActive").checked,
-
-      featured:
-        $("#offerFeatured").checked,
-
-      start_date:
-        start
-          ? `${start}T00:00:00`
-          : null,
-
-      end_date:
-        end
-          ? `${end}T23:59:59`
-          : null
-
-    };
+    const file = formData.get("image");
 
     try {
+        let imageUrl = null;
 
-      const {
-        error
-      } = await supabase
-        .from("offers")
-        .insert(payload);
+        if (file && file.size) {
+            imageUrl = await uploadStorageFile(
+                "services",
+                file
+            );
+        }
 
-      if (error) throw error;
+        const payload = {
+            name: String(
+                formData.get("name") || ""
+            ).trim(),
 
-      await loadOffers();
+            slug: String(
+                formData.get("slug") || ""
+            ).trim(),
 
-      showAlert(
-        "Offer saved successfully."
-      );
+            category_id:
+                formData.get("category_id") || null,
+
+            description:
+                String(
+                    formData.get("description") || ""
+                ).trim() || null,
+
+            price:
+                formData.get("price")
+                    ? Number(formData.get("price"))
+                    : null,
+
+            price_label:
+                String(
+                    formData.get("price_label") ||
+                    "Price on enquiry"
+                ).trim(),
+
+            duration_minutes:
+                formData.get("duration_minutes")
+                    ? Number(formData.get("duration_minutes"))
+                    : null,
+
+            image_url: imageUrl,
+
+            featured:
+                formData.get("featured") === "on",
+
+            active:
+                formData.get("active") === "on",
+
+            display_order:
+                Number(
+                    formData.get("display_order") || 0
+                )
+        };
+
+        if (!payload.name || !payload.slug) {
+            alert("Service name and slug are required.");
+            return;
+        }
+
+        const { error } = await supabaseClient
+            .from("services")
+            .insert(payload);
+
+        if (error) throw error;
+
+        showMessage("Service saved successfully.");
+        await loadServices();
 
     } catch (error) {
-
-      console.error(error);
-
-      showAlert(
-        error?.message ||
-        "Unable to save offer.",
-        "error"
-      );
+        console.error("Save service error:", error);
+        alert(
+            error.message ||
+            "Could not save service."
+        );
     }
-  }
+}
+/* =========================================================
+   MANJU'S THE WORLD OF GLAMOUR
+   admin.js — PART 3
+   ========================================================= */
+
+/* ---------- GALLERY MODULE ---------- */
+
+async function loadGalleryModule() {
+    moduleContent.innerHTML = `
+        <div class="module-header">
+            <h2>Gallery</h2>
+            <button class="primary-btn" onclick="showGalleryForm()">+ Add Gallery Image</button>
+        </div>
+
+        <div id="galleryFormArea"></div>
+
+        <div id="galleryList" class="admin-grid">
+            <div class="loading">Loading gallery...</div>
+        </div>
+    `;
+
+    await loadGalleryImages();
+}
 
 
-  /* =======================================================
-     APPOINTMENTS
-     Actual schema:
-     id, service_id, customer_name, phone, email,
-     appointment_date, appointment_time, message,
-     status, whatsapp_requested, privacy_consent,
-     created_at, updated_at
-     ======================================================= */
+function showGalleryForm(id = null) {
+    const existing = id
+        ? galleryData.find(item => item.id === id)
+        : null;
 
-  async function loadAppointments() {
+    document.getElementById("galleryFormArea").innerHTML = `
+        <div class="admin-form-card">
+            <div class="form-header">
+                <h3>${existing ? "Edit Gallery Image" : "Add Gallery Image"}</h3>
+                <button class="close-btn" onclick="closeGalleryForm()">×</button>
+            </div>
 
-    showLoading();
+            <form id="galleryForm"
+                  onsubmit="saveGalleryImage(event, '${existing?.id || ""}')">
 
-    const {
-      data,
-      error
-    } = await supabase
-      .from("appointments")
-      .select("*")
-      .order("created_at", {
-        ascending: false
-      });
+                <div class="form-grid">
 
-    if (error) throw error;
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input
+                            type="text"
+                            id="galleryTitle"
+                            value="${escapeHTML(existing?.title || "")}"
+                            placeholder="Bridal Makeup"
+                        >
+                    </div>
 
-    $("#moduleContent").innerHTML = `
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="galleryCategory">
+                            <option value="bridal"
+                                ${existing?.category === "bridal" ? "selected" : ""}>
+                                Bridal
+                            </option>
 
-      ${
-        data?.length
-          ? `
-            <div class="admin-table-wrap">
+                            <option value="girls"
+                                ${existing?.category === "girls" ? "selected" : ""}>
+                                Girls
+                            </option>
 
-              <table>
+                            <option value="customer"
+                                ${existing?.category === "customer" ? "selected" : ""}>
+                                Customer
+                            </option>
 
-                <thead>
+                            <option value="salon"
+                                ${existing?.category === "salon" ? "selected" : ""}>
+                                Salon
+                            </option>
+                        </select>
+                    </div>
 
-                  <tr>
-                    <th>Customer</th>
-                    <th>Contact</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Message</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
+                    <div class="form-group full-width">
+                        <label>Image</label>
 
-                </thead>
+                        <input
+                            type="file"
+                            id="galleryImageFile"
+                            accept="image/jpeg,image/png,image/webp"
+                        >
 
-                <tbody>
-
-                  ${data.map(row => `
-
-                    <tr>
-
-                      <td>
-                        <strong>
-                          ${escapeHTML(
-                            row.customer_name
-                          )}
-                        </strong>
-                      </td>
-
-                      <td>
-
-                        ${escapeHTML(row.phone)}
+                        <small>
+                            Upload JPG, PNG or WEBP. Maximum 10 MB.
+                        </small>
 
                         ${
-                          row.email
-                            ? `<br>
-                               ${escapeHTML(row.email)}`
+                            existing?.image_url
+                                ? `
+                                <div class="current-image-preview">
+                                    <img
+                                        src="${existing.image_url}"
+                                        alt="Current image"
+                                    >
+                                </div>
+                                `
+                                : ""
+                        }
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>OR Image URL</label>
+
+                        <input
+                            type="url"
+                            id="galleryImageUrl"
+                            value="${escapeHTML(existing?.image_url || "")}"
+                            placeholder="https://example.com/image.jpg"
+                        >
+
+                        <small>
+                            You can upload from your computer OR paste an image URL.
+                        </small>
+                    </div>
+
+                </div>
+
+                <div class="form-actions">
+                    <button type="button"
+                            class="secondary-btn"
+                            onclick="closeGalleryForm()">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                            class="primary-btn">
+                        ${existing ? "Update Image" : "Save Image"}
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    `;
+}
+
+
+function closeGalleryForm() {
+    const area = document.getElementById("galleryFormArea");
+
+    if (area) {
+        area.innerHTML = "";
+    }
+}
+
+
+async function saveGalleryImage(event, id = "") {
+    event.preventDefault();
+
+    const form = event.target;
+    const button = form.querySelector("button[type='submit']");
+
+    button.disabled = true;
+    button.textContent = "Saving...";
+
+    try {
+
+        const title =
+            document.getElementById("galleryTitle").value.trim();
+
+        const category =
+            document.getElementById("galleryCategory").value;
+
+        const fileInput =
+            document.getElementById("galleryImageFile");
+
+        const imageUrlInput =
+            document.getElementById("galleryImageUrl").value.trim();
+
+        let imageUrl = imageUrlInput;
+
+        /* -----------------------------------------
+           UPLOAD FILE TO SUPABASE STORAGE
+        ----------------------------------------- */
+
+        if (fileInput.files && fileInput.files.length > 0) {
+
+            const file = fileInput.files[0];
+
+            validateImageFile(file);
+
+            const extension =
+                file.name.split(".").pop().toLowerCase();
+
+            const fileName =
+                `gallery-${Date.now()}-${Math.random()
+                    .toString(36)
+                    .substring(2, 9)}.${extension}`;
+
+            const filePath =
+                `gallery/${fileName}`;
+
+            const { error: uploadError } =
+                await supabaseClient
+                    .storage
+                    .from("customer-gallery")
+                    .upload(filePath, file, {
+                        cacheControl: "3600",
+                        upsert: false
+                    });
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            const { data: publicUrlData } =
+                supabaseClient
+                    .storage
+                    .from("customer-gallery")
+                    .getPublicUrl(filePath);
+
+            imageUrl =
+                publicUrlData.publicUrl;
+        }
+
+        if (!imageUrl) {
+            throw new Error("Please upload an image or enter an image URL.");
+        }
+
+        /* -----------------------------------------
+           DATABASE DATA
+        ----------------------------------------- */
+
+        const payload = {
+            title: title || null,
+            category: category || "salon",
+            image_url: imageUrl
+        };
+
+        let result;
+
+        if (id) {
+
+            result =
+                await supabaseClient
+                    .from("gallery")
+                    .update(payload)
+                    .eq("id", id)
+                    .select()
+                    .single();
+
+        } else {
+
+            result =
+                await supabaseClient
+                    .from("gallery")
+                    .insert([payload])
+                    .select()
+                    .single();
+        }
+
+        if (result.error) {
+            throw result.error;
+        }
+
+        showToast(
+            id
+                ? "Gallery image updated successfully."
+                : "Gallery image added successfully.",
+            "success"
+        );
+
+        closeGalleryForm();
+
+        await loadGalleryImages();
+
+    } catch (error) {
+
+        console.error("Gallery save error:", error);
+
+        showToast(
+            error.message || "Could not save gallery image.",
+            "error"
+        );
+
+    } finally {
+
+        button.disabled = false;
+        button.textContent =
+            id ? "Update Image" : "Save Image";
+    }
+}
+
+
+async function loadGalleryImages() {
+
+    const container =
+        document.getElementById("galleryList");
+
+    if (!container) return;
+
+    container.innerHTML =
+        `<div class="loading">Loading...</div>`;
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from("gallery")
+                .select("*")
+                .order("created_at", {
+                    ascending: false
+                });
+
+        if (error) {
+            throw error;
+        }
+
+        galleryData = data || [];
+
+        if (!galleryData.length) {
+
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>No gallery images yet</h3>
+                    <p>Add your first gallery image.</p>
+                </div>
+            `;
+
+            return;
+        }
+
+        container.innerHTML =
+            galleryData.map(item => `
+                <div class="admin-card">
+
+                    <img
+                        class="admin-card-image"
+                        src="${item.image_url}"
+                        alt="${escapeHTML(item.title || "Gallery image")}"
+                        onerror="this.style.display='none'"
+                    >
+
+                    <div class="admin-card-body">
+
+                        <h3>
+                            ${escapeHTML(
+                                item.title || "Untitled"
+                            )}
+                        </h3>
+
+                        <span class="badge">
+                            ${escapeHTML(
+                                item.category || "salon"
+                            )}
+                        </span>
+
+                        <div class="admin-card-actions">
+
+                            <button
+                                class="secondary-btn"
+                                onclick="showGalleryForm('${item.id}')">
+                                Edit
+                            </button>
+
+                            <button
+                                class="danger-btn"
+                                onclick="deleteGalleryImage('${item.id}')">
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            `).join("");
+
+    } catch (error) {
+
+        console.error("Gallery loading error:", error);
+
+        container.innerHTML = `
+            <div class="error-state">
+                <h3>Unable to load gallery</h3>
+                <p>${escapeHTML(error.message)}</p>
+            </div>
+        `;
+    }
+}
+
+
+async function deleteGalleryImage(id) {
+
+    if (!confirm(
+        "Are you sure you want to delete this gallery image?"
+    )) {
+        return;
+    }
+
+    try {
+
+        const { error } =
+            await supabaseClient
+                .from("gallery")
+                .delete()
+                .eq("id", id);
+
+        if (error) {
+            throw error;
+        }
+
+        showToast(
+            "Gallery image deleted.",
+            "success"
+        );
+
+        await loadGalleryImages();
+
+    } catch (error) {
+
+        console.error(
+            "Gallery delete error:",
+            error
+        );
+
+        showToast(
+            error.message ||
+            "Could not delete gallery image.",
+            "error"
+        );
+    }
+}
+
+
+/* =========================================================
+   OFFERS MODULE
+   ========================================================= */
+
+async function loadOffersModule() {
+
+    moduleContent.innerHTML = `
+        <div class="module-header">
+            <h2>Special Offers</h2>
+
+            <button
+                class="primary-btn"
+                onclick="showOfferForm()">
+                + Add Offer
+            </button>
+        </div>
+
+        <div id="offerFormArea"></div>
+
+        <div id="offersList"
+             class="admin-grid">
+
+            <div class="loading">
+                Loading offers...
+            </div>
+
+        </div>
+    `;
+
+    await loadOffers();
+}
+
+
+function showOfferForm(id = null) {
+
+    const existing =
+        id
+            ? offersData.find(item => item.id === id)
+            : null;
+
+    document.getElementById("offerFormArea").innerHTML = `
+
+        <div class="admin-form-card">
+
+            <div class="form-header">
+
+                <h3>
+                    ${existing ? "Edit Offer" : "Add Offer"}
+                </h3>
+
+                <button
+                    class="close-btn"
+                    onclick="closeOfferForm()">
+                    ×
+                </button>
+
+            </div>
+
+            <form
+                id="offerForm"
+                onsubmit="saveOffer(event, '${existing?.id || ""}')">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label>Offer Title</label>
+
+                        <input
+                            type="text"
+                            id="offerTitle"
+                            value="${escapeHTML(existing?.title || "")}"
+                            placeholder="Bridal Makeup Offer"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label>Price</label>
+
+                        <input
+                            type="number"
+                            id="offerPrice"
+                            value="${existing?.price ?? ""}"
+                            min="0"
+                            placeholder="4999"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label>Old Price</label>
+
+                        <input
+                            type="number"
+                            id="offerOldPrice"
+                            value="${existing?.old_price ?? ""}"
+                            min="0"
+                            placeholder="7999"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label>Start Date</label>
+
+                        <input
+                            type="date"
+                            id="offerStartDate"
+                            value="${existing?.start_date || ""}"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label>End Date</label>
+
+                        <input
+                            type="date"
+                            id="offerEndDate"
+                            value="${existing?.end_date || ""}"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label>Status</label>
+
+                        <select id="offerStatus">
+
+                            <option value="active"
+                                ${existing?.status === "active"
+                                    ? "selected"
+                                    : ""}>
+                                Active
+                            </option>
+
+                            <option value="inactive"
+                                ${existing?.status === "inactive"
+                                    ? "selected"
+                                    : ""}>
+                                Inactive
+                            </option>
+
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+
+                        <label>Description</label>
+
+                        <textarea
+                            id="offerDescription"
+                            rows="4"
+                            placeholder="Describe this offer..."
+                        >${escapeHTML(
+                            existing?.description || ""
+                        )}</textarea>
+
+                    </div>
+
+                    <div class="form-group full-width">
+
+                        <label>Offer Image</label>
+
+                        <input
+                            type="file"
+                            id="offerImageFile"
+                            accept="image/jpeg,image/png,image/webp"
+                        >
+
+                        <small>
+                            Upload an image from your computer.
+                        </small>
+
+                        ${
+                            existing?.image_url
+                            ? `
+                            <div class="current-image-preview">
+
+                                <img
+                                    src="${existing.image_url}"
+                                    alt="Offer image"
+                                >
+
+                            </div>
+                            `
                             : ""
                         }
 
-                      </td>
+                    </div>
 
-                      <td>
-                        ${formatDate(
-                          row.appointment_date
-                        )}
-                      </td>
+                    <div class="form-group full-width">
 
-                      <td>
-                        ${escapeHTML(
-                          row.appointment_time ||
-                          "—"
-                        )}
-                      </td>
+                        <label>OR Image URL</label>
 
-                      <td>
-                        ${escapeHTML(
-                          row.message || "—"
-                        )}
-                      </td>
-
-                      <td>
-
-                        <select
-                          class="appointment-status"
-                          data-id="${row.id}"
+                        <input
+                            type="url"
+                            id="offerImageUrl"
+                            value="${escapeHTML(
+                                existing?.image_url || ""
+                            )}"
+                            placeholder="https://example.com/offer.jpg"
                         >
 
-                          ${[
-                            "New",
-                            "Confirmed",
-                            "Completed",
-                            "Cancelled",
-                            "No-show"
-                          ].map(status => `
+                    </div>
 
-                            <option
-                              value="${status}"
-                              ${row.status === status
-                                ? "selected"
-                                : ""}
-                            >
-                              ${status}
-                            </option>
+                </div>
 
-                          `).join("")}
+                <div class="form-actions">
 
-                        </select>
+                    <button
+                        type="button"
+                        class="secondary-btn"
+                        onclick="closeOfferForm()">
+                        Cancel
+                    </button>
 
-                      </td>
+                    <button
+                        type="submit"
+                        class="primary-btn">
+                        ${existing
+                            ? "Update Offer"
+                            : "Save Offer"}
+                    </button>
 
-                      <td>
+                </div>
 
-                        <button
-                          class="danger-btn small-btn delete-btn"
-                          data-table="appointments"
-                          data-id="${row.id}"
-                          data-module="appointments"
-                        >
-                          Delete
-                        </button>
+            </form>
 
-                      </td>
-
-                    </tr>
-
-                  `).join("")}
-
-                </tbody>
-
-              </table>
-
-            </div>
-          `
-          : emptyState(
-              "No appointment requests yet."
-            )
-      }
-
+        </div>
     `;
+}
 
-    $$(".appointment-status")
-      .forEach(select => {
 
-        select.addEventListener(
-          "change",
-          () => updateAppointmentStatus(
-            select.dataset.id,
-            select.value
-          )
+function closeOfferForm() {
+
+    const area =
+        document.getElementById("offerFormArea");
+
+    if (area) {
+        area.innerHTML = "";
+    }
+}
+
+
+async function saveOffer(event, id = "") {
+
+    event.preventDefault();
+
+    const form = event.target;
+
+    const button =
+        form.querySelector(
+            "button[type='submit']"
         );
 
-      });
-
-    bindDeleteButtons();
-  }
-
-
-  async function updateAppointmentStatus(
-    id,
-    status
-  ) {
+    button.disabled = true;
+    button.textContent = "Saving...";
 
     try {
 
-      const {
-        error
-      } = await supabase
-        .from("appointments")
-        .update({
-          status,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", id);
-
-      if (error) throw error;
-
-    } catch (error) {
-
-      console.error(error);
-
-      alert(
-        error?.message ||
-        "Unable to update appointment."
-      );
-
-      await loadAppointments();
-    }
-  }
-
-
-  /* =======================================================
-     GALLERY
-     ======================================================= */
-
-  async function loadGallery() {
-
-    showLoading();
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("gallery")
-      .select("*")
-      .order("display_order", {
-        ascending: true
-      })
-      .order("created_at", {
-        ascending: false
-      });
-
-    if (error) throw error;
-
-    $("#moduleContent").innerHTML = `
-
-      <div class="admin-form-card">
-
-        <h3>Add Gallery Photo</h3>
-
-        <form id="galleryForm">
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Title</label>
-              <input id="galleryTitle">
-            </div>
-
-            <div class="field">
-              <label>Category</label>
-              <input
-                id="galleryCategory"
-                placeholder="Example: Makeup"
-              >
-            </div>
-
-            <div class="field full">
-              <label>Description</label>
-              <textarea
-                id="galleryDescription"
-              ></textarea>
-            </div>
-
-            <div class="field full">
-              <label>Image URL</label>
-              <input
-                id="galleryImage"
-                type="url"
-                required
-              >
-            </div>
-
-            <div class="field">
-              <label>Display order</label>
-              <input
-                id="galleryOrder"
-                type="number"
-                value="0"
-              >
-            </div>
-
-            <label class="checkbox-field">
-              <input
-                id="galleryFeatured"
-                type="checkbox"
-              >
-              Featured
-            </label>
-
-            <label class="checkbox-field">
-              <input
-                id="galleryVisible"
-                type="checkbox"
-                checked
-              >
-              Visible
-            </label>
-
-          </div>
-
-          <div class="form-actions">
-
-            <button
-              class="primary-btn"
-              type="submit"
-            >
-              Save Photo
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-      ${renderImageTable(
-        data || [],
-        "gallery"
-      )}
-
-    `;
-
-    $("#galleryForm")
-      .addEventListener(
-        "submit",
-        saveGallery
-      );
-
-    bindDeleteButtons();
-  }
-
-
-  async function saveGallery(event) {
-
-    event.preventDefault();
-
-    const image =
-      safeUrl(
-        $("#galleryImage").value.trim()
-      );
-
-    if (!image) {
-      showAlert(
-        "Enter a valid image URL.",
-        "error"
-      );
-      return;
-    }
-
-    const payload = {
-
-      title:
-        $("#galleryTitle").value.trim() ||
-        null,
-
-      description:
-        $("#galleryDescription").value.trim() ||
-        null,
-
-      image_url: image,
-
-      category:
-        $("#galleryCategory").value.trim() ||
-        null,
-
-      featured:
-        $("#galleryFeatured").checked,
-
-      visible:
-        $("#galleryVisible").checked,
-
-      display_order:
-        Number($("#galleryOrder").value) || 0
-
-    };
-
-    try {
-
-      const {
-        error
-      } = await supabase
-        .from("gallery")
-        .insert(payload);
-
-      if (error) throw error;
-
-      await loadGallery();
-
-      showAlert(
-        "Gallery photo saved."
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      showAlert(
-        error?.message ||
-        "Unable to save gallery photo.",
-        "error"
-      );
-    }
-  }
-
-
-  function renderImageTable(
-    rows,
-    table
-  ) {
-
-    if (!rows.length) {
-      return emptyState(
-        "No photos added yet."
-      );
-    }
-
-    return `
-
-      <div class="admin-table-wrap">
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Photo</th>
-              <th>Title</th>
-              <th>Category</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${rows.map(row => `
-
-              <tr>
-
-                <td>
-
-                  ${
-                    safeUrl(row.image_url)
-                      ? `
-                        <img
-                          class="image-thumb"
-                          src="${safeUrl(row.image_url)}"
-                          alt=""
-                        >
-                      `
-                      : "—"
-                  }
-
-                </td>
-
-                <td>
-                  ${escapeHTML(
-                    row.title || "Untitled"
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHTML(
-                    row.category || "—"
-                  )}
-                </td>
-
-                <td>
-                  <span class="status">
-                    ${row.visible
-                      ? "Visible"
-                      : "Hidden"}
-                  </span>
-                </td>
-
-                <td>
-
-                  <button
-                    class="danger-btn small-btn delete-btn"
-                    data-table="${table}"
-                    data-id="${row.id}"
-                    data-module="${table}"
-                  >
-                    Delete
-                  </button>
-
-                </td>
-
-              </tr>
-
-            `).join("")}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    `;
-  }
-
-
-  /* =======================================================
-     BRIDE GALLERY
-     ======================================================= */
-
-  async function loadBrideGallery() {
-
-    showLoading();
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("bride_gallery")
-      .select("*")
-      .order("display_order", {
-        ascending: true
-      })
-      .order("created_at", {
-        ascending: false
-      });
-
-    if (error) throw error;
-
-    $("#moduleContent").innerHTML = `
-
-      <div class="admin-form-card">
-
-        <h3>Add Bride / Girls Photo</h3>
-
-        <form id="brideForm">
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Title</label>
-              <input id="brideTitle">
-            </div>
-
-            <div class="field">
-              <label>Category</label>
-              <input
-                id="brideCategory"
-                placeholder="Bride, Girls, Makeup..."
-              >
-            </div>
-
-            <div class="field full">
-              <label>Description</label>
-              <textarea
-                id="brideDescription"
-              ></textarea>
-            </div>
-
-            <div class="field">
-              <label>Photo date</label>
-              <input
-                id="brideDate"
-                type="date"
-              >
-            </div>
-
-            <div class="field">
-              <label>Display order</label>
-              <input
-                id="brideOrder"
-                type="number"
-                value="0"
-              >
-            </div>
-
-            <div class="field full">
-              <label>Image URL</label>
-              <input
-                id="brideImage"
-                type="url"
-                required
-              >
-            </div>
-
-            <label class="checkbox-field">
-              <input
-                id="brideFeatured"
-                type="checkbox"
-              >
-              Featured
-            </label>
-
-            <label class="checkbox-field">
-              <input
-                id="brideVisible"
-                type="checkbox"
-                checked
-              >
-              Visible
-            </label>
-
-          </div>
-
-          <div class="form-actions">
-
-            <button
-              class="primary-btn"
-              type="submit"
-            >
-              Save Photo
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-      ${renderBrideTable(data || [])}
-
-    `;
-
-    $("#brideForm")
-      .addEventListener(
-        "submit",
-        saveBrideGallery
-      );
-
-    bindDeleteButtons();
-  }
-
-
-  function renderBrideTable(rows) {
-
-    if (!rows.length) {
-      return emptyState(
-        "No bride or girls photos added yet."
-      );
-    }
-
-    return `
-
-      <div class="admin-table-wrap">
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Photo</th>
-              <th>Title</th>
-              <th>Category</th>
-              <th>Date</th>
-              <th>Action</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${rows.map(row => `
-
-              <tr>
-
-                <td>
-
-                  ${
-                    safeUrl(row.image_url)
-                      ? `
-                        <img
-                          class="image-thumb"
-                          src="${safeUrl(row.image_url)}"
-                          alt=""
-                        >
-                      `
-                      : "—"
-                  }
-
-                </td>
-
-                <td>
-                  ${escapeHTML(
-                    row.title || "Untitled"
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHTML(
-                    row.category || "—"
-                  )}
-                </td>
-
-                <td>
-                  ${formatDate(row.photo_date)}
-                </td>
-
-                <td>
-
-                  <button
-                    class="danger-btn small-btn delete-btn"
-                    data-table="bride_gallery"
-                    data-id="${row.id}"
-                    data-module="bride_gallery"
-                  >
-                    Delete
-                  </button>
-
-                </td>
-
-              </tr>
-
-            `).join("")}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    `;
-  }
-
-
-  async function saveBrideGallery(event) {
-
-    event.preventDefault();
-
-    const image =
-      safeUrl(
-        $("#brideImage").value.trim()
-      );
-
-    if (!image) return;
-
-    const payload = {
-
-      title:
-        $("#brideTitle").value.trim() ||
-        null,
-
-      description:
-        $("#brideDescription").value.trim() ||
-        null,
-
-      image_url: image,
-
-      category:
-        $("#brideCategory").value.trim() ||
-        null,
-
-      photo_date:
-        $("#brideDate").value ||
-        null,
-
-      featured:
-        $("#brideFeatured").checked,
-
-      visible:
-        $("#brideVisible").checked,
-
-      display_order:
-        Number($("#brideOrder").value) || 0
-
-    };
-
-    try {
-
-      const {
-        error
-      } = await supabase
-        .from("bride_gallery")
-        .insert(payload);
-
-      if (error) throw error;
-
-      await loadBrideGallery();
-
-      showAlert(
-        "Bride / girls photo saved."
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      showAlert(
-        error?.message ||
-        "Unable to save photo.",
-        "error"
-      );
-    }
-  }
-
-
-  /* =======================================================
-     CUSTOMER GALLERY
-     ======================================================= */
-
-  async function loadCustomerGallery() {
-
-    showLoading();
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("customer_gallery")
-      .select("*")
-      .order("display_order", {
-        ascending: true
-      })
-      .order("created_at", {
-        ascending: false
-      });
-
-    if (error) throw error;
-
-    $("#moduleContent").innerHTML = `
-
-      <div class="admin-form-card">
-
-        <h3>Add Customer Photo</h3>
-
-        <form id="customerGalleryForm">
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Customer name</label>
-              <input
-                id="customerName"
-                placeholder="Optional"
-              >
-            </div>
-
-            <div class="field">
-              <label>Service</label>
-              <input
-                id="customerService"
-                placeholder="Optional"
-              >
-            </div>
-
-            <div class="field full">
-              <label>Photo URL</label>
-              <input
-                id="customerPhoto"
-                type="url"
-                required
-              >
-            </div>
-
-            <div class="field full">
-              <label>Testimonial</label>
-              <textarea
-                id="customerTestimonial"
-              ></textarea>
-            </div>
-
-            <div class="field">
-              <label>Rating</label>
-              <input
-                id="customerRating"
-                type="number"
-                min="1"
-                max="5"
-              >
-            </div>
-
-            <div class="field">
-              <label>Photo date</label>
-              <input
-                id="customerDate"
-                type="date"
-              >
-            </div>
-
-            <div class="field">
-              <label>Display order</label>
-              <input
-                id="customerOrder"
-                type="number"
-                value="0"
-              >
-            </div>
-
-            <label class="checkbox-field">
-              <input
-                id="customerConsent"
-                type="checkbox"
-              >
-              Customer consent given
-            </label>
-
-            <label class="checkbox-field">
-              <input
-                id="customerVisible"
-                type="checkbox"
-                checked
-              >
-              Visible
-            </label>
-
-            <label class="checkbox-field">
-              <input
-                id="customerFeatured"
-                type="checkbox"
-              >
-              Featured
-            </label>
-
-          </div>
-
-          <div class="form-actions">
-
-            <button
-              class="primary-btn"
-              type="submit"
-            >
-              Save Customer Photo
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-      ${renderCustomerTable(data || [])}
-
-    `;
-
-    $("#customerGalleryForm")
-      .addEventListener(
-        "submit",
-        saveCustomerGallery
-      );
-
-    bindDeleteButtons();
-  }
-
-
-  function renderCustomerTable(rows) {
-
-    if (!rows.length) {
-      return emptyState(
-        "No customer photos added yet."
-      );
-    }
-
-    return `
-
-      <div class="admin-table-wrap">
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Photo</th>
-              <th>Customer</th>
-              <th>Service</th>
-              <th>Consent</th>
-              <th>Action</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${rows.map(row => `
-
-              <tr>
-
-                <td>
-
-                  ${
-                    safeUrl(row.photo_url)
-                      ? `
-                        <img
-                          class="image-thumb"
-                          src="${safeUrl(row.photo_url)}"
-                          alt=""
-                        >
-                      `
-                      : "—"
-                  }
-
-                </td>
-
-                <td>
-                  ${escapeHTML(
-                    row.customer_name || "Anonymous"
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHTML(
-                    row.service || "—"
-                  )}
-                </td>
-
-                <td>
-                  ${row.consent_given
-                    ? "Yes"
-                    : "No"}
-                </td>
-
-                <td>
-
-                  <button
-                    class="danger-btn small-btn delete-btn"
-                    data-table="customer_gallery"
-                    data-id="${row.id}"
-                    data-module="customer_gallery"
-                  >
-                    Delete
-                  </button>
-
-                </td>
-
-              </tr>
-
-            `).join("")}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    `;
-  }
-
-
-  async function saveCustomerGallery(event) {
-
-    event.preventDefault();
-
-    const photo =
-      safeUrl(
-        $("#customerPhoto").value.trim()
-      );
-
-    if (!photo) return;
-
-    const rating =
-      $("#customerRating").value.trim();
-
-    const payload = {
-
-      customer_name:
-        $("#customerName").value.trim() ||
-        null,
-
-      photo_url: photo,
-
-      service:
-        $("#customerService").value.trim() ||
-        null,
-
-      testimonial:
-        $("#customerTestimonial").value.trim() ||
-        null,
-
-      rating:
-        rating === ""
-          ? null
-          : Number(rating),
-
-      photo_date:
-        $("#customerDate").value ||
-        null,
-
-      featured:
-        $("#customerFeatured").checked,
-
-      visible:
-        $("#customerVisible").checked,
-
-      consent_given:
-        $("#customerConsent").checked,
-
-      display_order:
-        Number($("#customerOrder").value) || 0
-
-    };
-
-    try {
-
-      const {
-        error
-      } = await supabase
-        .from("customer_gallery")
-        .insert(payload);
-
-      if (error) throw error;
-
-      await loadCustomerGallery();
-
-      showAlert(
-        "Customer photo saved."
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      showAlert(
-        error?.message ||
-        "Unable to save customer photo.",
-        "error"
-      );
-    }
-  }
-
-
-  /* =======================================================
-     BEFORE / AFTER
-     ======================================================= */
-
-  async function loadBeforeAfter() {
-
-    showLoading();
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("before_after")
-      .select("*")
-      .order("display_order", {
-        ascending: true
-      })
-      .order("created_at", {
-        ascending: false
-      });
-
-    if (error) throw error;
-
-    $("#moduleContent").innerHTML = `
-
-      <div class="admin-form-card">
-
-        <h3>Add Before / After</h3>
-
-        <form id="beforeAfterForm">
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Title</label>
-              <input id="beforeTitle">
-            </div>
-
-            <div class="field">
-              <label>Category</label>
-              <input id="beforeCategory">
-            </div>
-
-            <div class="field full">
-              <label>Description</label>
-              <textarea id="beforeDescription"></textarea>
-            </div>
-
-            <div class="field">
-              <label>Before image URL</label>
-              <input
-                id="beforeImage"
-                type="url"
-                required
-              >
-            </div>
-
-            <div class="field">
-              <label>After image URL</label>
-              <input
-                id="afterImage"
-                type="url"
-                required
-              >
-            </div>
-
-            <div class="field">
-              <label>Display order</label>
-              <input
-                id="beforeOrder"
-                type="number"
-                value="0"
-              >
-            </div>
-
-            <label class="checkbox-field">
-              <input
-                id="beforeFeatured"
-                type="checkbox"
-              >
-              Featured
-            </label>
-
-            <label class="checkbox-field">
-              <input
-                id="beforeVisible"
-                type="checkbox"
-                checked
-              >
-              Visible
-            </label>
-
-          </div>
-
-          <div class="form-actions">
-
-            <button
-              class="primary-btn"
-              type="submit"
-            >
-              Save Transformation
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-      ${renderBeforeAfterTable(data || [])}
-
-    `;
-
-    $("#beforeAfterForm")
-      .addEventListener(
-        "submit",
-        saveBeforeAfter
-      );
-
-    bindDeleteButtons();
-  }
-
-
-  function renderBeforeAfterTable(rows) {
-
-    if (!rows.length) {
-      return emptyState(
-        "No before / after entries yet."
-      );
-    }
-
-    return `
-
-      <div class="admin-table-wrap">
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Before</th>
-              <th>After</th>
-              <th>Title</th>
-              <th>Action</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${rows.map(row => `
-
-              <tr>
-
-                <td>
-
-                  <img
-                    class="image-thumb"
-                    src="${safeUrl(
-                      row.before_image_url
-                    )}"
-                    alt=""
-                  >
-
-                </td>
-
-                <td>
-
-                  <img
-                    class="image-thumb"
-                    src="${safeUrl(
-                      row.after_image_url
-                    )}"
-                    alt=""
-                  >
-
-                </td>
-
-                <td>
-                  ${escapeHTML(
-                    row.title || "Untitled"
-                  )}
-                </td>
-
-                <td>
-
-                  <button
-                    class="danger-btn small-btn delete-btn"
-                    data-table="before_after"
-                    data-id="${row.id}"
-                    data-module="before_after"
-                  >
-                    Delete
-                  </button>
-
-                </td>
-
-              </tr>
-
-            `).join("")}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    `;
-  }
-
-
-  async function saveBeforeAfter(event) {
-
-    event.preventDefault();
-
-    const before =
-      safeUrl(
-        $("#beforeImage").value.trim()
-      );
-
-    const after =
-      safeUrl(
-        $("#afterImage").value.trim()
-      );
-
-    if (!before || !after) return;
-
-    const payload = {
-
-      title:
-        $("#beforeTitle").value.trim() ||
-        null,
-
-      description:
-        $("#beforeDescription").value.trim() ||
-        null,
-
-      before_image_url: before,
-
-      after_image_url: after,
-
-      category:
-        $("#beforeCategory").value.trim() ||
-        null,
-
-      featured:
-        $("#beforeFeatured").checked,
-
-      visible:
-        $("#beforeVisible").checked,
-
-      display_order:
-        Number($("#beforeOrder").value) || 0
-
-    };
-
-    try {
-
-      const {
-        error
-      } = await supabase
-        .from("before_after")
-        .insert(payload);
-
-      if (error) throw error;
-
-      await loadBeforeAfter();
-
-      showAlert(
-        "Before / after entry saved."
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      showAlert(
-        error?.message ||
-        "Unable to save entry.",
-        "error"
-      );
-    }
-  }
-
-
-  /* =======================================================
-     BRIDAL PACKAGES
-     ======================================================= */
-
-  async function loadBridalPackages() {
-
-    showLoading();
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("bridal_packages")
-      .select("*")
-      .order("display_order", {
-        ascending: true
-      })
-      .order("created_at", {
-        ascending: false
-      });
-
-    if (error) throw error;
-
-    $("#moduleContent").innerHTML = `
-
-      <div class="admin-form-card">
-
-        <h3>Add Bridal Package</h3>
-
-        <form id="bridalPackageForm">
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Package name</label>
-              <input
-                id="bridalName"
-                required
-              >
-            </div>
-
-            <div class="field">
-              <label>Price</label>
-              <input
-                id="bridalPrice"
-                type="number"
-                min="0"
-              >
-            </div>
-
-            <div class="field">
-              <label>Price label</label>
-              <input
-                id="bridalPriceLabel"
-                value="Price on enquiry"
-              >
-            </div>
-
-            <div class="field">
-              <label>Duration</label>
-              <input id="bridalDuration">
-            </div>
-
-            <div class="field full">
-              <label>Description</label>
-              <textarea id="bridalDescription"></textarea>
-            </div>
-
-            <div class="field full">
-              <label>Included services</label>
-              <textarea id="bridalIncluded"></textarea>
-            </div>
-
-            <div class="field full">
-              <label>Image URL</label>
-              <input
-                id="bridalImage"
-                type="url"
-              >
-            </div>
-
-            <div class="field">
-              <label>Display order</label>
-              <input
-                id="bridalOrder"
-                type="number"
-                value="0"
-              >
-            </div>
-
-            <label class="checkbox-field">
-              <input
-                id="bridalFeatured"
-                type="checkbox"
-              >
-              Featured
-            </label>
-
-            <label class="checkbox-field">
-              <input
-                id="bridalActive"
-                type="checkbox"
-                checked
-              >
-              Active
-            </label>
-
-          </div>
-
-          <div class="form-actions">
-
-            <button
-              class="primary-btn"
-              type="submit"
-            >
-              Save Package
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-      ${renderBridalPackages(data || [])}
-
-    `;
-
-    $("#bridalPackageForm")
-      .addEventListener(
-        "submit",
-        saveBridalPackage
-      );
-
-    bindDeleteButtons();
-  }
-
-
-  function renderBridalPackages(rows) {
-
-    if (!rows.length) {
-      return emptyState(
-        "No bridal packages added yet."
-      );
-    }
-
-    return `
-
-      <div class="admin-table-wrap">
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Package</th>
-              <th>Price</th>
-              <th>Duration</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${rows.map(row => `
-
-              <tr>
-
-                <td>
-
-                  <strong>
-                    ${escapeHTML(row.name)}
-                  </strong>
-
-                  <br>
-
-                  <small>
-                    ${escapeHTML(
-                      row.description || ""
-                    )}
-                  </small>
-
-                </td>
-
-                <td>
-
-                  ${
-                    row.price !== null
-                      ? formatMoney(row.price)
-                      : escapeHTML(
-                          row.price_label ||
-                          "Price on enquiry"
-                        )
-                  }
-
-                </td>
-
-                <td>
-                  ${escapeHTML(
-                    row.duration || "—"
-                  )}
-                </td>
-
-                <td>
-                  <span class="status">
-                    ${row.active
-                      ? "Active"
-                      : "Inactive"}
-                  </span>
-                </td>
-
-                <td>
-
-                  <button
-                    class="danger-btn small-btn delete-btn"
-                    data-table="bridal_packages"
-                    data-id="${row.id}"
-                    data-module="bridal_packages"
-                  >
-                    Delete
-                  </button>
-
-                </td>
-
-              </tr>
-
-            `).join("")}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    `;
-  }
-
-
-  async function saveBridalPackage(event) {
-
-    event.preventDefault();
-
-    const name =
-      $("#bridalName").value.trim();
-
-    if (!name) return;
-
-    const price =
-      $("#bridalPrice").value.trim();
-
-    const payload = {
-
-      name,
-
-      description:
-        $("#bridalDescription").value.trim() ||
-        null,
-
-      image_url:
-        safeUrl(
-          $("#bridalImage").value.trim()
-        ) || null,
-
-      price:
-        price === ""
-          ? null
-          : Number(price),
-
-      price_label:
-        $("#bridalPriceLabel").value.trim() ||
-        "Price on enquiry",
-
-      included_services:
-        $("#bridalIncluded").value.trim() ||
-        null,
-
-      duration:
-        $("#bridalDuration").value.trim() ||
-        null,
-
-      featured:
-        $("#bridalFeatured").checked,
-
-      active:
-        $("#bridalActive").checked,
-
-      display_order:
-        Number($("#bridalOrder").value) || 0
-
-    };
-
-    try {
-
-      const {
-        error
-      } = await supabase
-        .from("bridal_packages")
-        .insert(payload);
-
-      if (error) throw error;
-
-      await loadBridalPackages();
-
-      showAlert(
-        "Bridal package saved."
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      showAlert(
-        error?.message ||
-        "Unable to save bridal package.",
-        "error"
-      );
-    }
-  }
-
-
-  /* =======================================================
-     TEAM
-     ======================================================= */
-
-  async function loadTeam() {
-
-    showLoading();
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("team")
-      .select("*")
-      .order("display_order", {
-        ascending: true
-      });
-
-    if (error) throw error;
-
-    $("#moduleContent").innerHTML = `
-
-      <div class="admin-form-card">
-
-        <h3>Add Team Member</h3>
-
-        <form id="teamForm">
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Name</label>
-              <input
-                id="teamName"
-                required
-              >
-            </div>
-
-            <div class="field">
-              <label>Role</label>
-              <input id="teamRole">
-            </div>
-
-            <div class="field full">
-              <label>Bio</label>
-              <textarea id="teamBio"></textarea>
-            </div>
-
-            <div class="field">
-              <label>Image URL</label>
-              <input
-                id="teamImage"
-                type="url"
-              >
-            </div>
-
-            <div class="field">
-              <label>Instagram URL</label>
-              <input
-                id="teamInstagram"
-                type="url"
-              >
-            </div>
-
-            <div class="field">
-              <label>Display order</label>
-              <input
-                id="teamOrder"
-                type="number"
-                value="0"
-              >
-            </div>
-
-            <label class="checkbox-field">
-              <input
-                id="teamActive"
-                type="checkbox"
-                checked
-              >
-              Active
-            </label>
-
-          </div>
-
-          <div class="form-actions">
-
-            <button
-              class="primary-btn"
-              type="submit"
-            >
-              Save Team Member
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-      ${renderTeam(data || [])}
-
-    `;
-
-    $("#teamForm")
-      .addEventListener(
-        "submit",
-        saveTeam
-      );
-
-    bindDeleteButtons();
-  }
-
-
-  function renderTeam(rows) {
-
-    if (!rows.length) {
-      return emptyState(
-        "No team members added yet."
-      );
-    }
-
-    return `
-
-      <div class="admin-table-wrap">
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Photo</th>
-              <th>Name</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${rows.map(row => `
-
-              <tr>
-
-                <td>
-
-                  ${
-                    safeUrl(row.image_url)
-                      ? `
-                        <img
-                          class="image-thumb"
-                          src="${safeUrl(row.image_url)}"
-                          alt=""
-                        >
-                      `
-                      : "—"
-                  }
-
-                </td>
-
-                <td>
-                  ${escapeHTML(row.name)}
-                </td>
-
-                <td>
-                  ${escapeHTML(
-                    row.role || "—"
-                  )}
-                </td>
-
-                <td>
-                  ${row.active
-                    ? "Active"
-                    : "Inactive"}
-                </td>
-
-                <td>
-
-                  <button
-                    class="danger-btn small-btn delete-btn"
-                    data-table="team"
-                    data-id="${row.id}"
-                    data-module="team"
-                  >
-                    Delete
-                  </button>
-
-                </td>
-
-              </tr>
-
-            `).join("")}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    `;
-  }
-
-
-  async function saveTeam(event) {
-
-    event.preventDefault();
-
-    const name =
-      $("#teamName").value.trim();
-
-    if (!name) return;
-
-    const payload = {
-
-      name,
-
-      role:
-        $("#teamRole").value.trim() ||
-        null,
-
-      bio:
-        $("#teamBio").value.trim() ||
-        null,
-
-      image_url:
-        safeUrl(
-          $("#teamImage").value.trim()
-        ) || null,
-
-      instagram_url:
-        safeUrl(
-          $("#teamInstagram").value.trim()
-        ) || null,
-
-      display_order:
-        Number($("#teamOrder").value) || 0,
-
-      active:
-        $("#teamActive").checked
-
-    };
-
-    try {
-
-      const {
-        error
-      } = await supabase
-        .from("team")
-        .insert(payload);
-
-      if (error) throw error;
-
-      await loadTeam();
-
-      showAlert(
-        "Team member saved."
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      showAlert(
-        error?.message ||
-        "Unable to save team member.",
-        "error"
-      );
-    }
-  }
-
-
-  /* =======================================================
-     TESTIMONIALS
-     Actual schema:
-     id, customer_name, testimonial, rating,
-     image_url, service, featured, visible, created_at
-     ======================================================= */
-
-  async function loadTestimonials() {
-
-    showLoading();
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("testimonials")
-      .select("*")
-      .order("created_at", {
-        ascending: false
-      });
-
-    if (error) throw error;
-
-    $("#moduleContent").innerHTML = `
-
-      <div class="admin-form-card">
-
-        <h3>Add Testimonial</h3>
-
-        <form id="testimonialForm">
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Customer name</label>
-              <input
-                id="testimonialName"
-                required
-              >
-            </div>
-
-            <div class="field">
-              <label>Service</label>
-              <input id="testimonialService">
-            </div>
-
-            <div class="field">
-              <label>Rating</label>
-              <input
-                id="testimonialRating"
-                type="number"
-                min="1"
-                max="5"
-              >
-            </div>
-
-            <div class="field">
-              <label>Image URL</label>
-              <input
-                id="testimonialImage"
-                type="url"
-              >
-            </div>
-
-            <div class="field full">
-              <label>Testimonial</label>
-              <textarea
-                id="testimonialText"
-                required
-              ></textarea>
-            </div>
-
-            <label class="checkbox-field">
-              <input
-                id="testimonialFeatured"
-                type="checkbox"
-              >
-              Featured
-            </label>
-
-            <label class="checkbox-field">
-              <input
-                id="testimonialVisible"
-                type="checkbox"
-                checked
-              >
-              Visible
-            </label>
-
-          </div>
-
-          <div class="form-actions">
-
-            <button
-              class="primary-btn"
-              type="submit"
-            >
-              Save Testimonial
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-      ${renderTestimonials(data || [])}
-
-    `;
-
-    $("#testimonialForm")
-      .addEventListener(
-        "submit",
-        saveTestimonial
-      );
-
-    bindDeleteButtons();
-  }
-
-
-  function renderTestimonials(rows) {
-
-    if (!rows.length) {
-      return emptyState(
-        "No testimonials added yet."
-      );
-    }
-
-    return `
-
-      <div class="admin-table-wrap">
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Customer</th>
-              <th>Testimonial</th>
-              <th>Rating</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${rows.map(row => `
-
-              <tr>
-
-                <td>
-                  <strong>
-                    ${escapeHTML(
-                      row.customer_name
-                    )}
-                  </strong>
-                </td>
-
-                <td>
-                  ${escapeHTML(
-                    row.testimonial
-                  )}
-                </td>
-
-                <td>
-                  ${row.rating || "—"}
-                </td>
-
-                <td>
-                  ${row.visible
-                    ? "Visible"
-                    : "Hidden"}
-                </td>
-
-                <td>
-
-                  <button
-                    class="danger-btn small-btn delete-btn"
-                    data-table="testimonials"
-                    data-id="${row.id}"
-                    data-module="testimonials"
-                  >
-                    Delete
-                  </button>
-
-                </td>
-
-              </tr>
-
-            `).join("")}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    `;
-  }
-
-
-  async function saveTestimonial(event) {
-
-    event.preventDefault();
-
-    const customerName =
-      $("#testimonialName").value.trim();
-
-    const testimonial =
-      $("#testimonialText").value.trim();
-
-    if (!customerName || !testimonial) {
-      return;
-    }
-
-    const rating =
-      $("#testimonialRating").value.trim();
-
-    const payload = {
-
-      customer_name:
-        customerName,
-
-      testimonial,
-
-      rating:
-        rating === ""
-          ? null
-          : Number(rating),
-
-      image_url:
-        safeUrl(
-          $("#testimonialImage").value.trim()
-        ) || null,
-
-      service:
-        $("#testimonialService").value.trim() ||
-        null,
-
-      featured:
-        $("#testimonialFeatured").checked,
-
-      visible:
-        $("#testimonialVisible").checked
-
-    };
-
-    try {
-
-      const {
-        error
-      } = await supabase
-        .from("testimonials")
-        .insert(payload);
-
-      if (error) throw error;
-
-      await loadTestimonials();
-
-      showAlert(
-        "Testimonial saved."
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      showAlert(
-        error?.message ||
-        "Unable to save testimonial.",
-        "error"
-      );
-    }
-  }
-
-
-  /* =======================================================
-     FAQS
-     ======================================================= */
-
-  async function loadFaqs() {
-
-    showLoading();
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("faqs")
-      .select("*")
-      .order("display_order", {
-        ascending: true
-      });
-
-    if (error) throw error;
-
-    $("#moduleContent").innerHTML = `
-
-      <div class="admin-form-card">
-
-        <h3>Add FAQ</h3>
-
-        <form id="faqForm">
-
-          <div class="form-grid">
-
-            <div class="field full">
-              <label>Question</label>
-              <input
-                id="faqQuestion"
-                required
-              >
-            </div>
-
-            <div class="field full">
-              <label>Answer</label>
-              <textarea
-                id="faqAnswer"
-                required
-              ></textarea>
-            </div>
-
-            <div class="field">
-              <label>Display order</label>
-              <input
-                id="faqOrder"
-                type="number"
-                value="0"
-              >
-            </div>
-
-            <label class="checkbox-field">
-              <input
-                id="faqActive"
-                type="checkbox"
-                checked
-              >
-              Active
-            </label>
-
-          </div>
-
-          <div class="form-actions">
-
-            <button
-              class="primary-btn"
-              type="submit"
-            >
-              Save FAQ
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-      ${renderFaqs(data || [])}
-
-    `;
-
-    $("#faqForm")
-      .addEventListener(
-        "submit",
-        saveFaq
-      );
-
-    bindDeleteButtons();
-  }
-
-
-  function renderFaqs(rows) {
-
-    if (!rows.length) {
-      return emptyState(
-        "No FAQs added yet."
-      );
-    }
-
-    return `
-
-      <div class="admin-table-wrap">
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Question</th>
-              <th>Answer</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${rows.map(row => `
-
-              <tr>
-
-                <td>
-                  <strong>
-                    ${escapeHTML(
-                      row.question
-                    )}
-                  </strong>
-                </td>
-
-                <td>
-                  ${escapeHTML(
-                    row.answer
-                  )}
-                </td>
-
-                <td>
-                  ${row.active
-                    ? "Active"
-                    : "Inactive"}
-                </td>
-
-                <td>
-
-                  <button
-                    class="danger-btn small-btn delete-btn"
-                    data-table="faqs"
-                    data-id="${row.id}"
-                    data-module="faqs"
-                  >
-                    Delete
-                  </button>
-
-                </td>
-
-              </tr>
-
-            `).join("")}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    `;
-  }
-
-
-  async function saveFaq(event) {
-
-    event.preventDefault();
-
-    const question =
-      $("#faqQuestion").value.trim();
-
-    const answer =
-      $("#faqAnswer").value.trim();
-
-    if (!question || !answer) return;
-
-    const payload = {
-
-      question,
-
-      answer,
-
-      display_order:
-        Number($("#faqOrder").value) || 0,
-
-      active:
-        $("#faqActive").checked
-
-    };
-
-    try {
-
-      const {
-        error
-      } = await supabase
-        .from("faqs")
-        .insert(payload);
-
-      if (error) throw error;
-
-      await loadFaqs();
-
-      showAlert(
-        "FAQ saved."
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      showAlert(
-        error?.message ||
-        "Unable to save FAQ.",
-        "error"
-      );
-    }
-  }
-
-
-  /* =======================================================
-     SETTINGS
-     Actual schema:
-     id, setting_key, setting_value, updated_at
-     ======================================================= */
-
-  async function loadSettings() {
-
-    showLoading();
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("settings")
-      .select("*")
-      .order("setting_key");
-
-    if (error) throw error;
-
-    const map = {};
-
-    (data || []).forEach(row => {
-      map[row.setting_key] =
-        row.setting_value || "";
-    });
-
-    $("#moduleContent").innerHTML = `
-
-      <div class="admin-form-card">
-
-        <h3>Business Information</h3>
-
-        <form id="settingsForm">
-
-          <div class="form-grid">
-
-            <div class="field full">
-              <label>Business name</label>
-              <input
-                id="settingBusinessName"
-                value="${escapeHTML(
-                  map.business_name || ""
-                )}"
-              >
-            </div>
-
-            <div class="field">
-              <label>Artist name</label>
-              <input
-                id="settingArtist"
-                value="${escapeHTML(
-                  map.artist_name || ""
-                )}"
-              >
-            </div>
-
-            <div class="field">
-              <label>Phone</label>
-              <input
-                id="settingPhone"
-                value="${escapeHTML(
-                  map.phone || ""
-                )}"
-              >
-            </div>
-
-            <div class="field">
-              <label>WhatsApp</label>
-              <input
-                id="settingWhatsapp"
-                value="${escapeHTML(
-                  map.whatsapp || ""
-                )}"
-              >
-            </div>
-
-            <div class="field">
-              <label>Email</label>
-              <input
-                id="settingEmail"
-                type="email"
-                value="${escapeHTML(
-                  map.email || ""
-                )}"
-              >
-            </div>
-
-            <div class="field full">
-              <label>Address</label>
-              <textarea
-                id="settingAddress"
-              >${escapeHTML(
-                map.address || ""
-              )}</textarea>
-            </div>
-
-          </div>
-
-          <div class="form-actions">
-
-            <button
-              class="primary-btn"
-              type="submit"
-            >
-              Save Settings
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-      <div class="admin-form-card">
-
-        <h3>Current Database Settings</h3>
-
-        ${
-          data?.length
-            ? `
-              <div class="admin-table-wrap">
-
-                <table>
-
-                  <thead>
-
-                    <tr>
-                      <th>Key</th>
-                      <th>Value</th>
-                    </tr>
-
-                  </thead>
-
-                  <tbody>
-
-                    ${data.map(row => `
-
-                      <tr>
-
-                        <td>
-                          ${escapeHTML(
-                            row.setting_key
-                          )}
-                        </td>
-
-                        <td>
-                          ${escapeHTML(
-                            row.setting_value || ""
-                          )}
-                        </td>
-
-                      </tr>
-
-                    `).join("")}
-
-                  </tbody>
-
-                </table>
-
-              </div>
-            `
-            : emptyState(
-                "No settings found."
-              )
-        }
-
-      </div>
-
-    `;
-
-    $("#settingsForm")
-      .addEventListener(
-        "submit",
-        saveSettings
-      );
-  }
-
-
-  async function saveSetting(
-    key,
-    value
-  ) {
-
-    const {
-      data: existing,
-      error: findError
-    } = await supabase
-      .from("settings")
-      .select("id")
-      .eq("setting_key", key)
-      .maybeSingle();
-
-    if (findError) {
-      throw findError;
-    }
-
-    if (existing?.id) {
-
-      const {
-        error
-      } = await supabase
-        .from("settings")
-        .update({
-          setting_value: value,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", existing.id);
-
-      if (error) throw error;
-
-    } else {
-
-      const {
-        error
-      } = await supabase
-        .from("settings")
-        .insert({
-          setting_key: key,
-          setting_value: value
-        });
-
-      if (error) throw error;
-    }
-  }
-
-
-  async function saveSettings(event) {
-
-    event.preventDefault();
-
-    try {
-
-      const settings = {
-
-        business_name:
-          $("#settingBusinessName").value.trim(),
-
-        artist_name:
-          $("#settingArtist").value.trim(),
-
-        phone:
-          $("#settingPhone").value.trim(),
-
-        whatsapp:
-          $("#settingWhatsapp").value.trim(),
-
-        email:
-          $("#settingEmail").value.trim(),
-
-        address:
-          $("#settingAddress").value.trim()
-
-      };
-
-      for (
-        const [key, value]
-        of Object.entries(settings)
-      ) {
-
-        await saveSetting(
-          key,
-          value
-        );
-
-      }
-
-      await loadSettings();
-
-      showAlert(
-        "Settings saved successfully."
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      showAlert(
-        error?.message ||
-        "Unable to save settings.",
-        "error"
-      );
-    }
-  }
-
-
-  /* =======================================================
-     EMPTY STATE
-     ======================================================= */
-
-  function emptyState(message) {
-
-    return `
-      <div class="empty-state">
-        ${escapeHTML(message)}
-      </div>
-    `;
-  }
-
-
-  /* =======================================================
-     MOBILE SIDEBAR
-     ======================================================= */
-
-  function closeMobileSidebar() {
-
-    const sidebar = $("#sidebar");
-
-    if (sidebar) {
-      sidebar.classList.remove("open");
-    }
-  }
-
-
-  function toggleMobileSidebar() {
-
-    const sidebar = $("#sidebar");
-
-    if (sidebar) {
-      sidebar.classList.toggle("open");
-    }
-  }
-
-
-  /* =======================================================
-     EVENT SETUP
-     ======================================================= */
-
-  function setupNavigation() {
-
-    $$(".nav-btn").forEach(button => {
-
-      button.addEventListener(
-        "click",
-        () => {
-          openModule(
-            button.dataset.module
-          );
-        }
-      );
-
-    });
-  }
-
-
-  function setupAuthEvents() {
-
-    $("#loginForm")
-      .addEventListener(
-        "submit",
-        login
-      );
-
-    $("#logoutBtn")
-      .addEventListener(
-        "click",
-        logout
-      );
-
-    $("#mobileMenuBtn")
-      .addEventListener(
-        "click",
-        toggleMobileSidebar
-      );
-
-    /*
-      One and only one Supabase auth listener.
-      This avoids the old double-navigation problem.
-    */
-
-    const result =
-      supabase.auth.onAuthStateChange(
-        (event, session) => {
-
-          if (
-            event === "SIGNED_IN" ||
-            event === "TOKEN_REFRESHED" ||
-            event === "INITIAL_SESSION"
-          ) {
-
-            if (session?.user) {
-
-              currentUser =
-                session.user;
-
-              showAdmin();
-
-            } else if (
-              event === "INITIAL_SESSION"
-            ) {
-
-              currentUser = null;
-
-              showLogin();
+        const title =
+            document.getElementById(
+                "offerTitle"
+            ).value.trim();
+
+        const price =
+            document.getElementById(
+                "offerPrice"
+            ).value;
+
+        const oldPrice =
+            document.getElementById(
+                "offerOldPrice"
+            ).value;
+
+        const startDate =
+            document.getElementById(
+                "offerStartDate"
+            ).value;
+
+        const endDate =
+            document.getElementById(
+                "offerEndDate"
+            ).value;
+
+        const status =
+            document.getElementById(
+                "offerStatus"
+            ).value;
+
+        const description =
+            document.getElementById(
+                "offerDescription"
+            ).value.trim();
+
+        const fileInput =
+            document.getElementById(
+                "offerImageFile"
+            );
+
+        const imageUrlInput =
+            document.getElementById(
+                "offerImageUrl"
+            ).value.trim();
+
+        let imageUrl =
+            imageUrlInput;
+
+        /* -----------------------------------------
+           SUPABASE STORAGE UPLOAD
+        ----------------------------------------- */
+
+        if (
+            fileInput.files &&
+            fileInput.files.length > 0
+        ) {
+
+            const file =
+                fileInput.files[0];
+
+            validateImageFile(file);
+
+            const extension =
+                file.name
+                    .split(".")
+                    .pop()
+                    .toLowerCase();
+
+            const fileName =
+                `offer-${Date.now()}-${Math.random()
+                    .toString(36)
+                    .substring(2, 9)}.${extension}`;
+
+            const filePath =
+                `offers/${fileName}`;
+
+            const { error: uploadError } =
+                await supabaseClient
+                    .storage
+                    .from("offers")
+                    .upload(
+                        filePath,
+                        file,
+                        {
+                            cacheControl: "3600",
+                            upsert: false
+                        }
+                    );
+
+            if (uploadError) {
+                throw uploadError;
             }
 
-          }
+            const { data: publicUrlData } =
+                supabaseClient
+                    .storage
+                    .from("offers")
+                    .getPublicUrl(filePath);
 
-          if (event === "SIGNED_OUT") {
-
-            currentUser = null;
-
-            showLogin();
-          }
-
+            imageUrl =
+                publicUrlData.publicUrl;
         }
-      );
 
-    authListener =
-      result?.data?.subscription || null;
-  }
+        const payload = {
+
+            title: title || null,
+
+            price:
+                price === ""
+                    ? null
+                    : Number(price),
+
+            old_price:
+                oldPrice === ""
+                    ? null
+                    : Number(oldPrice),
+
+            start_date:
+                startDate || null,
+
+            end_date:
+                endDate || null,
+
+            status:
+                status || "active",
+
+            description:
+                description || null,
+
+            image_url:
+                imageUrl || null
+        };
+
+        let result;
+
+        if (id) {
+
+            result =
+                await supabaseClient
+                    .from("offers")
+                    .update(payload)
+                    .eq("id", id)
+                    .select()
+                    .single();
+
+        } else {
+
+            result =
+                await supabaseClient
+                    .from("offers")
+                    .insert([payload])
+                    .select()
+                    .single();
+        }
+
+        if (result.error) {
+            throw result.error;
+        }
+
+        showToast(
+            id
+                ? "Offer updated successfully."
+                : "Offer added successfully.",
+            "success"
+        );
+
+        closeOfferForm();
+
+        await loadOffers();
+
+    } catch (error) {
+
+        console.error(
+            "Offer save error:",
+            error
+        );
+
+        showToast(
+            error.message ||
+            "Could not save offer.",
+            "error"
+        );
+
+    } finally {
+
+        button.disabled = false;
+
+        button.textContent =
+            id
+                ? "Update Offer"
+                : "Save Offer";
+    }
+}
 
 
-  /* =======================================================
-     START
-     ======================================================= */
+async function loadOffers() {
 
-  async function init() {
+    const container =
+        document.getElementById(
+            "offersList"
+        );
+
+    if (!container) return;
+
+    container.innerHTML =
+        `<div class="loading">Loading...</div>`;
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from("offers")
+                .select("*")
+                .order(
+                    "created_at",
+                    {
+                        ascending: false
+                    }
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        offersData =
+            data || [];
+
+        if (!offersData.length) {
+
+            container.innerHTML = `
+                <div class="empty-state">
+
+                    <h3>No offers yet</h3>
+
+                    <p>
+                        Add your first special offer.
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
+
+        container.innerHTML =
+            offersData.map(item => `
+
+                <div class="admin-card">
+
+                    ${
+                        item.image_url
+                        ? `
+                        <img
+                            class="admin-card-image"
+                            src="${item.image_url}"
+                            alt="${escapeHTML(
+                                item.title || "Offer"
+                            )}"
+                        >
+                        `
+                        : `
+                        <div class="no-image">
+                            No Image
+                        </div>
+                        `
+                    }
+
+                    <div class="admin-card-body">
+
+                        <h3>
+                            ${escapeHTML(
+                                item.title || "Untitled Offer"
+                            )}
+                        </h3>
+
+                        ${
+                            item.price !== null
+                            ? `
+                            <p class="price">
+                                ₹${Number(
+                                    item.price
+                                ).toLocaleString("en-IN")}
+                            </p>
+                            `
+                            : ""
+                        }
+
+                        ${
+                            item.old_price !== null
+                            ? `
+                            <p class="old-price">
+                                ₹${Number(
+                                    item.old_price
+                                ).toLocaleString("en-IN")}
+                            </p>
+                            `
+                            : ""
+                        }
+
+                        <span class="badge">
+                            ${escapeHTML(
+                                item.status || "active"
+                            )}
+                        </span>
+
+                        <div class="admin-card-actions">
+
+                            <button
+                                class="secondary-btn"
+                                onclick="showOfferForm('${item.id}')">
+                                Edit
+                            </button>
+
+                            <button
+                                class="danger-btn"
+                                onclick="deleteOffer('${item.id}')">
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `).join("");
+
+    } catch (error) {
+
+        console.error(
+            "Offer loading error:",
+            error
+        );
+
+        container.innerHTML = `
+            <div class="error-state">
+
+                <h3>
+                    Unable to load offers
+                </h3>
+
+                <p>
+                    ${escapeHTML(
+                        error.message
+                    )}
+                </p>
+
+            </div>
+        `;
+    }
+}
+
+
+async function deleteOffer(id) {
+
+    if (!confirm(
+        "Are you sure you want to delete this offer?"
+    )) {
+        return;
+    }
+
+    try {
+
+        const { error } =
+            await supabaseClient
+                .from("offers")
+                .delete()
+                .eq("id", id);
+
+        if (error) {
+            throw error;
+        }
+
+        showToast(
+            "Offer deleted successfully.",
+            "success"
+        );
+
+        await loadOffers();
+
+    } catch (error) {
+
+        console.error(
+            "Offer delete error:",
+            error
+        );
+
+        showToast(
+            error.message ||
+            "Could not delete offer.",
+            "error"
+        );
+    }
+}
+
+
+/* =========================================================
+   COMMON IMAGE VALIDATION
+   ========================================================= */
+
+function validateImageFile(file) {
+
+    const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+
+        throw new Error(
+            "Only JPG, PNG and WEBP images are allowed."
+        );
+    }
+
+    const maxSize =
+        10 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+
+        throw new Error(
+            "Image must be smaller than 10 MB."
+        );
+    }
+}
+
+
+/* =========================================================
+   SAFE HTML ESCAPE
+   ========================================================= */
+
+function escapeHTML(value) {
+
+    if (value === null || value === undefined) {
+        return "";
+    }
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+/* =========================================================
+   TOAST MESSAGE
+   ========================================================= */
+
+function showToast(message, type = "success") {
+
+    let toast =
+        document.getElementById("adminToast");
+
+    if (!toast) {
+
+        toast =
+            document.createElement("div");
+
+        toast.id =
+            "adminToast";
+
+        document.body.appendChild(toast);
+    }
+
+    toast.className =
+        `admin-toast ${type}`;
+
+    toast.textContent =
+        message;
+
+    toast.classList.add("show");
+
+    setTimeout(() => {
+
+        toast.classList.remove("show");
+
+    }, 3500);
+}
+                                ? data.map(row => `
+                                    <tr>
+                                        <td>
+                                            ${escapeHTML(
+                                                row.setting_key
+                                            )}
+                                        </td>
+                                        <td>
+                                            ${escapeHTML(
+                                                row.setting_value || ""
+                                            )}
+                                        </td>
+                                    </tr>
+                                `).join("")
+                                : `
+                                    <tr>
+                                        <td colspan="2">
+                                            No settings found.
+                                        </td>
+                                    </tr>
+                                `
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+async function saveSettings() {
+    const values = {
+        business_name:
+            $("settingBusinessName")?.value.trim() || "",
+        artist_name:
+            $("settingArtistName")?.value.trim() || "",
+        phone:
+            $("settingPhone")?.value.trim() || "",
+        whatsapp:
+            $("settingWhatsapp")?.value.trim() || "",
+        email:
+            $("settingEmail")?.value.trim() || "",
+        address:
+            $("settingAddress")?.value.trim() || "",
+        instagram:
+            $("settingInstagram")?.value.trim() || "",
+        youtube:
+            $("settingYoutube")?.value.trim() || ""
+    };
+
+    try {
+        for (const [key, value] of Object.entries(values)) {
+
+            const { data: existing, error: findError } =
+                await supabaseClient
+                    .from("settings")
+                    .select("id")
+                    .eq("setting_key", key)
+                    .maybeSingle();
+
+            if (findError) throw findError;
+
+            if (existing?.id) {
+                const { error } =
+                    await supabaseClient
+                        .from("settings")
+                        .update({
+                            setting_value: value,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq("id", existing.id);
+
+                if (error) throw error;
+
+            } else {
+                const { error } =
+                    await supabaseClient
+                        .from("settings")
+                        .insert({
+                            setting_key: key,
+                            setting_value: value
+                        });
+
+                if (error) throw error;
+            }
+        }
+
+        showMessage("Website settings saved successfully.");
+        await loadSettings();
+
+    } catch (error) {
+        console.error("Settings save error:", error);
+        alert(error.message || "Could not save settings.");
+    }
+}
+
+/* ============================================================
+   DELETE
+   ============================================================ */
+
+async function deleteRecord(table, id) {
+    if (!table || !id) return;
+
+    const confirmed = confirm(
+        "Are you sure you want to delete this record?"
+    );
+
+    if (!confirmed) return;
+
+    const { error } = await supabaseClient
+        .from(table)
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        console.error("Delete error:", error);
+        alert(error.message || "Could not delete record.");
+        return;
+    }
+
+    showMessage("Record deleted successfully.");
+
+    await openModule(currentModule);
+}
+
+/* ============================================================
+   OPTIONAL PUBLIC FUNCTIONS
+   ============================================================ */
+
+window.openModule = openModule;
+window.handleLogin = handleLogin;
+window.handleLogout = handleLogout;
+
+window.updateAppointmentStatus =
+    updateAppointmentStatus;
+
+window.deleteRecord =
+    deleteRecord;
+
+window.showServiceForm =
+    showServiceForm;
+
+window.editService =
+    editService;
+
+window.saveService =
+    saveService;
+
+window.showOfferForm =
+    showOfferForm;
+
+window.editOffer =
+    editOffer;
+
+window.saveOffer =
+    saveOffer;
+
+window.showPhotoForm =
+    showPhotoForm;
+
+window.editPhoto =
+    editPhoto;
+
+window.savePhoto =
+    savePhoto;
+
+window.showBeforeAfterForm =
+    showBeforeAfterForm;
+
+window.editBeforeAfter =
+    editBeforeAfter;
+
+window.saveBeforeAfter =
+    saveBeforeAfter;
+
+window.showBridalPackageForm =
+    showBridalPackageForm;
+
+window.editBridalPackage =
+    editBridalPackage;
+
+window.saveBridalPackage =
+    saveBridalPackage;
+
+window.showTeamForm =
+    showTeamForm;
+
+window.editTeam =
+    editTeam;
+
+window.saveTeam =
+    saveTeam;
+
+window.showTestimonialForm =
+    showTestimonialForm;
+
+window.editTestimonial =
+    editTestimonial;
+
+window.saveTestimonial =
+    saveTestimonial;
+
+window.showFAQForm =
+    showFAQForm;
+
+window.editFAQ =
+    editFAQ;
+
+window.saveFAQ =
+    saveFAQ;
+
+window.saveSettings =
+    saveSettings;
+
+/* ============================================================
+   STARTUP
+   ============================================================ */
+
+document.addEventListener("DOMContentLoaded", async () => {
 
     console.log(
-      "Manju Admin Panel starting..."
+        "Manju Admin Panel loaded — matched version"
     );
+
+    if (
+        typeof supabaseClient === "undefined" ||
+        !supabaseClient
+    ) {
+        console.error(
+            "supabaseClient is not available."
+        );
+
+        const loginMessage = $("loginMessage");
+
+        if (loginMessage) {
+            loginMessage.textContent =
+                "Supabase configuration could not be loaded.";
+            loginMessage.style.display = "block";
+        }
+
+        return;
+    }
+
+    const loginForm = $("loginForm");
+    const logoutBtn = $("logoutBtn");
+
+    if (loginForm) {
+        loginForm.addEventListener(
+            "submit",
+            handleLogin
+        );
+    } else {
+        console.warn("loginForm not found.");
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener(
+            "click",
+            handleLogout
+        );
+    } else {
+        console.warn("logoutBtn not found.");
+    }
 
     setupNavigation();
 
-    setupAuthEvents();
+    try {
+        supabaseClient.auth.onAuthStateChange(
+            (event, session) => {
 
-    await checkAuth();
+                console.log(
+                    "Supabase auth event:",
+                    event
+                );
 
-    console.log(
-      "Manju Admin Panel ready."
+                if (session) {
+                    currentUser = session.user;
+
+                    if (
+                        event === "SIGNED_IN" ||
+                        event === "TOKEN_REFRESHED"
+                    ) {
+                        showAdmin();
+                    }
+                } else if (event === "SIGNED_OUT") {
+                    currentUser = null;
+                    showLogin();
+                }
+            }
+        );
+
+        await checkAuth();
+
+    } catch (error) {
+        console.error(
+            "Admin startup error:",
+            error
+        );
+
+        showLogin();
+    }
+
+});
+                                        </select>
+                                    </td>
+
+                                    <td>
+                                        ${
+                                            item.whatsapp_requested
+                                                ? "Yes"
+                                                : "No"
+                                        }
+                                    </td>
+
+                                    <td>
+                                        ${formatDateTime(item.created_at)}
+                                    </td>
+
+                                    <td>
+                                        <button
+                                            type="button"
+                                            class="delete-btn"
+                                            onclick="deleteAppointment('${escapeAttr(item.id)}')"
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                ${
+                                    item.message
+                                        ? `
+                                        <tr class="detail-row">
+                                            <td colspan="8">
+                                                <strong>Message:</strong>
+                                                ${escapeHTML(item.message)}
+                                            </td>
+                                        </tr>
+                                        `
+                                        : ""
+                                }
+                            `).join("")}
+                        </tbody>
+                    </table>
+                    `
+                    : emptyMessage("No appointment requests yet.")
+            }
+        </div>
+        `;
+}
+
+async function updateAppointmentStatus(id, status) {
+    if (!id || !status) return;
+
+    try {
+        const { error } = await supabaseClient
+            .from("appointments")
+            .update({
+                status,
+                updated_at: new Date().toISOString()
+            })
+            .eq("id", id);
+
+        if (error) throw error;
+
+        showMessage("Appointment status updated.");
+    } catch (error) {
+        console.error(error);
+        showMessage(
+            error.message || "Could not update appointment.",
+            "error"
+        );
+
+        await loadAppointments();
+    }
+}
+
+async function deleteAppointment(id) {
+    if (!id) return;
+
+    const confirmed = confirm(
+        "Delete this appointment request permanently?"
     );
-  }
 
+    if (!confirmed) return;
 
-  document.addEventListener(
-    "DOMContentLoaded",
-    init
-  );
+    try {
+        const { error } = await supabaseClient
+            .from("appointments")
+            .delete()
+            .eq("id", id);
 
-})();
+        if (error) throw error;
+
+        showMessage("Appointment deleted.");
+        await loadAppointments();
+
+    } catch (error) {
+        console.error(error);
+        showMessage(
+            error.message || "Could not delete appointment.",
+            "error"
+        );
+    }
+}
+
+/* ============================================================
+   CATEGORIES
+   ============================================================ */
+
+async function getCategories() {
+    const { data, error } = await supabaseClient
+        .from("categories")
+        .select(`
+            id,
+            name,
+            slug,
+            description,
+            image_url,
+            display_order,
+            active
+        `)
+        .order("display_order", {
+            ascending: true
+        })
+        .order("name", {
+            ascending: true
+        });
+
+    if (error) throw error;
+
+    return data || [];
+}
+
+async function loadCategoriesForSelect() {
+    return await getCategories();
+}
