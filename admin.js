@@ -1,4 +1,3 @@
-
 /* ============================================================
    MANJU'S THE WORLD OF GLAMOUR
    ADMIN PANEL — MATCHED VERSION
@@ -413,247 +412,6 @@ function fileInput(name, label, accept = "image/jpeg,image/png,image/webp") {
             <small>JPG, PNG or WEBP — maximum 10 MB</small>
         </label>
     `;
-}
-
-/* ============================================================
-   DASHBOARD
-   ============================================================ */
-
-async function getCount(table) {
-    const { count, error } = await supabaseClient
-        .from(table)
-        .select("*", {
-            count: "exact",
-            head: true
-        });
-
-    if (error) {
-        console.error(`Count error for ${table}:`, error);
-        return 0;
-    }
-
-    return count || 0;
-}
-
-async function loadDashboard() {
-    const container = $("moduleContent");
-
-    container.innerHTML =
-        moduleHeader(
-            "Dashboard",
-            "Manage Manju's The World of Glamour website."
-        ) +
-        `
-        <div class="dashboard-grid">
-            <div class="dashboard-card">
-                <span class="dashboard-card-label">Appointments</span>
-                <strong id="dashboardAppointments">—</strong>
-            </div>
-
-            <div class="dashboard-card">
-                <span class="dashboard-card-label">Services</span>
-                <strong id="dashboardServices">—</strong>
-            </div>
-
-            <div class="dashboard-card">
-                <span class="dashboard-card-label">Offers</span>
-                <strong id="dashboardOffers">—</strong>
-            </div>
-
-            <div class="dashboard-card">
-                <span class="dashboard-card-label">Gallery Photos</span>
-                <strong id="dashboardGallery">—</strong>
-            </div>
-
-            <div class="dashboard-card">
-                <span class="dashboard-card-label">Bride & Girls Photos</span>
-                <strong id="dashboardBrideGallery">—</strong>
-            </div>
-
-            <div class="dashboard-card">
-                <span class="dashboard-card-label">Customer Photos</span>
-                <strong id="dashboardCustomerGallery">—</strong>
-            </div>
-
-            <div class="dashboard-card">
-                <span class="dashboard-card-label">Before / After</span>
-                <strong id="dashboardBeforeAfter">—</strong>
-            </div>
-
-            <div class="dashboard-card">
-                <span class="dashboard-card-label">Bridal Packages</span>
-                <strong id="dashboardBridalPackages">—</strong>
-            </div>
-
-            <div class="dashboard-card">
-                <span class="dashboard-card-label">Team Members</span>
-                <strong id="dashboardTeam">—</strong>
-            </div>
-
-            <div class="dashboard-card">
-                <span class="dashboard-card-label">Testimonials</span>
-                <strong id="dashboardTestimonials">—</strong>
-            </div>
-
-            <div class="dashboard-card">
-                <span class="dashboard-card-label">FAQs</span>
-                <strong id="dashboardFAQs">—</strong>
-            </div>
-
-            <div class="dashboard-card">
-                <span class="dashboard-card-label">Categories</span>
-                <strong id="dashboardCategories">—</strong>
-            </div>
-        </div>
-        `;
-
-    const counts = await Promise.all([
-        getCount("appointments"),
-        getCount("services"),
-        getCount("offers"),
-        getCount("gallery"),
-        getCount("bride_gallery"),
-        getCount("customer_gallery"),
-        getCount("before_after"),
-        getCount("bridal_packages"),
-        getCount("team"),
-        getCount("testimonials"),
-        getCount("faqs"),
-        getCount("categories")
-    ]);
-
-    const ids = [
-        "dashboardAppointments",
-        "dashboardServices",
-        "dashboardOffers",
-        "dashboardGallery",
-        "dashboardBrideGallery",
-        "dashboardCustomerGallery",
-        "dashboardBeforeAfter",
-        "dashboardBridalPackages",
-        "dashboardTeam",
-        "dashboardTestimonials",
-        "dashboardFAQs",
-        "dashboardCategories"
-    ];
-
-    counts.forEach((count, index) => {
-        const element = $(ids[index]);
-        if (element) {
-            element.textContent = count;
-        }
-    });
-}
-
-/* ============================================================
-   APPOINTMENTS
-   ============================================================ */
-
-async function loadAppointments() {
-    const container = $("moduleContent");
-
-    const { data, error } = await supabaseClient
-        .from("appointments")
-        .select(`
-            id,
-            service_id,
-            customer_name,
-            phone,
-            email,
-            appointment_date,
-            appointment_time,
-            message,
-            status,
-            whatsapp_requested,
-            privacy_consent,
-            created_at
-        `)
-        .order("created_at", {
-            ascending: false
-        });
-
-    if (error) throw error;
-
-    container.innerHTML =
-        moduleHeader(
-            "Appointments",
-            "Appointment requests submitted through the public website."
-        ) +
-        `
-        <div class="admin-table-wrap">
-            ${
-                data?.length
-                    ? `
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Customer</th>
-                                <th>Phone</th>
-                                <th>Date</th>
-                                <th>Time</th>
-                                <th>Status</th>
-                                <th>WhatsApp</th>
-                                <th>Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            ${data.map(item => `
-                                <tr>
-                                    <td>
-                                        <strong>
-                                            ${escapeHTML(item.customer_name)}
-                                        </strong>
-                                        ${
-                                            item.email
-                                                ? `<small>${escapeHTML(item.email)}</small>`
-                                                : ""
-                                        }
-                                    </td>
-
-                                    <td>
-                                        ${escapeHTML(item.phone)}
-                                    </td>
-
-                                    <td>
-                                        ${formatDate(item.appointment_date)}
-                                    </td>
-
-                                    <td>
-                                        ${escapeHTML(
-                                            item.appointment_time || "—"
-                                        )}
-                                    </td>
-
-                                    <td>
-                                        <select
-                                            onchange="updateAppointmentStatus('${escapeAttr(item.id)}', this.value)"
-                                        >
-                                            ${[
-                                                "New",
-                                                "Confirmed",
-                                                "Completed",
-                                                "Cancelled",
-                                                "No-show"
-                                            ].map(status => `
-                                                <option
-                                                    value="${escapeAttr(status)}"
-                                                    ${
-                                                        item.status === status
-                                                            ? "selected"
-                                                            : ""
-                                                    }
-                                                >
-                                                    ${escapeHTML(status)}
-                                                </option>
-                                            `).join("")}
-                                                            );
-        }
-    } catch (error) {
-        console.error(`Module ${moduleName} error:`, error);
-        showDatabaseError(error);
-    }
 }
 
 /* ============================================================
@@ -1467,17 +1225,14 @@ function showGalleryForm(id = null) {
                     </div>
 
                     <div class="form-group full-width">
-                        <label>OR Image URL</label>
 
                         <input
-                            type="url"
-                            id="galleryImageUrl"
                             value="${escapeHTML(existing?.image_url || "")}"
                             placeholder="https://example.com/image.jpg"
                         >
 
                         <small>
-                            You can upload from your computer OR paste an image URL.
+                            Upload an image from your computer.
                         </small>
                     </div>
 
@@ -1530,11 +1285,7 @@ async function saveGalleryImage(event, id = "") {
 
         const fileInput =
             document.getElementById("galleryImageFile");
-
-        const imageUrlInput =
-            document.getElementById("galleryImageUrl").value.trim();
-
-        let imageUrl = imageUrlInput;
+let imageUrl = null;
 
         /* -----------------------------------------
            UPLOAD FILE TO SUPABASE STORAGE
@@ -1580,8 +1331,14 @@ async function saveGalleryImage(event, id = "") {
                 publicUrlData.publicUrl;
         }
 
+        if (!imageUrl && id) {
+            const { data: existingImage, error: existingImageError } = await supabaseClient
+                .from("gallery").select("image_url").eq("id", id).single();
+            if (existingImageError) throw existingImageError;
+            imageUrl = existingImage?.image_url || null;
+        }
         if (!imageUrl) {
-            throw new Error("Please upload an image or enter an image URL.");
+            throw new Error("Please upload an image from your computer.");
         }
 
         /* -----------------------------------------
@@ -1979,11 +1736,8 @@ function showOfferForm(id = null) {
 
                     <div class="form-group full-width">
 
-                        <label>OR Image URL</label>
 
                         <input
-                            type="url"
-                            id="offerImageUrl"
                             value="${escapeHTML(
                                 existing?.image_url || ""
                             )}"
@@ -2086,14 +1840,7 @@ async function saveOffer(event, id = "") {
             document.getElementById(
                 "offerImageFile"
             );
-
-        const imageUrlInput =
-            document.getElementById(
-                "offerImageUrl"
-            ).value.trim();
-
-        let imageUrl =
-            imageUrlInput;
+let imageUrl = null;
 
         /* -----------------------------------------
            SUPABASE STORAGE UPLOAD
@@ -2527,35 +2274,6 @@ function showToast(message, type = "success") {
 
     }, 3500);
 }
-                                ? data.map(row => `
-                                    <tr>
-                                        <td>
-                                            ${escapeHTML(
-                                                row.setting_key
-                                            )}
-                                        </td>
-                                        <td>
-                                            ${escapeHTML(
-                                                row.setting_value || ""
-                                            )}
-                                        </td>
-                                    </tr>
-                                `).join("")
-                                : `
-                                    <tr>
-                                        <td colspan="2">
-                                            No settings found.
-                                        </td>
-                                    </tr>
-                                `
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-}
-
 async function saveSettings() {
     const values = {
         business_name:
@@ -2829,53 +2547,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
 });
-                                        </select>
-                                    </td>
-
-                                    <td>
-                                        ${
-                                            item.whatsapp_requested
-                                                ? "Yes"
-                                                : "No"
-                                        }
-                                    </td>
-
-                                    <td>
-                                        ${formatDateTime(item.created_at)}
-                                    </td>
-
-                                    <td>
-                                        <button
-                                            type="button"
-                                            class="delete-btn"
-                                            onclick="deleteAppointment('${escapeAttr(item.id)}')"
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
-                                </tr>
-
-                                ${
-                                    item.message
-                                        ? `
-                                        <tr class="detail-row">
-                                            <td colspan="8">
-                                                <strong>Message:</strong>
-                                                ${escapeHTML(item.message)}
-                                            </td>
-                                        </tr>
-                                        `
-                                        : ""
-                                }
-                            `).join("")}
-                        </tbody>
-                    </table>
-                    `
-                    : emptyMessage("No appointment requests yet.")
-            }
-        </div>
-        `;
-}
 
 async function updateAppointmentStatus(id, status) {
     if (!id || !status) return;
