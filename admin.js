@@ -2370,93 +2370,24 @@ async function deleteRecord(table, id) {
 }
 
 /* ============================================================
-   OPTIONAL PUBLIC FUNCTIONS
+   PUBLIC FUNCTIONS USED BY INLINE HTML HANDLERS
+   Only export functions that are actually defined in this file.
    ============================================================ */
 
 window.openModule = openModule;
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
-
-window.updateAppointmentStatus =
-    updateAppointmentStatus;
-
-window.deleteRecord =
-    deleteRecord;
-
-window.showServiceForm =
-    showServiceForm;
-
-window.editService =
-    editService;
-
-window.saveService =
-    saveService;
-
-window.showOfferForm =
-    showOfferForm;
-
-window.editOffer =
-    editOffer;
-
-window.saveOffer =
-    saveOffer;
-
-window.showPhotoForm =
-    showPhotoForm;
-
-window.editPhoto =
-    editPhoto;
-
-window.savePhoto =
-    savePhoto;
-
-window.showBeforeAfterForm =
-    showBeforeAfterForm;
-
-window.editBeforeAfter =
-    editBeforeAfter;
-
-window.saveBeforeAfter =
-    saveBeforeAfter;
-
-window.showBridalPackageForm =
-    showBridalPackageForm;
-
-window.editBridalPackage =
-    editBridalPackage;
-
-window.saveBridalPackage =
-    saveBridalPackage;
-
-window.showTeamForm =
-    showTeamForm;
-
-window.editTeam =
-    editTeam;
-
-window.saveTeam =
-    saveTeam;
-
-window.showTestimonialForm =
-    showTestimonialForm;
-
-window.editTestimonial =
-    editTestimonial;
-
-window.saveTestimonial =
-    saveTestimonial;
-
-window.showFAQForm =
-    showFAQForm;
-
-window.editFAQ =
-    editFAQ;
-
-window.saveFAQ =
-    saveFAQ;
-
-window.saveSettings =
-    saveSettings;
+window.updateAppointmentStatus = updateAppointmentStatus;
+window.deleteRecord = deleteRecord;
+window.showGalleryForm = showGalleryForm;
+window.closeGalleryForm = closeGalleryForm;
+window.saveGalleryImage = saveGalleryImage;
+window.deleteGalleryImage = deleteGalleryImage;
+window.showOfferForm = showOfferForm;
+window.closeOfferForm = closeOfferForm;
+window.saveOffer = saveOffer;
+window.deleteOffer = deleteOffer;
+window.saveSettings = saveSettings;
 
 /* ============================================================
    STARTUP
