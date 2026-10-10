@@ -2369,12 +2369,19 @@ async function deleteRecord(table, id) {
     await openModule(currentModule);
 }
 
+/* Open the Services module from any existing HTML onclick handler. */
+function showServiceForm() {
+    currentModule = "services";
+    return loadServices();
+}
+
 /* ============================================================
    PUBLIC FUNCTIONS USED BY INLINE HTML HANDLERS
    Only export functions that are actually defined in this file.
    ============================================================ */
 
 window.openModule = openModule;
+window.showServiceForm = showServiceForm;
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
 window.updateAppointmentStatus = updateAppointmentStatus;
