@@ -513,6 +513,24 @@
       resize: vertical;
     }
 
+    .image-preview,
+    .current-image-preview {
+      margin-top: 8px;
+      max-width: 320px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f5f1eb;
+    }
+
+    .image-preview img,
+    .current-image-preview img {
+      display: block;
+      max-width: 100%;
+      max-height: 220px;
+      object-fit: contain;
+    }
+
     .form-field input:focus,
     .form-field textarea:focus,
     .form-field select:focus,
