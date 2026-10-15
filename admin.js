@@ -349,7 +349,7 @@ async function openModule(moduleName) {
    STORAGE
    ============================================================ */
 
-async function uploadStorageFile(bucket, file) {
+async function uploadStorageFile(bucket, file, folder = "") {
     if (!file) return null;
 
     const {
@@ -382,8 +382,15 @@ async function uploadStorageFile(bucket, file) {
         file.name.split(".").pop()?.toLowerCase() ||
         "jpg";
 
-    const path =
+    const fileName =
         `${Date.now()}-${crypto.randomUUID()}.${extension}`;
+    const safeFolder = String(folder || "")
+        .split("/")
+        .filter(Boolean)
+        .join("/");
+    const path = safeFolder
+        ? `${safeFolder}/${fileName}`
+        : fileName;
 
     const { error } = await supabaseClient
         .storage
@@ -1245,20 +1252,6 @@ function showGalleryForm(id = null) {
                     </div>
 
                     <div class="form-group full-width">
-
-                        <input
-                            type="url"
-                            id="galleryImageUrl"
-                            value="${escapeAttr(existing?.image_url || "")}" 
-                            placeholder="https://example.com/image.jpg"
-                        >
-
-                        <small>
-                            Or paste an image URL. A selected file takes priority.
-                        </small>
-                    </div>
-
-                    <div class="form-group full-width">
                         <label>Description</label>
                         <textarea id="galleryDescription" rows="3">${escapeHTML(existing?.description || "")}</textarea>
                     </div>
@@ -1330,8 +1323,7 @@ async function saveGalleryImage(event, id = "") {
 
         const fileInput =
             document.getElementById("galleryImageFile");
-        let imageUrl =
-            document.getElementById("galleryImageUrl").value.trim() || null;
+        let imageUrl = null;
 
         /* -----------------------------------------
            UPLOAD FILE TO SUPABASE STORAGE
@@ -1384,7 +1376,7 @@ async function saveGalleryImage(event, id = "") {
             imageUrl = existingImage?.image_url || null;
         }
         if (!imageUrl) {
-            throw new Error("Paste an image URL or upload an image from your computer.");
+            throw new Error("Choose an image file to upload.");
         }
 
         /* -----------------------------------------
@@ -1762,6 +1754,11 @@ function showOfferForm(id = null) {
                             id="offerImageFile"
                             accept="image/jpeg,image/png,image/webp"
                         >
+                        <input
+                            type="hidden"
+                            id="offerExistingImageUrl"
+                            value="${escapeAttr(existing?.image_url || "")}" 
+                        >
 
                         <small>
                             Upload an image from your computer.
@@ -1773,7 +1770,7 @@ function showOfferForm(id = null) {
                             <div class="current-image-preview">
 
                                 <img
-                                    src="${existing.image_url}"
+                                    src="${escapeAttr(existing.image_url)}"
                                     alt="Offer image"
                                 >
 
@@ -1781,18 +1778,6 @@ function showOfferForm(id = null) {
                             `
                             : ""
                         }
-
-                    </div>
-
-                    <div class="form-group full-width">
-
-
-                        <input
-                            value="${escapeHTML(
-                                existing?.image_url || ""
-                            )}"
-                            placeholder="https://example.com/offer.jpg"
-                        >
 
                     </div>
 
@@ -1890,7 +1875,8 @@ async function saveOffer(event, id = "") {
             document.getElementById(
                 "offerImageFile"
             );
-let imageUrl = null;
+        let imageUrl =
+            document.getElementById("offerExistingImageUrl").value.trim() || null;
 
         /* -----------------------------------------
            SUPABASE STORAGE UPLOAD
@@ -2636,7 +2622,7 @@ const ADMIN_MANAGED_MODULES = {
             { name: "name", label: "Name", type: "text", required: true },
             { name: "slug", label: "Slug", type: "text", required: true },
             { name: "description", label: "Description", type: "textarea" },
-            { name: "image_url", label: "Image URL", type: "url" },
+            { name: "image_url", label: "Category image", type: "image" },
             { name: "display_order", label: "Display order", type: "number", defaultValue: 0 },
             { name: "active", label: "Active on website", type: "checkbox", defaultValue: true }
         ]
@@ -2650,7 +2636,7 @@ const ADMIN_MANAGED_MODULES = {
         fields: [
             { name: "title", label: "Title", type: "text", required: true },
             { name: "description", label: "Description", type: "textarea" },
-            { name: "image_url", label: "Image URL", type: "url", required: true },
+            { name: "image_url", label: "Gallery image", type: "image", required: true },
             { name: "category", label: "Category", type: "text", defaultValue: "salon" },
             { name: "featured", label: "Featured", type: "checkbox" },
             { name: "visible", label: "Visible on website", type: "checkbox", defaultValue: true },
@@ -2666,7 +2652,7 @@ const ADMIN_MANAGED_MODULES = {
         fields: [
             { name: "title", label: "Title", type: "text", required: true },
             { name: "description", label: "Description", type: "textarea" },
-            { name: "image_url", label: "Image URL", type: "url", required: true },
+            { name: "image_url", label: "Photo", type: "image", required: true },
             { name: "category", label: "Category", type: "text", defaultValue: "bridal" },
             { name: "photo_date", label: "Photo date", type: "date" },
             { name: "featured", label: "Featured", type: "checkbox" },
@@ -2682,7 +2668,7 @@ const ADMIN_MANAGED_MODULES = {
         orderBy: "display_order",
         fields: [
             { name: "customer_name", label: "Customer name", type: "text", required: true },
-            { name: "photo_url", label: "Photo URL", type: "url", required: true },
+            { name: "photo_url", label: "Customer photo", type: "image", required: true },
             { name: "service", label: "Service", type: "text" },
             { name: "testimonial", label: "Testimonial", type: "textarea" },
             { name: "rating", label: "Rating (1–5)", type: "number", min: 1, max: 5 },
@@ -2702,8 +2688,8 @@ const ADMIN_MANAGED_MODULES = {
         fields: [
             { name: "title", label: "Title", type: "text", required: true },
             { name: "description", label: "Description", type: "textarea" },
-            { name: "before_image_url", label: "Before image URL", type: "url", required: true },
-            { name: "after_image_url", label: "After image URL", type: "url", required: true },
+            { name: "before_image_url", label: "Before image", type: "image", required: true },
+            { name: "after_image_url", label: "After image", type: "image", required: true },
             { name: "category", label: "Category", type: "text" },
             { name: "featured", label: "Featured", type: "checkbox" },
             { name: "visible", label: "Visible on website", type: "checkbox", defaultValue: true },
@@ -2719,7 +2705,7 @@ const ADMIN_MANAGED_MODULES = {
         fields: [
             { name: "name", label: "Package name", type: "text", required: true },
             { name: "description", label: "Description", type: "textarea" },
-            { name: "image_url", label: "Image URL", type: "url" },
+            { name: "image_url", label: "Package image", type: "image" },
             { name: "price", label: "Price", type: "number", min: 0, step: "0.01" },
             { name: "price_label", label: "Price label", type: "text" },
             { name: "included_services", label: "Included services", type: "textarea" },
@@ -2739,7 +2725,7 @@ const ADMIN_MANAGED_MODULES = {
             { name: "name", label: "Name", type: "text", required: true },
             { name: "role", label: "Role", type: "text" },
             { name: "bio", label: "Bio", type: "textarea" },
-            { name: "image_url", label: "Image URL", type: "url" },
+            { name: "image_url", label: "Team member photo", type: "image" },
             { name: "instagram_url", label: "Instagram URL", type: "url" },
             { name: "display_order", label: "Display order", type: "number", defaultValue: 0 },
             { name: "active", label: "Active on website", type: "checkbox", defaultValue: true }
@@ -2756,7 +2742,7 @@ const ADMIN_MANAGED_MODULES = {
             { name: "customer_name", label: "Customer name", type: "text", required: true },
             { name: "testimonial", label: "Testimonial", type: "textarea", required: true },
             { name: "rating", label: "Rating (1–5)", type: "number", min: 1, max: 5 },
-            { name: "image_url", label: "Image URL", type: "url" },
+            { name: "image_url", label: "Customer photo", type: "image" },
             { name: "service", label: "Service", type: "text" },
             { name: "featured", label: "Featured", type: "checkbox" },
             { name: "visible", label: "Visible on website", type: "checkbox", defaultValue: true }
@@ -2794,6 +2780,19 @@ function managedFieldMarkup(field, record) {
                 <input type="checkbox" name="${escapeAttr(field.name)}" ${checked}>
                 <span>${escapeHTML(field.label)}</span>
             </label>
+        `;
+    }
+
+    if (field.type === "image") {
+        const imageRequired = field.required && !value ? "required" : "";
+        return `
+            <div class="form-field managed-image-field">
+                <span>${escapeHTML(field.label)}${field.required ? " *" : ""}</span>
+                <input type="file" name="upload_${escapeAttr(field.name)}" accept="image/jpeg,image/png,image/webp" ${imageRequired}>
+                <input type="hidden" name="${escapeAttr(field.name)}" value="${escapeAttr(value || "")}">
+                <small>Choose a JPG, PNG or WEBP image, up to 10 MB.</small>
+                ${value ? imagePreview(value, field.label) : ""}
+            </div>
         `;
     }
 
@@ -2934,10 +2933,24 @@ async function saveManagedRecord(event, moduleName) {
     const formData = new FormData(form);
     const recordId = String(formData.get("record_id") || "");
     const payload = {};
+    const imageUploads = [];
 
     for (const field of spec.fields) {
         if (field.type === "checkbox") {
             payload[field.name] = formData.has(field.name);
+            continue;
+        }
+
+        if (field.type === "image") {
+            const file = formData.get(`upload_${field.name}`);
+            const currentUrl = String(formData.get(field.name) || "").trim();
+            if (file && file.size > 0) {
+                imageUploads.push({ field, file });
+            } else if (!currentUrl && field.required) {
+                showMessage(`Choose an image for ${field.label.toLowerCase()}.`, "error");
+                return;
+            }
+            payload[field.name] = currentUrl || null;
             continue;
         }
 
@@ -2962,6 +2975,14 @@ async function saveManagedRecord(event, moduleName) {
     }
 
     try {
+        for (const upload of imageUploads) {
+            payload[upload.field.name] = await uploadStorageFile(
+                spec.storageBucket || "customer-gallery",
+                upload.file,
+                `${spec.table}/${upload.field.name}`
+            );
+        }
+
         let request = supabaseClient.from(spec.table);
         request = recordId
             ? request.update(payload).eq("id", recordId)
