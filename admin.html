@@ -428,6 +428,10 @@
       grid-column: 1 / -1;
     }
 
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
     .checkbox-field {
       display: flex;
       align-items: center;
@@ -458,6 +462,144 @@
       border-radius: var(--radius);
       overflow-x: auto;
       box-shadow: 0 4px 20px rgba(0,0,0,.03);
+    }
+
+    .module-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .module-header h2,
+    .module-header p {
+      margin: 0;
+    }
+
+    .module-header p {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .form-field,
+    .form-group {
+      display: grid;
+      gap: 7px;
+      align-content: start;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .form-field input:not([type="checkbox"]),
+    .form-field textarea,
+    .form-field select,
+    .form-group input:not([type="checkbox"]),
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      color: var(--text);
+      padding: 11px 12px;
+      outline: none;
+    }
+
+    .form-field textarea,
+    .form-group textarea {
+      resize: vertical;
+    }
+
+    .form-field input:focus,
+    .form-field textarea:focus,
+    .form-field select:focus,
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(177,138,74,.10);
+    }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .admin-card {
+      min-width: 0;
+      overflow: hidden;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px rgba(0,0,0,.04);
+    }
+
+    .admin-card-image {
+      display: block;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      background: #eee8df;
+    }
+
+    .admin-card-body {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .admin-card-body h3,
+    .admin-card-body p {
+      margin: 0;
+    }
+
+    .admin-card-body p,
+    .managed-record-details {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .managed-record-details,
+    .managed-record-badges,
+    .admin-card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .managed-record-details span {
+      width: 100%;
+    }
+
+    .managed-record-badges .badge {
+      border-radius: 999px;
+      background: #f2ede5;
+      color: var(--text);
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+
+    .admin-card-actions .secondary-btn,
+    .admin-card-actions .danger-btn,
+    .form-actions .primary-btn,
+    .form-actions .secondary-btn {
+      width: auto;
+    }
+
+    .empty-admin,
+    .module-loading {
+      padding: 20px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      color: var(--muted);
     }
 
     table {
@@ -598,6 +740,14 @@
 
       .full {
         grid-column: auto;
+      }
+
+      .full-width {
+        grid-column: auto;
+      }
+
+      .module-header {
+        flex-direction: column;
       }
 
       .user-email {
