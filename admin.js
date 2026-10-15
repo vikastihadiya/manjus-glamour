@@ -7,6 +7,7 @@
 let currentUser = null;
 let currentModule = "dashboard";
 let galleryData = [];
+let offersData = [];
 
 const $ = (id) => document.getElementById(id);
 
@@ -296,7 +297,7 @@ async function openModule(moduleName) {
                 break;
 
             case "offers":
-                await loadOffers();
+                await loadOffersModule();
                 break;
 
             case "gallery":
@@ -1654,81 +1655,75 @@ function showOfferForm(id = null) {
                 <div class="form-grid">
 
                     <div class="form-group">
-                        <label>Offer Title</label>
+                        <label>Offer Name</label>
 
                         <input
                             type="text"
-                            id="offerTitle"
-                            value="${escapeHTML(existing?.title || "")}"
+                            id="offerName"
+                            value="${escapeAttr(existing?.name || existing?.title || "")}" 
                             placeholder="Bridal Makeup Offer"
                             required
                         >
                     </div>
 
                     <div class="form-group">
-                        <label>Price</label>
+                        <label>Offer Price (₹)</label>
 
                         <input
                             type="number"
                             id="offerPrice"
-                            value="${existing?.price ?? ""}"
+                            value="${existing?.offer_price ?? existing?.price ?? ""}"
                             min="0"
+                            step="0.01"
                             placeholder="4999"
                         >
                     </div>
 
                     <div class="form-group">
-                        <label>Old Price</label>
+                        <label>Original Price (₹)</label>
 
                         <input
                             type="number"
-                            id="offerOldPrice"
-                            value="${existing?.old_price ?? ""}"
+                            id="offerOriginalPrice"
+                            value="${existing?.original_price ?? existing?.old_price ?? ""}"
                             min="0"
+                            step="0.01"
                             placeholder="7999"
                         >
                     </div>
 
                     <div class="form-group">
-                        <label>Start Date</label>
+                        <label>Discount (%)</label>
 
                         <input
-                            type="date"
-                            id="offerStartDate"
-                            value="${existing?.start_date || ""}"
+                            type="number"
+                            id="offerDiscountPercent"
+                            value="${existing?.discount_percent ?? ""}"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            placeholder="20"
                         >
                     </div>
 
                     <div class="form-group">
-                        <label>End Date</label>
+                        <label>Valid From</label>
 
                         <input
                             type="date"
-                            id="offerEndDate"
-                            value="${existing?.end_date || ""}"
+                            id="offerValidFrom"
+                            value="${(existing?.valid_from || existing?.start_date || "").slice(0, 10)}"
                         >
                     </div>
 
                     <div class="form-group">
-                        <label>Status</label>
+                        <label>Valid Until</label>
 
-                        <select id="offerStatus">
-
-                            <option value="active"
-                                ${existing?.status === "active"
-                                    ? "selected"
-                                    : ""}>
-                                Active
-                            </option>
-
-                            <option value="inactive"
-                                ${existing?.status === "inactive"
-                                    ? "selected"
-                                    : ""}>
-                                Inactive
-                            </option>
-
-                        </select>
+                        <input
+                            type="date"
+                            id="offerValidUntil"
+                            value="${(existing?.valid_until || existing?.end_date || "").slice(0, 10)}"
+                        >
                     </div>
 
                     <div class="form-group full-width">
@@ -1743,6 +1738,40 @@ function showOfferForm(id = null) {
                             existing?.description || ""
                         )}</textarea>
 
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Included Services</label>
+                        <textarea
+                            id="offerIncludedServices"
+                            rows="2"
+                            placeholder="Services included in this offer"
+                        >${escapeHTML(existing?.included_services || "")}</textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Terms</label>
+                        <textarea
+                            id="offerTerms"
+                            rows="2"
+                            placeholder="Optional terms and conditions"
+                        >${escapeHTML(existing?.terms || "")}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="offerActive"
+                                ${existing?.active === false ? "" : "checked"}>
+                            Active (show on website)
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="offerFeatured"
+                                ${existing?.featured ? "checked" : ""}>
+                            Featured
+                        </label>
                     </div>
 
                     <div class="form-group full-width">
@@ -1836,9 +1865,9 @@ async function saveOffer(event, id = "") {
 
     try {
 
-        const title =
+        const name =
             document.getElementById(
-                "offerTitle"
+                "offerName"
             ).value.trim();
 
         const price =
@@ -1846,30 +1875,46 @@ async function saveOffer(event, id = "") {
                 "offerPrice"
             ).value;
 
-        const oldPrice =
+        const originalPrice =
             document.getElementById(
-                "offerOldPrice"
+                "offerOriginalPrice"
             ).value;
 
-        const startDate =
+        const discountPercent =
             document.getElementById(
-                "offerStartDate"
+                "offerDiscountPercent"
             ).value;
 
-        const endDate =
+        const validFrom =
             document.getElementById(
-                "offerEndDate"
+                "offerValidFrom"
             ).value;
 
-        const status =
+        const validUntil =
             document.getElementById(
-                "offerStatus"
+                "offerValidUntil"
             ).value;
 
         const description =
             document.getElementById(
                 "offerDescription"
             ).value.trim();
+
+        const includedServices =
+            document.getElementById(
+                "offerIncludedServices"
+            ).value.trim();
+
+        const terms =
+            document.getElementById(
+                "offerTerms"
+            ).value.trim();
+
+        const active =
+            document.getElementById("offerActive").checked;
+
+        const featured =
+            document.getElementById("offerFeatured").checked;
 
         const fileInput =
             document.getElementById(
@@ -1934,33 +1979,20 @@ async function saveOffer(event, id = "") {
         }
 
         const payload = {
-
-            title: title || null,
-
-            price:
-                price === ""
-                    ? null
-                    : Number(price),
-
-            old_price:
-                oldPrice === ""
-                    ? null
-                    : Number(oldPrice),
-
-            start_date:
-                startDate || null,
-
-            end_date:
-                endDate || null,
-
-            status:
-                status || "active",
-
-            description:
-                description || null,
-
-            image_url:
-                imageUrl || null
+            name: name || null,
+            description: description || null,
+            image_url: imageUrl || null,
+            original_price: originalPrice === "" ? null : Number(originalPrice),
+            offer_price: price === "" ? null : Number(price),
+            discount_percent: discountPercent === "" ? null : Number(discountPercent),
+            valid_from: validFrom || null,
+            valid_until: validUntil || null,
+            start_date: validFrom || null,
+            end_date: validUntil || null,
+            included_services: includedServices || null,
+            terms: terms || null,
+            active,
+            featured
         };
 
         let result;
@@ -2084,9 +2116,9 @@ async function loadOffers() {
                         ? `
                         <img
                             class="admin-card-image"
-                            src="${item.image_url}"
+                            src="${escapeAttr(item.image_url)}"
                             alt="${escapeHTML(
-                                item.title || "Offer"
+                                item.name || item.title || "Offer"
                             )}"
                         >
                         `
@@ -2101,16 +2133,16 @@ async function loadOffers() {
 
                         <h3>
                             ${escapeHTML(
-                                item.title || "Untitled Offer"
+                                item.name || item.title || "Untitled Offer"
                             )}
                         </h3>
 
                         ${
-                            item.price !== null
+                            item.offer_price !== null && item.offer_price !== undefined
                             ? `
                             <p class="price">
                                 ₹${Number(
-                                    item.price
+                                    item.offer_price
                                 ).toLocaleString("en-IN")}
                             </p>
                             `
@@ -2118,11 +2150,11 @@ async function loadOffers() {
                         }
 
                         ${
-                            item.old_price !== null
+                            item.original_price !== null && item.original_price !== undefined
                             ? `
                             <p class="old-price">
                                 ₹${Number(
-                                    item.old_price
+                                    item.original_price
                                 ).toLocaleString("en-IN")}
                             </p>
                             `
@@ -2130,9 +2162,7 @@ async function loadOffers() {
                         }
 
                         <span class="badge">
-                            ${escapeHTML(
-                                item.status || "active"
-                            )}
+                            ${item.active ? "Active" : "Inactive"}${item.featured ? " · Featured" : ""}
                         </span>
 
                         <div class="admin-card-actions">
